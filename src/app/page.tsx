@@ -1,5 +1,7 @@
 "use client";
 
+import Footer from "@/components/common/Footer";
+import HeroBanner from "@/components/common/Hero-Section";
 import React, { useState } from "react";
 import { 
   FaPlay, 
@@ -188,32 +190,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* HERO SECTION */}
-      <div className="hero min-h-[50vh] relative bg-cover bg-center overflow-hidden" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop')` }}>
-        <div className="hero-overlay bg-gradient-to-t from-neutral via-neutral/70 to-transparent"></div>
-        <div className="hero-content text-left justify-start w-full px-4 md:px-8 py-12 lg:py-20 z-10">
-          <div className="max-w-xl">
-            <div className="badge badge-secondary font-semibold mb-4 gap-1 animate-bounce">
-              <FaFire className="text-xs" /> MUST-WATCH OF THE WEEK
-            </div>
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-3">
-              The Silent Cosmos
-            </h1>
-            <p className="text-sm md:text-base text-zinc-300 mb-6 max-w-lg leading-relaxed">
-              Journey into the darkest corners of outer space. Discover cosmic secrets, supermassive black holes, and the beautiful stellar nurseries shaping our universe.
-            </p>
-            <div className="flex gap-3">
-              <button className="btn btn-primary shadow-lg hover:scale-105 transition-all">
-                <FaPlay /> Watch Trailer
-              </button>
-              <button onClick={() => toggleMyList(3)} className="btn btn-outline btn-white hover:scale-105 transition-all">
-                {myList.includes(3) ? <FaCheck className="text-success" /> : <FaPlus />} 
-                {myList.includes(3) ? "In My List" : "Add to List"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <HeroBanner/>
 
       {/* FILTER TABS FOR MOBILE */}
       <div className="flex md:hidden justify-center gap-1 p-4 bg-base-200">
@@ -353,21 +330,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* FOOTER */}
-      <footer className="footer footer-center p-10 bg-base-300 text-base-content rounded-t-3xl border-t border-base-100 mt-20">
-        <div className="grid grid-flow-col gap-4">
-          <a className="link link-hover">About us</a>
-          <a className="link link-hover">Terms of service</a>
-          <a className="link link-hover">Privacy policy</a>
-          <a className="link link-hover">Help Center</a>
-        </div> 
-        <div>
-          <div className="flex items-center gap-2 text-lg font-black text-primary mb-2 select-none">
-            <FaFilm className="text-xl text-secondary" /> FLIXORA
-          </div>
-          <p>© 2026 Flixora Media Inc. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer/>
 
     </div>
   );
