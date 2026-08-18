@@ -129,8 +129,8 @@ export default function Navbar({
             </button>
           </div>
 
-          {/* Profile Dropdown */}
-          <div className="relative" ref={profileRef}>
+          {/* Profile Dropdown (hidden on mobile, visible on desktop/tablet) */}
+          <div className="relative hidden md:block" ref={profileRef}>
             <button
               onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
               className="flex items-center gap-1.5 focus:outline-none group"
@@ -213,9 +213,61 @@ export default function Navbar({
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="absolute top-0 right-0 w-[280px] h-full bg-[#000000] border-l border-[#1A1A1A] p-6 pt-24 flex flex-col gap-6"
+            className="absolute top-0 right-0 w-[280px] h-full bg-[#000000] border-l border-[#1A1A1A] p-6 pt-20 flex flex-col gap-6 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Mobile Profile Area */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 px-4 py-2 border-b border-[#1A1A1A] pb-4">
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-[#FF4C00]">
+                  <img
+                    src={profileAvatarSrc}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-white text-sm font-bold">My Account</span>
+                  <span className="text-zinc-500 text-[10px]">Premium Member</span>
+                </div>
+              </div>
+
+              {/* Mobile Profile Dropdown Submenus */}
+              <div className="flex flex-col gap-1.5">
+                {PROFILE_ITEMS.map((item, idx) => {
+                  const classNames = `block w-full text-left px-4 py-2 text-sm rounded-lg transition-colors ${
+                    item.isDanger 
+                      ? "text-red-500 hover:bg-red-500/10" 
+                      : "text-[#E5E5E5] hover:bg-[#1A1A1A]"
+                  }`;
+                  return item.href ? (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={classNames}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (item.onClick) item.onClick();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={classNames}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Separator Line */}
+            <div className="h-[1px] bg-[#1A1A1A] w-full" />
+
             <div className="flex flex-col gap-3">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
