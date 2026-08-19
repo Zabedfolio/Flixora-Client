@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronDown, Globe } from 'lucide-react';
-import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
+import { usePathname } from 'next/navigation';
 
 interface FooterLink {
   label: string;
@@ -109,6 +108,7 @@ export default function Footer() {
   const [expandedSections, setExpandedSections] = useState<
     Record<number, boolean>
   >({});
+  const pathname = usePathname();
 
   const toggleSection = (index: number) => {
     setExpandedSections(previous => ({
@@ -116,6 +116,11 @@ export default function Footer() {
       [index]: !previous[index],
     }));
   };
+
+  // Hide Footer on authentication routes
+  if (pathname?.startsWith('/auth')) {
+    return null;
+  }
 
   return (
     <footer className="w-full overflow-hidden border-t border-[#1A1A1A] bg-[#0A0A0A] px-4 pb-8 pt-14 text-zinc-500">
