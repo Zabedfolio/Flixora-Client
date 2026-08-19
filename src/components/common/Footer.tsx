@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Globe, ChevronDown, Film } from 'lucide-react';
-import { FaInstagram, FaTwitter, FaFacebookF, FaYoutube } from 'react-icons/fa';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ChevronDown, Globe } from 'lucide-react';
+import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 
-interface LinkItem {
+interface FooterLink {
   label: string;
   href: string;
 }
 
 interface FooterColumn {
   title: string;
-  links: LinkItem[];
+  links: FooterLink[];
 }
 
 const FOOTER_COLUMNS: FooterColumn[] = [
@@ -39,22 +39,71 @@ const FOOTER_COLUMNS: FooterColumn[] = [
   {
     title: 'Account',
     links: [
-      { label: 'Manage Subscription', href: '/subscription' },
-      { label: 'Billing', href: '/billing' },
-      { label: 'Account Settings', href: '/settings' },
-      { label: 'Help Center', href: '/help' },
+      {
+        label: 'Manage Subscription',
+        href: '/subscription',
+      },
+      {
+        label: 'Billing',
+        href: '/billing',
+      },
+      {
+        label: 'Account Settings',
+        href: '/settings',
+      },
+      {
+        label: 'Help Center',
+        href: '/help',
+      },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Privacy Policy', href: '/privacy' },
-      { label: 'Terms of Service', href: '/terms' },
-      { label: 'Cookie Preferences', href: '/cookies' },
-      { label: 'Content Guidelines', href: '/guidelines' },
+      {
+        label: 'Privacy Policy',
+        href: '/privacy',
+      },
+      {
+        label: 'Terms of Service',
+        href: '/terms',
+      },
+      {
+        label: 'Cookie Preferences',
+        href: '/cookies',
+      },
+      {
+        label: 'Content Guidelines',
+        href: '/guidelines',
+      },
     ],
   },
 ];
+
+const SOCIAL_LINKS = [
+  {
+    label: 'Instagram',
+    icon: FaInstagram,
+    href: '#',
+  },
+  {
+    label: 'Twitter/X',
+    icon: FaTwitter,
+    href: '#',
+  },
+  {
+    label: 'Facebook',
+    icon: FaFacebookF,
+    href: '#',
+  },
+  {
+    label: 'YouTube',
+    icon: FaYoutube,
+    href: '#',
+  },
+];
+
+const PAYMENT_METHODS = ['VISA', 'MC', 'AMEX', 'PAYPAL'];
 
 export default function Footer() {
   const [expandedSections, setExpandedSections] = useState<
@@ -62,107 +111,95 @@ export default function Footer() {
   >({});
 
   const toggleSection = (index: number) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [index]: !prev[index],
+    setExpandedSections(previous => ({
+      ...previous,
+      [index]: !previous[index],
     }));
   };
 
   return (
-    <footer className="relative bg-[#0A0A0A] border-t border-[#1A1A1A] pt-14 pb-8 px-4 md:px-8 select-none text-zinc-500 z-10 w-full overflow-hidden">
-      <div className="max-w-7xl mx-auto flex flex-col gap-10">
-        {/* TOP AREA: Logo, tagline, and socials */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
-          <div className="flex flex-col gap-2 items-center md:items-start text-center md:text-left">
+    <footer className="w-full overflow-hidden border-t border-[#1A1A1A] bg-[#0A0A0A] px-4 pb-8 pt-14 text-zinc-500">
+      <div className="mx-auto flex max-w-7xl flex-col gap-10">
+        {/* Header */}
+        <div className="flex flex-col justify-between gap-6 border-b border-[#1A1A1A]/50 pb-8 md:flex-row md:items-center">
+          <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
             <Link
               href="/"
-              className="outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] rounded px-1 -mx-1"
+              aria-label="Flixora home"
+              className="rounded outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
             >
               <Image
+                src="/logo.png"
+                alt="Flixora"
                 width={150}
                 height={150}
-                src="/logo.png"
-                alt="Flixora Logo"
-                className="h-14 md:h-16 object-cover"
+                className="h-14 w-auto object-contain md:h-16"
               />
             </Link>
-            <p className="text-xs text-zinc-500 font-medium">
+
+            <p className="text-xs font-medium text-zinc-500">
               Your stories. Your way.
             </p>
           </div>
 
-          {/* Social Icons Row */}
+          {/* Socials */}
           <div className="flex items-center justify-center gap-3">
-            <a
-              href="#"
-              aria-label="Instagram"
-              className="w-9 h-9 rounded-full border border-zinc-900 hover:border-[#FF4C00]/50 flex items-center justify-center text-zinc-500 hover:text-[#FF4C00] hover:scale-105 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] focus-visible:text-[#FF4C00]"
-            >
-              <FaInstagram size={16} />
-            </a>
-            <a
-              href="#"
-              aria-label="Twitter/X"
-              className="w-9 h-9 rounded-full border border-zinc-900 hover:border-[#FF4C00]/50 flex items-center justify-center text-zinc-500 hover:text-[#FF4C00] hover:scale-105 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] focus-visible:text-[#FF4C00]"
-            >
-              <FaTwitter size={16} />
-            </a>
-            <a
-              href="#"
-              aria-label="Facebook"
-              className="w-9 h-9 rounded-full border border-zinc-900 hover:border-[#FF4C00]/50 flex items-center justify-center text-zinc-500 hover:text-[#FF4C00] hover:scale-105 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] focus-visible:text-[#FF4C00]"
-            >
-              <FaFacebookF size={16} />
-            </a>
-            <a
-              href="#"
-              aria-label="YouTube"
-              className="w-9 h-9 rounded-full border border-zinc-900 hover:border-[#FF4C00]/50 flex items-center justify-center text-zinc-500 hover:text-[#FF4C00] hover:scale-105 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] focus-visible:text-[#FF4C00]"
-            >
-              <FaYoutube size={16} />
-            </a>
+            {SOCIAL_LINKS.map(({ label, icon: Icon, href }) => (
+              <a
+                key={label}
+                href={href}
+                aria-label={label}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-900 text-zinc-500 outline-none transition-all duration-200 hover:scale-105 hover:border-[#FF4C00]/50 hover:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
+              >
+                <Icon size={16} />
+              </a>
+            ))}
           </div>
         </div>
 
-        {/* MIDDLE AREA: Columns (Responsive Grid & Accordion) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-8 border-t border-[#1A1A1A]/30 pt-8 md:pt-4">
+        {/* Footer Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           {FOOTER_COLUMNS.map((column, index) => {
-            const isExpanded = expandedSections[index] || false;
+            const isExpanded = expandedSections[index] ?? false;
+
             return (
-              <div key={index} className="flex flex-col md:gap-1.5 w-full">
-                {/* Header: Accordion Row on Mobile, Static Header on Tablet/Desktop */}
-                <div
+              <div key={column.title}>
+                {/* Column Header */}
+                <button
+                  type="button"
                   onClick={() => toggleSection(index)}
-                  className="flex items-center justify-between w-full py-4 md:py-0 border-b border-[#1A1A1A]/50 md:border-none cursor-pointer md:cursor-default"
+                  className="flex w-full items-center justify-between border-b border-[#1A1A1A]/50 py-4 text-left md:cursor-default md:border-none md:py-0"
                 >
-                  <div className="flex flex-col">
-                    <h3 className="text-white text-xs font-bold tracking-wider uppercase select-none">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-white">
                       {column.title}
                     </h3>
-                    <div className="w-6 h-[2.5px] bg-[#FF4C00] mt-1.5 hidden md:block" />
+
+                    <div className="mt-1.5 hidden h-[2.5px] w-6 bg-[#FF4C00] md:block" />
                   </div>
+
                   <ChevronDown
                     size={14}
-                    className={`text-zinc-500 md:hidden transition-transform duration-300 ${
+                    className={`text-zinc-500 transition-transform duration-300 md:hidden ${
                       isExpanded ? 'rotate-180 text-[#FF4C00]' : ''
                     }`}
                   />
-                </div>
+                </button>
 
-                {/* Links Container */}
+                {/* Links */}
                 <div
-                  className={`md:block transition-all duration-300 overflow-hidden ${
+                  className={`overflow-hidden transition-all duration-300 md:block ${
                     isExpanded
-                      ? 'max-h-[250px] opacity-100 mt-3 pb-4'
-                      : 'max-h-0 md:max-h-none opacity-0 md:opacity-100 mt-0'
+                      ? 'max-h-[300px] opacity-100'
+                      : 'max-h-0 opacity-0 md:max-h-none md:opacity-100'
                   }`}
                 >
-                  <ul className="space-y-3 pl-1 md:pl-0">
-                    {column.links.map((link, idx) => (
-                      <li key={idx}>
+                  <ul className="space-y-3 py-4 md:py-5">
+                    {column.links.map(link => (
+                      <li key={link.href}>
                         <Link
                           href={link.href}
-                          className="text-[13px] font-medium text-[#B3B3B3] hover:text-[#FF4C00] hover:underline hover:underline-offset-4 decoration-[#FF4C00]/40 transition-all duration-150 outline-none focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/70 rounded px-1.5 py-0.5 -mx-1.5"
+                          className="rounded text-[13px] font-medium text-[#B3B3B3] outline-none transition-colors hover:text-[#FF4C00] focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/50"
                         >
                           {link.label}
                         </Link>
@@ -175,47 +212,46 @@ export default function Footer() {
           })}
         </div>
 
-        {/* BOTTOM BAR: copyright, language, and payments */}
-        <div className="border-t border-[#1A1A1A] pt-8 mt-4 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-[11px] text-zinc-600 text-center md:text-left order-3 md:order-1 select-none">
+        {/* Bottom */}
+        <div className="flex flex-col items-center justify-between gap-6 border-t border-[#1A1A1A] pt-8 md:flex-row">
+          {/* Copyright */}
+          <p className="order-3 text-center text-[11px] text-zinc-600 md:order-1 md:text-left">
             © 2026 Flixora. All rights reserved.
           </p>
 
-          {/* Payment Methods */}
-          <div className="flex items-center gap-2.5 text-zinc-700 text-[10px] font-bold tracking-widest order-2 select-none">
-            <span className="px-2 py-0.5 border border-zinc-900 rounded bg-[#0A0A0A]">
-              VISA
-            </span>
-            <span className="px-2 py-0.5 border border-zinc-900 rounded bg-[#0A0A0A]">
-              MC
-            </span>
-            <span className="px-2 py-0.5 border border-zinc-900 rounded bg-[#0A0A0A]">
-              AMEX
-            </span>
-            <span className="px-2 py-0.5 border border-zinc-900 rounded bg-[#0A0A0A]">
-              PAYPAL
-            </span>
+          {/* Payments */}
+          <div className="order-2 flex items-center gap-2.5 text-[10px] font-bold tracking-widest text-zinc-700">
+            {PAYMENT_METHODS.map(method => (
+              <span
+                key={method}
+                className="rounded border border-zinc-900 bg-[#0A0A0A] px-2 py-0.5"
+              >
+                {method}
+              </span>
+            ))}
           </div>
 
-          {/* Region/Language selector */}
-          <div className="relative flex items-center bg-zinc-950 border border-zinc-900 hover:border-[#FF4C00]/50 rounded-full px-3.5 py-2 text-zinc-400 hover:text-white transition-all duration-200 order-1 md:order-3 shadow-sm select-none">
-            <Globe
-              size={14}
-              className="text-[#FF4C00] mr-2 pointer-events-none"
-            />
+          {/* Language */}
+          <div className="order-1 relative flex items-center rounded-full border border-zinc-900 bg-zinc-950 px-3.5 py-2 text-zinc-400 transition-colors hover:border-[#FF4C00]/50 hover:text-white md:order-3">
+            <Globe size={14} className="mr-2 text-[#FF4C00]" />
+
             <select
-              className="bg-transparent text-xs font-bold pr-5 outline-none appearance-none cursor-pointer focus-visible:ring-0 select-none"
-              aria-label="Select Language"
+              aria-label="Select language"
               defaultValue="en-US"
+              className="cursor-pointer appearance-none bg-transparent pr-5 text-xs font-bold outline-none"
             >
               <option value="en-US">English (US)</option>
+
               <option value="es-ES">Español</option>
+
               <option value="fr-FR">Français</option>
+
               <option value="ja-JP">日本語</option>
             </select>
+
             <ChevronDown
               size={11}
-              className="absolute right-3.5 text-zinc-500 pointer-events-none"
+              className="pointer-events-none absolute right-3.5 text-zinc-500"
             />
           </div>
         </div>

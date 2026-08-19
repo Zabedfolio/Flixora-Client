@@ -119,7 +119,7 @@ export default function Navbar({
       {/* =========================================
           MAIN NAVBAR
       ========================================== */}
-      <nav className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4">
+      <nav className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4 ">
         {/* =========================================
             LEFT SECTION
         ========================================== */}
