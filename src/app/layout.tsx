@@ -5,25 +5,32 @@ import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "Flixora",
-  description: "Watch movies online",
+  title: {
+    default: 'Flixora',
+    template: '%s | Flixora',
+  },
+  description: 'Discover and watch movies and TV shows with Flixora.',
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-full flex flex-col overflow-x-hidden w-full relative">
         <Navbar myListCount={5} />

@@ -1,114 +1,155 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, Film, Play } from "lucide-react";
-import Link from "next/link";
+import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Film, Play } from 'lucide-react';
+import Link from 'next/link';
 
-const slides = [
+interface Slide {
+  id: number;
+  image: string;
+  title: string;
+  subtitle: string;
+  highlight: string;
+}
+
+const SLIDES: Slide[] = [
   {
     id: 1,
-    image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1600&auto=format&fit=crop",
-    title: "Fury: Born of War",
-    subtitle: "A grizzled tank commander makes tough decisions as he and his crew fight their way across Germany in April, 1945.",
-    highlight: "Critically Acclaimed Action",
+    image:
+      'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1600&auto=format&fit=crop',
+    title: 'Fury: Born of War',
+    subtitle:
+      'A grizzled tank commander makes tough decisions as he and his crew fight their way across Germany in April, 1945.',
+    highlight: 'Critically Acclaimed Action',
   },
   {
     id: 2,
-    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop",
-    title: "The Silent Cosmos",
-    subtitle: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival and discover deep stellar secrets.",
-    highlight: "Top Sci-Fi Blockbuster",
+    image:
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
+    title: 'The Silent Cosmos',
+    subtitle:
+      "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival and discover deep stellar secrets.",
+    highlight: 'Top Sci-Fi Blockbuster',
   },
   {
     id: 3,
-    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1600&auto=format&fit=crop",
-    title: "Neon Shadows",
-    subtitle: "When a ruthless crime syndicate threatens the cyberpunk streets of Gotham, a rogue detective takes the law into his own hands.",
+    image:
+      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1600&auto=format&fit=crop',
+    title: 'Neon Shadows',
+    subtitle:
+      'When a ruthless crime syndicate threatens the cyberpunk streets of Gotham, a rogue detective takes the law into his own hands.',
     highlight: "Viewer's Choice Thriller",
   },
 ];
+
+const AUTO_PLAY_INTERVAL = 5000;
+const RESUME_DELAY = 8000;
 
 export default function HeroBanner() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-  // Auto-slide
+  const currentMovie = SLIDES[currentSlide];
+
   useEffect(() => {
-    if (!isAutoPlaying) return;
-    
+    if (!isAutoPlaying) {
+      return;
+    }
+
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+      setCurrentSlide(previous => (previous + 1) % SLIDES.length);
+    }, AUTO_PLAY_INTERVAL);
 
     return () => clearInterval(timer);
   }, [isAutoPlaying]);
 
+  const pauseAutoPlay = () => {
+    setIsAutoPlaying(false);
+
+    window.setTimeout(() => {
+      setIsAutoPlaying(true);
+    }, RESUME_DELAY);
+  };
+
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
-    setIsAutoPlaying(false);
-    // Resume auto-play after manual interaction
-    setTimeout(() => setIsAutoPlaying(true), 8000);
+    pauseAutoPlay();
   };
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 8000);
+  const goToNextSlide = () => {
+    setCurrentSlide(previous => (previous + 1) % SLIDES.length);
+
+    pauseAutoPlay();
   };
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 8000);
+  const goToPreviousSlide = () => {
+    setCurrentSlide(previous => (previous - 1 + SLIDES.length) % SLIDES.length);
+
+    pauseAutoPlay();
   };
 
   return (
-    <section className="relative h-screen min-h-[640px] overflow-hidden bg-black select-none">
-      
-      {/* Slides */}
+    <section className="relative h-screen min-h-[640px] w-full overflow-hidden bg-black">
+      {/* Background */}
       <AnimatePresence mode="wait">
-        {slides.map((slide, index) => (
-          index === currentSlide && (
-            <motion.div
-              key={slide.id}
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.8, ease: "easeInOut" }}
-              className="absolute inset-0"
-            >
-              {/* Background Image */}
-              <div 
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${slide.image})` }}
-              />
-              
-              {/* Premium Dark Gradients for better readability */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
-              
-              {/* Subtle visual grid mesh overlay */}
-              <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:40px_40px] opacity-30" />
-            </motion.div>
-          )
-        ))}
+        <motion.div
+          key={currentMovie.id}
+          initial={{
+            opacity: 0,
+            scale: 1.05,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          exit={{
+            opacity: 0,
+            scale: 0.98,
+          }}
+          transition={{
+            duration: 0.8,
+            ease: 'easeInOut',
+          }}
+          className="absolute inset-0"
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${currentMovie.image})`,
+            }}
+          />
+
+          <div className="absolute inset-0 bg-linear-to-r from-black via-black/60 to-transparent" />
+
+          <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/30" />
+
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:40px_40px] opacity-30" />
+        </motion.div>
       </AnimatePresence>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex items-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div className="relative z-10 flex h-full items-center">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
-            
-            {/* Tag Badge */}
+            {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
+              initial={{
+                opacity: 0,
+                y: 30,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.7,
+              }}
             >
-              <div className="inline-flex items-center gap-1.5 xs:gap-2 px-3 py-1.5 xs:px-5 xs:py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/10 mb-6">
-                <Film className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-[#FF4C00] flex-shrink-0" />
-                <span className="text-[8px] xs:text-[10px] font-bold text-[#E5E5E5] tracking-wider xs:tracking-widest uppercase truncate max-w-[240px] xs:max-w-none">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md sm:px-5 sm:py-2">
+                <Film className="h-3.5 w-3.5 text-[#FF4C00] sm:h-4 sm:w-4" />
+
+                <span className="max-w-[240px] truncate text-[8px] font-bold tracking-wider text-[#E5E5E5] sm:max-w-none sm:text-[10px] sm:tracking-widest">
                   STREAMING NOW • EXCLUSIVE COLLECTION
                 </span>
               </div>
@@ -116,96 +157,129 @@ export default function HeroBanner() {
 
             {/* Title */}
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-7xl font-black leading-none text-white mb-6 tracking-tighter"
+              initial={{
+                opacity: 0,
+                y: 30,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.7,
+                delay: 0.1,
+              }}
+              className="mb-6 text-4xl font-black leading-none tracking-tight text-white sm:text-5xl lg:text-7xl"
             >
-              {slides[currentSlide].title}
+              {currentMovie.title}
             </motion.h1>
 
-            {/* Subtitle */}
+            {/* Description */}
             <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="text-base sm:text-lg text-zinc-300 mb-8 max-w-lg leading-relaxed"
+              initial={{
+                opacity: 0,
+                y: 30,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.7,
+                delay: 0.2,
+              }}
+              className="mb-8 max-w-lg text-base leading-relaxed text-zinc-300 sm:text-lg"
             >
-              {slides[currentSlide].subtitle}
+              {currentMovie.subtitle}
             </motion.p>
 
-            {/* Action Buttons */}
+            {/* CTA */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="flex flex-wrap gap-4"
+              initial={{
+                opacity: 0,
+                y: 30,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.7,
+                delay: 0.3,
+              }}
             >
               <Link
-                href="/"
-                className="bg-[#FF4C00] hover:bg-[#E04300] text-white px-8 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2.5 transition-all duration-300 hover:scale-105 shadow-xl shadow-[#FF4C00]/10 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
+                href="/movies"
+                className="inline-flex items-center gap-2.5 rounded-xl bg-[#FF4C00] px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#FF4C00]/10 transition-all duration-300 hover:scale-105 hover:bg-[#E04300] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
               >
-                <Play size={16} fill="currentColor" /> WATCH NOW
+                <Play size={16} fill="currentColor" />
+                WATCH NOW
               </Link>
             </motion.div>
 
-            {/* Highlight Tag */}
+            {/* Highlight */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="mt-10 inline-flex items-center gap-2 px-5 py-2 bg-white/5 backdrop-blur-sm rounded-xl border border-white/5 text-zinc-300 text-xs font-semibold"
+              initial={{
+                opacity: 0,
+              }}
+              animate={{
+                opacity: 1,
+              }}
+              transition={{
+                delay: 0.6,
+              }}
+              className="mt-10 inline-flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-5 py-2 text-xs font-semibold text-zinc-300 backdrop-blur-sm"
             >
-              <span className="text-[#FF4C00]">★</span> {slides[currentSlide].highlight}
-            </motion.div>
+              <span className="text-[#FF4C00]">★</span>
 
+              {currentMovie.highlight}
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Navigation Arrows (hidden on mobile/tablet) */}
+      {/* Previous */}
       <button
-        onClick={prevSlide}
-        className="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 hidden md:flex items-center justify-center bg-black/40 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent transition-all duration-300 hover:scale-110"
+        type="button"
+        onClick={goToPreviousSlide}
         aria-label="Previous slide"
+        className="absolute left-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white transition-all duration-300 hover:scale-110 hover:border-transparent hover:bg-[#FF4C00] md:flex"
       >
         <ChevronLeft size={24} />
       </button>
 
+      {/* Next */}
       <button
-        onClick={nextSlide}
-        className="absolute right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 hidden md:flex items-center justify-center bg-black/40 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent transition-all duration-300 hover:scale-110"
+        type="button"
+        onClick={goToNextSlide}
         aria-label="Next slide"
+        className="absolute right-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white transition-all duration-300 hover:scale-110 hover:border-transparent hover:bg-[#FF4C00] md:flex"
       >
         <ChevronRight size={24} />
       </button>
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-        {slides.map((_, index) => (
+      {/* Indicators */}
+      <div className="absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+        {SLIDES.map((slide, index) => (
           <button
-            key={index}
+            key={slide.id}
+            type="button"
             onClick={() => goToSlide(index)}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              index === currentSlide 
-                ? "bg-[#FF4C00] w-10" 
-                : "bg-white/30 hover:bg-white/50 w-2.5"
-            }`}
             aria-label={`Go to slide ${index + 1}`}
+            className={`h-2.5 rounded-full transition-all duration-300 ${
+              index === currentSlide
+                ? 'w-10 bg-[#FF4C00]'
+                : 'w-2.5 bg-white/30 hover:bg-white/50'
+            }`}
           />
         ))}
       </div>
 
-      {/* Scroll Prompt */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.6 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center text-white/50 text-[10px] font-bold tracking-widest"
-      >
+      {/* Scroll Indicator */}
+      <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center text-[10px] font-bold tracking-widest text-white/50 sm:flex">
         SCROLL TO EXPLORE
-        <div className="w-px h-8 bg-gradient-to-b from-transparent via-[#FF4C00] to-transparent mt-2 animate-bounce" />
-      </motion.div>
-
+        <div className="mt-2 h-8 w-px animate-bounce bg-linear-to-b from-transparent via-[#FF4C00] to-transparent" />
+      </div>
     </section>
   );
 }
