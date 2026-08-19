@@ -5,6 +5,7 @@ import { Globe, ChevronDown, Film } from 'lucide-react';
 import { FaInstagram, FaTwitter, FaFacebookF, FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 interface LinkItem {
   label: string;
@@ -60,6 +61,7 @@ export default function Footer() {
   const [expandedSections, setExpandedSections] = useState<
     Record<number, boolean>
   >({});
+  const pathname = usePathname();
 
   const toggleSection = (index: number) => {
     setExpandedSections(prev => ({
@@ -67,6 +69,11 @@ export default function Footer() {
       [index]: !prev[index],
     }));
   };
+
+  // Hide Footer on authentication routes
+  if (pathname?.startsWith('/auth')) {
+    return null;
+  }
 
   return (
     <footer className="relative bg-[#0A0A0A] border-t border-[#1A1A1A] pt-14 pb-8 px-4 md:px-8 select-none text-zinc-500 z-10 w-full overflow-hidden">

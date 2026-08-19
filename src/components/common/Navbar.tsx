@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fa';
 import SearchBar from './SearchBar';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 interface NavItem {
   id: string;
@@ -85,6 +86,19 @@ export default function Navbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  // Hide Navbar on authentication routes
+  if (pathname?.startsWith('/auth')) {
+    return null;
+  }
+
+  // Resolve current active tab from route pathname if activeTab prop is empty
+  const currentActiveTab = activeTab || (
+    pathname === '/trending' ? 'trending' :
+    pathname === '/explore' ? 'explore' :
+    pathname === '/my-list' ? 'mylist' : ''
+  );
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -145,7 +159,7 @@ export default function Navbar({
           <div className="hidden lg:flex items-center gap-5 xl:gap-6">
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = currentActiveTab === item.id;
 
               return (
                 <Link
@@ -294,7 +308,7 @@ export default function Navbar({
             <div className="flex flex-col gap-2">
               {NAV_ITEMS.map(item => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
+                const isActive = currentActiveTab === item.id;
 
                 return (
                   <Link
@@ -418,7 +432,7 @@ export default function Navbar({
             <div className="flex flex-col gap-3">
               {NAV_ITEMS.map(item => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
+                const isActive = currentActiveTab === item.id;
 
                 return (
                   <Link
