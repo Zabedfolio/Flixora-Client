@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
-import { ChevronDown, Globe } from 'lucide-react';
+import { Globe, ChevronDown, Film } from 'lucide-react';
+import { FaInstagram, FaTwitter, FaFacebookF, FaYoutube } from 'react-icons/fa';
 
 interface FooterLink {
   label: string;
