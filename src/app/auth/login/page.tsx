@@ -20,7 +20,8 @@ export const LoginForm: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login Form Submitted:', formData);
+    // console.log('Login Form Submitted:', formData);
+    alert(JSON.stringify(formData))
   };
 
   return (
