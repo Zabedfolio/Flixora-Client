@@ -52,12 +52,12 @@ interface DropdownItem {
 
 const PROFILE_ITEMS: DropdownItem[] = [
   {
-    label: 'Switch Profile',
+    label: 'Profile',
     href: '/profile',
   },
   {
-    label: 'Account',
-    href: '/account',
+    label: 'Dashboard',
+    href: '/dashboard',
   },
   {
     label: 'Sign Out',
@@ -87,11 +87,6 @@ export default function Navbar({
 
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-
-  // Hide Navbar on authentication routes
-  if (pathname?.startsWith('/auth')) {
-    return null;
-  }
 
   // Resolve current active tab from route pathname if activeTab prop is empty
   const currentActiveTab = activeTab || (
@@ -127,6 +122,11 @@ export default function Navbar({
     setIsMobileMenuOpen(false);
     setIsProfileDropdownOpen(false);
   };
+
+  // Hide Navbar on authentication, dashboard, and admin routes
+  if (pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black border-b border-[#1A1A1A] px-4 sm:px-6 lg:px-8 select-none">

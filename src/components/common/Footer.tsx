@@ -119,8 +119,8 @@ export default function Footer() {
     }));
   };
 
-  // Hide Footer on authentication routes
-  if (pathname?.startsWith('/auth')) {
+  // Hide Footer on authentication, dashboard, and admin routes
+  if (pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
     return null;
   }
 

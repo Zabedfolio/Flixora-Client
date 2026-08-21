@@ -7,9 +7,11 @@ interface RootLayoutProps {
 
 const layout = ({ children }: RootLayoutProps) => {
   return (
-    <div className="flex min-h-screen bg-[#0f0f13] text-white">
+    <div className="flex min-h-screen bg-black text-white w-full">
       <SideNavbar />
-      {children}
+      <div className="flex-1 w-full min-w-0">
+        {children}
+      </div>
     </div>
   );
 };
