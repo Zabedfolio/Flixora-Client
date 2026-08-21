@@ -1,0 +1,391 @@
+'use client';
+
+import React, { useState } from 'react';
+import { 
+  Crown, 
+  CreditCard, 
+  Download, 
+  Check, 
+  HelpCircle, 
+  X, 
+  Info, 
+  AlertTriangle 
+} from 'lucide-react';
+
+interface BillingRecord {
+  id: string;
+  date: string;
+  amount: string;
+  status: 'Paid' | 'Failed';
+  invoiceId: string;
+}
+
+const BILLING_HISTORY: BillingRecord[] = [
+  { id: '1', date: '2026-08-15', amount: '$14.99', status: 'Paid', invoiceId: 'INV-2026-004' },
+  { id: '2', date: '2026-07-15', amount: '$14.99', status: 'Paid', invoiceId: 'INV-2026-003' },
+  { id: '3', date: '2026-06-15', amount: '$14.99', status: 'Paid', invoiceId: 'INV-2026-002' },
+  { id: '4', date: '2026-05-15', amount: '$14.99', status: 'Failed', invoiceId: 'INV-2026-001' }
+];
+
+const PLANS = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    price: '$7.99/mo',
+    resolution: '720p (HD)',
+    screens: '1 screen',
+    downloads: 'No downloads',
+    ads: 'Ad-supported',
+    kids: '1 kids profile'
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: '$11.99/mo',
+    resolution: '1080p (FHD)',
+    screens: '2 screens',
+    downloads: 'Standard downloads',
+    ads: 'Ad-free',
+    kids: '3 kids profiles'
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: '$14.99/mo',
+    resolution: '4K + HDR',
+    screens: '4 screens',
+    downloads: 'Unlimited downloads',
+    ads: 'Ad-free',
+    kids: 'Unlimited kids profiles'
+  }
+];
+
+export default function SubscriptionPage() {
+  const [currentPlan, setCurrentPlan] = useState<string>('premium');
+  const [billingList, setBillingList] = useState<BillingRecord[]>(BILLING_HISTORY);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
+  const activePlanData = PLANS.find(p => p.id === currentPlan) || PLANS[2];
+
+  const handlePlanChange = (planId: string) => {
+    setCurrentPlan(planId);
+  };
+
+  const handleConfirmCancel = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert(`Subscription cancelled. Reason: ${cancelReason || 'None provided'}`);
+    setIsCancelModalOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans relative">
+      <main className="pt-28 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-10">
+        
+        {/* PAGE HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-0.5 border-b border-[#1A1A1A] pb-5">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2.5">
+              <Crown className="text-[#FF4C00] shrink-0" size={24} fill="currentColor" />
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase">
+                Subscription Plan
+              </h1>
+            </div>
+            <p className="text-xs md:text-sm text-zinc-550 font-medium max-w-2xl leading-relaxed">
+              View your billing statements, change payment methods, or upgrade your streaming resolution.
+            </p>
+          </div>
+        </div>
+
+        {/* CURRENT PLAN OVERVIEW SECTION */}
+        <section className="bg-[#1A1A1A] border border-[#FF4C00]/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_0_30px_rgba(255,76,0,0.06)] relative overflow-hidden">
+          <div className="absolute -right-16 -top-16 w-40 h-40 bg-[#FF4C00]/5 blur-[60px] rounded-full pointer-events-none" />
+          
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00] shrink-0">
+              <Crown size={22} fill="currentColor" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-black text-white uppercase tracking-wider">{activePlanData.name} Plan</span>
+                <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md">
+                  Active
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 font-semibold mt-0.5">
+                Current Cost: <span className="text-white font-bold">{activePlanData.price}</span> • Next renewal date: <span className="text-white font-bold">2026-09-15</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0 z-10">
+            <a 
+              href="#plans"
+              className="flex-1 md:flex-initial text-center bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10 outline-none"
+            >
+              Upgrade Plan
+            </a>
+            <button 
+              onClick={() => setIsCancelModalOpen(true)}
+              className="flex-grow md:flex-initial border border-zinc-700 hover:border-red-500 text-zinc-400 hover:text-red-500 font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
+            >
+              Cancel Sub
+            </button>
+          </div>
+        </section>
+
+        {/* PLANS COMPARISON SECTION */}
+        <section id="plans" className="flex flex-col gap-6">
+          <h2 className="text-lg font-bold text-zinc-300 tracking-wide uppercase">
+            Available Stream Plans
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {PLANS.map((plan) => {
+              const isActive = plan.id === currentPlan;
+
+              return (
+                <div 
+                  key={plan.id}
+                  className={`bg-[#0A0A0A] border rounded-2xl p-6 flex flex-col justify-between gap-6 transition-all duration-300 ${
+                    isActive 
+                      ? 'border-[#FF4C00] shadow-[0_0_25px_rgba(255,76,0,0.06)]' 
+                      : 'border-[#1A1A1A] hover:border-zinc-800'
+                  }`}
+                >
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-black text-white uppercase tracking-wider">{plan.name}</span>
+                        <span className="text-xl font-black text-[#FF4C00]">{plan.price.split('/')[0]}</span>
+                      </div>
+                      {isActive && (
+                        <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg">
+                          Current Plan
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Plan features lists */}
+                    <ul className="space-y-3.5 text-xs font-semibold text-zinc-400">
+                      <li className="flex items-center gap-2.5">
+                        <Check size={14} className="text-[#FF4C00]" />
+                        <span>Resolution: <strong className="text-white">{plan.resolution}</strong></span>
+                      </li>
+                      <li className="flex items-center gap-2.5">
+                        <Check size={14} className="text-[#FF4C00]" />
+                        <span>Screens: <strong className="text-white">{plan.screens}</strong></span>
+                      </li>
+                      <li className="flex items-center gap-2.5">
+                        <Check size={14} className="text-[#FF4C00]" />
+                        <span>{plan.downloads}</span>
+                      </li>
+                      <li className="flex items-center gap-2.5">
+                        <Check size={14} className="text-[#FF4C00]" />
+                        <span>{plan.ads}</span>
+                      </li>
+                      <li className="flex items-center gap-2.5">
+                        <Check size={14} className="text-[#FF4C00]" />
+                        <span>{plan.kids}</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <button
+                    disabled={isActive}
+                    onClick={() => handlePlanChange(plan.id)}
+                    className={`w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none ${
+                      isActive
+                        ? 'bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed'
+                        : 'bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm'
+                    }`}
+                  >
+                    {isActive ? 'Active Plan' : 'Switch Plan'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* BOTTOM METADATA: BILLING & PAYMENT */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Billing statements list */}
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <h2 className="text-lg font-bold text-zinc-300 tracking-wide uppercase">
+              Billing History
+            </h2>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl">
+              <table className="table w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-[#1A1A1A] text-left text-zinc-500 text-[10px] font-black uppercase tracking-widest bg-zinc-950/40">
+                    <th className="p-4 pl-6">Invoice</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Amount</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 pr-6 text-right">Download</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1A1A1A] text-xs font-semibold text-zinc-400">
+                  {billingList.map((bill) => (
+                    <tr key={bill.id} className="hover:bg-zinc-950/40 transition-colors">
+                      <td className="p-4 pl-6 font-mono text-zinc-300">{bill.invoiceId}</td>
+                      <td className="p-4">{bill.date}</td>
+                      <td className="p-4 text-white font-bold">{bill.amount}</td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                          bill.status === 'Paid'
+                            ? 'bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00]'
+                            : 'bg-red-500/10 border border-red-500/25 text-red-500'
+                        }`}>
+                          {bill.status}
+                        </span>
+                      </td>
+                      <td className="p-4 pr-6 text-right">
+                        <button 
+                          onClick={() => alert(`Downloading ${bill.invoiceId} PDF...`)}
+                          className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                        >
+                          <Download size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Stacked Card View */}
+            <div className="flex sm:hidden flex-col gap-3">
+              {billingList.map((bill) => (
+                <div key={bill.id} className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-2">
+                    <span className="text-xs font-bold text-zinc-300 font-mono">{bill.invoiceId}</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                      bill.status === 'Paid'
+                        ? 'bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00]'
+                        : 'bg-red-500/10 border border-red-500/25 text-red-500'
+                    }`}>
+                      {bill.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-zinc-500">{bill.date}</span>
+                      <span className="text-white font-bold">{bill.amount}</span>
+                    </div>
+                    <button 
+                      onClick={() => alert(`Downloading ${bill.invoiceId} PDF...`)}
+                      className="p-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                    >
+                      <Download size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Method configuration */}
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-bold text-zinc-300 tracking-wide uppercase">
+              Payment Details
+            </h2>
+
+            <div className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-6 flex flex-col gap-5 h-full justify-between">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-900 flex items-center justify-center text-[#FF4C00]">
+                    <CreditCard size={18} />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Visa ending in 4242</span>
+                    <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Expires 12/2028</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#141414] border border-[#262626]/30 p-4 rounded-xl flex items-start gap-2.5 mt-2">
+                  <Info size={14} className="text-zinc-500 shrink-0 mt-0.5" />
+                  <p className="text-[9px] text-zinc-550 leading-relaxed font-semibold">
+                    Billing details can be updated dynamically at any time. Card validation takes 2-3 business hours.
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => alert('Update payment dialog...')}
+                className="w-full border border-[#FF4C00]/40 hover:border-[#FF4C00] text-[#FF4C00] hover:text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer hover:bg-[#FF4C00]/5 hover:scale-102 outline-none"
+              >
+                Update Payment
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
+      {/* CANCELLATION FLOW CONFIRMATION MODAL */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
+            
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-950/20 border border-red-900/50 flex items-center justify-center text-red-500 shrink-0">
+                <AlertTriangle size={18} />
+              </div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                Cancel Subscription?
+              </h3>
+            </div>
+
+            <div className="bg-red-500/10 border border-red-500/25 p-4 rounded-xl flex items-start gap-2.5">
+              <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider leading-relaxed">
+                Retention offer: Cancel now, and you will retain access until 2026-09-15. No early charges will apply.
+              </p>
+            </div>
+
+            <form onSubmit={handleConfirmCancel} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">
+                  Why are you leaving? (Optional)
+                </label>
+                <select
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl pl-4 pr-10 py-2.5 text-xs font-semibold outline-none cursor-pointer focus:border-red-500/50 transition-all appearance-none"
+                >
+                  <option value="">Select a reason...</option>
+                  <option value="expensive">Too expensive</option>
+                  <option value="no-use">Don't use it enough</option>
+                  <option value="content">Lack of content choices</option>
+                  <option value="other">Other reason</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#1A1A1A]">
+                <button
+                  type="button"
+                  onClick={() => setIsCancelModalOpen(false)}
+                  className="flex-1 bg-[#1A1A1A] hover:bg-[#FF4C00] hover:text-black text-zinc-300 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer outline-none"
+                >
+                  Keep Subscription
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 border border-zinc-700 hover:bg-red-600/10 hover:border-red-500 text-zinc-400 hover:text-red-500 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer outline-none"
+                >
+                  Confirm Cancel
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
