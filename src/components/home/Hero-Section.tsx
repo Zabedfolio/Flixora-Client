@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Film, Play } from 'lucide-react';
+import {
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  Film,
+  Play,
+  Send,
+  Sparkles,
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface Slide {
@@ -11,6 +19,7 @@ interface Slide {
   title: string;
   subtitle: string;
   highlight: string;
+  aiMatch: number;
 }
 
 const SLIDES: Slide[] = [
@@ -22,6 +31,7 @@ const SLIDES: Slide[] = [
     subtitle:
       'A grizzled tank commander makes tough decisions as he and his crew fight their way across Germany in April, 1945.',
     highlight: 'Critically Acclaimed Action',
+    aiMatch: 96,
   },
   {
     id: 2,
@@ -31,6 +41,7 @@ const SLIDES: Slide[] = [
     subtitle:
       "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival and discover deep stellar secrets.",
     highlight: 'Top Sci-Fi Blockbuster',
+    aiMatch: 99,
   },
   {
     id: 3,
@@ -40,15 +51,71 @@ const SLIDES: Slide[] = [
     subtitle:
       'When a ruthless crime syndicate threatens the cyberpunk streets of Gotham, a rogue detective takes the law into his own hands.',
     highlight: "Viewer's Choice Thriller",
+    aiMatch: 93,
   },
 ];
 
 const AUTO_PLAY_INTERVAL = 5000;
 const RESUME_DELAY = 8000;
 
+// --- AI quick-recommendation demo data -------------------------------------
+// Static/mock keyword matcher standing in for a real AI backend. Swap this
+// out for an actual API call (e.g. to your assistant/LLM endpoint) later.
+interface AiSuggestion {
+  title: string;
+  reason: string;
+}
+
+const AI_SUGGESTION_CHIPS = ['Something intense', 'Feel-good pick', 'Surprise me'];
+
+const AI_KEYWORD_MAP: { keywords: string[]; suggestion: AiSuggestion }[] = [
+  {
+    keywords: ['intense', 'action', 'war', 'fight'],
+    suggestion: { title: 'Fury: Born of War', reason: 'high-stakes, unrelenting combat drama' },
+  },
+  {
+    keywords: ['feel-good', 'feel good', 'happy', 'light', 'romance'],
+    suggestion: { title: 'Echoes of Eternity', reason: 'a warm, slow-burn love story' },
+  },
+  {
+    keywords: ['space', 'sci-fi', 'scifi', 'cosmos', 'thoughtful'],
+    suggestion: { title: 'The Silent Cosmos', reason: 'a meditative journey through deep space' },
+  },
+  {
+    keywords: ['thriller', 'dark', 'crime', 'neon', 'cyberpunk'],
+    suggestion: { title: 'Neon Shadows', reason: 'a gritty, neon-soaked crime thriller' },
+  },
+];
+
+const AI_FALLBACK_SUGGESTIONS: AiSuggestion[] = [
+  { title: 'Tokyo Cyber-Run', reason: "it's trending hard with viewers like you" },
+  { title: 'Chrono Drift', reason: 'a fan-favorite pick across all moods' },
+  { title: 'Project Zero: Genesis', reason: "Flixora's top-rated new release" },
+];
+
+function getAiSuggestion(query: string): AiSuggestion {
+  const normalized = query.toLowerCase();
+  const match = AI_KEYWORD_MAP.find(({ keywords }) =>
+    keywords.some((keyword) => normalized.includes(keyword))
+  );
+
+  if (match) {
+    return match.suggestion;
+  }
+
+  return AI_FALLBACK_SUGGESTIONS[
+    Math.floor(Math.random() * AI_FALLBACK_SUGGESTIONS.length)
+  ];
+}
+// -----------------------------------------------------------------------------
+
 export default function HeroBanner() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
 
   const currentMovie = SLIDES[currentSlide];
 
@@ -89,6 +156,39 @@ export default function HeroBanner() {
     pauseAutoPlay();
   };
 
+  const runAiSearch = (query: string) => {
+    const trimmed = query.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    pauseAutoPlay();
+    setAiLoading(true);
+    setAiSuggestion(null);
+
+    // Simulated "thinking" delay — replace with a real API call.
+    window.setTimeout(() => {
+      setAiSuggestion(getAiSuggestion(trimmed));
+      setAiLoading(false);
+    }, 900);
+  };
+
+  const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    runAiSearch(aiQuery);
+  };
+
+  const handleChipClick = (chip: string) => {
+    setAiQuery(chip);
+    runAiSearch(chip);
+  };
+
+  const matchLabel = useMemo(
+    () => `${currentMovie.aiMatch}% AI Match`,
+    [currentMovie.aiMatch]
+  );
+
   return (
     <section className="relative h-screen min-h-[640px] w-full overflow-hidden bg-black">
       {/* Background */}
@@ -120,7 +220,7 @@ export default function HeroBanner() {
             }}
           />
 
-          <div className="absolute inset-0 bg-linear-to-r from-black via-black/60 to-transparent" />
+          
 
           <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/30" />
 
@@ -129,14 +229,12 @@ export default function HeroBanner() {
       </AnimatePresence>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full items-center">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            {/* Badge */}
+      <div className=" flex   h-full items-center ">
+            {/* Ask Flix AI — quick recommendation bar */}
             <motion.div
               initial={{
                 opacity: 0,
-                y: 30,
+                y: 20,
               }}
               animate={{
                 opacity: 1,
@@ -144,98 +242,81 @@ export default function HeroBanner() {
               }}
               transition={{
                 duration: 0.7,
+                delay: 0.7,
               }}
+              className="mt-50  w-8/12   mx-auto "
             >
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md sm:px-5 sm:py-2">
-                <Film className="h-3.5 w-3.5 text-[#FF4C00] sm:h-4 sm:w-4" />
-
-                <span className="max-w-60 truncate text-[8px] font-bold tracking-wider text-[#E5E5E5] sm:max-w-none sm:text-[10px] sm:tracking-widest">
-                  STREAMING NOW • EXCLUSIVE COLLECTION
-                </span>
-              </div>
-            </motion.div>
-
-            {/* Title */}
-            <motion.h1
-              initial={{
-                opacity: 0,
-                y: 30,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.7,
-                delay: 0.1,
-              }}
-              className="mb-6 text-4xl font-black leading-none tracking-tight text-white sm:text-5xl lg:text-7xl"
-            >
-              {currentMovie.title}
-            </motion.h1>
-
-            {/* Description */}
-            <motion.p
-              initial={{
-                opacity: 0,
-                y: 30,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.7,
-                delay: 0.2,
-              }}
-              className="mb-8 max-w-lg text-base leading-relaxed text-zinc-300 sm:text-lg"
-            >
-              {currentMovie.subtitle}
-            </motion.p>
-
-            {/* CTA */}
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 30,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.7,
-                delay: 0.3,
-              }}
-            >
-              <Link
-                href="/movies"
-                className="inline-flex items-center gap-2.5 rounded-xl bg-[#FF4C00] px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-[#FF4C00]/10 transition-all duration-300 hover:scale-105 hover:bg-[#E04300] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
+              <form
+                onSubmit={handleAiSubmit}
+                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/40 p-2 backdrop-blur-md focus-within:border-[#FF4C00]/50"
               >
-                <Play size={16} fill="currentColor" />
-                WATCH NOW
-              </Link>
-            </motion.div>
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00]/15 border border-[#FF4C00]/30">
+                  <Bot size={16} className="text-[#FF4C00]" />
+                </div>
 
-            {/* Highlight */}
-            <motion.div
-              initial={{
-                opacity: 0,
-              }}
-              animate={{
-                opacity: 1,
-              }}
-              transition={{
-                delay: 0.6,
-              }}
-              className="mt-10 inline-flex items-center gap-2 rounded-xl border border-white/5 bg-white/5 px-5 py-2 text-xs font-semibold text-zinc-300 backdrop-blur-sm"
-            >
-              <span className="text-[#FF4C00]">★</span>
+                <input
+                  type="text"
+                  value={aiQuery}
+                  onChange={(event) => setAiQuery(event.target.value)}
+                  placeholder="Ask Flix AI what to watch tonight..."
+                  className="min-w-0 flex-1 bg-transparent text-sm font-medium text-white placeholder:text-zinc-500 focus:outline-none"
+                />
 
-              {currentMovie.highlight}
-            </motion.div>
-          </div>
-        </div>
+                <button
+                  type="submit"
+                  disabled={aiLoading || !aiQuery.trim()}
+                  aria-label="Ask Flix AI"
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00] text-black transition-transform duration-200 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
+                >
+                  <Send size={14} />
+                </button>
+              </form>
+
+              {/* Quick suggestion chips */}
+              {/* <div className="mt-3 flex flex-wrap gap-2">
+                {AI_SUGGESTION_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => handleChipClick(chip)}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold text-zinc-300 transition-colors hover:border-[#FF4C00]/40 hover:text-[#FF4C00]"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div> */}
+
+              {/* AI response */}
+              <AnimatePresence mode="wait">
+                {(aiLoading || aiSuggestion) && (
+                  <motion.div
+                    key={aiLoading ? 'loading' : aiSuggestion?.title}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    className="mt-3 flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                  >
+                    <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
+
+                    {aiLoading ? (
+                      <span className="text-xs font-medium text-zinc-400">
+                        Flix is thinking
+                        <span className="animate-pulse">...</span>
+                      </span>
+                    ) : (
+                      <p className="text-xs font-medium leading-relaxed text-zinc-300">
+                        Try{' '}
+                        <span className="font-bold text-white">
+                          {aiSuggestion?.title}
+                        </span>{' '}
+                        — {aiSuggestion?.reason}.
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>       
       </div>
 
       {/* Previous */}
