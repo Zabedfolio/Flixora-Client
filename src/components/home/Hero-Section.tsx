@@ -116,6 +116,18 @@ export default function HeroBanner() {
   const [aiQuery, setAiQuery] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
+  const [username, setUsername] = useState('Viewer');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedRole = localStorage.getItem('flixora-session-role');
+      if (savedRole === 'admin') {
+        setUsername('Admin');
+      } else {
+        setUsername('Viewer');
+      }
+    }
+  }, []);
 
   const currentMovie = SLIDES[currentSlide];
 
@@ -222,14 +234,16 @@ export default function HeroBanner() {
 
           
 
-          <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/30" />
-
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:40px_40px] opacity-30" />
         </motion.div>
       </AnimatePresence>
 
+      {/* Static Overlays (z-index 1, stays persistent across image transitions) */}
+      <div className="absolute inset-0 bg-linear-to-t from-black via-black/35 to-black/60 z-1" />
+      <div className="absolute inset-0 bg-black/60 z-1" />
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:40px_40px] opacity-25 z-1" />
+
       {/* Content */}
-      <div className=" flex   h-full items-center ">
+      <div className="flex h-full items-center relative z-10">
             {/* Ask Flix AI — quick recommendation bar */}
             <motion.div
               initial={{
@@ -246,9 +260,18 @@ export default function HeroBanner() {
               }}
               className="mt-50  w-8/12   mx-auto "
             >
+              <div className="mb-6 text-center sm:text-left animate-in fade-in duration-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+                <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
+                  Welcome, <span className="text-[#FF4C00]">{username}</span>!
+                </h2>
+                <p className="text-xs md:text-sm text-zinc-350 font-bold uppercase tracking-widest mt-2">
+                  Our bot will help you find movies based on your mood
+                </p>
+              </div>
+
               <form
                 onSubmit={handleAiSubmit}
-                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/40 p-2 backdrop-blur-md focus-within:border-[#FF4C00]/50"
+                className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-lg focus-within:border-[#FF4C00] focus-within:shadow-[0_0_20px_rgba(255,76,0,0.25)] transition-all duration-300"
               >
                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00]/15 border border-[#FF4C00]/30">
                   <Bot size={16} className="text-[#FF4C00]" />
@@ -259,7 +282,7 @@ export default function HeroBanner() {
                   value={aiQuery}
                   onChange={(event) => setAiQuery(event.target.value)}
                   placeholder="Ask Flix AI what to watch tonight..."
-                  className="min-w-0 flex-1 bg-transparent text-sm font-medium text-white placeholder:text-zinc-500 focus:outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-zinc-350 focus:outline-none"
                 />
 
                 <button

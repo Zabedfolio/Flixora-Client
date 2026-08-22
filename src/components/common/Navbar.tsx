@@ -130,7 +130,7 @@ export default function Navbar({
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black border-b border-[#1A1A1A] px-4 sm:px-6 lg:px-8 select-none">
+    <header className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/65 backdrop-blur-md border-b border-[#1A1A1A]/80 px-4 sm:px-6 lg:px-8 select-none transition-colors duration-300">
       {/* =========================================
           MAIN NAVBAR
       ========================================== */}
