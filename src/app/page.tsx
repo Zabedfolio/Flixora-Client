@@ -3,6 +3,7 @@
 
 import HeroBanner from '@/components/home/Hero-Section';
 import GenreRows from '@/components/home/GenreRows';
+import NewReleases from '@/components/home/NewReleases';
 import RecommendedSection from '@/components/home/RecommendedSection';
 import FAQ from '@/components/home/FAQ';
 import TrendingNow from '@/components/home/Trending-Section';
@@ -15,7 +16,7 @@ export default function Home() {
     <div className="min-h-screen bg-black font-sans text-white overflow-x-hidden w-full relative">
       <HeroBanner />
      
-
+<NewReleases />
 <GenreRows />
       <TrendingNow/>
       <TopRated/>
