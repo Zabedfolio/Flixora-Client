@@ -1,18 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+import RouteTransition from "@/components/common/RouteTransition";
 
 export const metadata: Metadata = {
   title: {
@@ -30,14 +20,16 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      className="antialiased"
     >
-      <body className="min-h-full flex flex-col overflow-x-hidden w-full relative">
-        <Navbar myListCount={5} />
-        <main>
-          {children}
-        </main>
-        <Footer />
+      <body className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-black text-[#E5E5E5]">
+        <RouteTransition>
+          <Navbar myListCount={5} />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </RouteTransition>
       </body>
     </html>
   );
