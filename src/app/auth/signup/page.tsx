@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
+import { toast } from 'react-hot-toast';
+
 export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -23,7 +25,7 @@ export const RegisterForm: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      toast.error('Passwords do not match!');
       return;
     }
     console.log('Form Submitted:', formData);
