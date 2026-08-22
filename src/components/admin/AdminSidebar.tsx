@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -183,7 +184,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
             </Link>
             <div className="h-px bg-[#1A1A1A] my-1" />
             <button 
-              onClick={() => alert('Sign out clicked')}
+              onClick={() => toast.success('Logged out successfully!')}
               className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left"
             >
               <LogOut size={14} />

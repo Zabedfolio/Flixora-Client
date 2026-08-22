@@ -2,7 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
-import RouteTransition from "@/components/common/RouteTransition";
+import { Toaster } from "react-hot-toast";
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
 
 export const metadata: Metadata = {
   title: {
@@ -22,14 +32,25 @@ export default function RootLayout({ children }: RootLayoutProps) {
       lang="en"
       className="antialiased"
     >
-      <body className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-black text-[#E5E5E5]">
-        <RouteTransition>
-          <Navbar myListCount={5} />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-        </RouteTransition>
+      <body className="min-h-full flex flex-col overflow-x-hidden w-full relative">
+        <Toaster 
+          position="bottom-right" 
+          toastOptions={{
+            style: {
+              background: '#141414',
+              color: '#fff',
+              border: '1px solid #1A1A1A',
+              fontSize: '13px',
+              fontFamily: 'sans-serif',
+              borderRadius: '12px',
+            },
+          }} 
+        />
+        <Navbar myListCount={5} />
+        <main>
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );

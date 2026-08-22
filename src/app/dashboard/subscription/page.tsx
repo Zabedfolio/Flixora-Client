@@ -11,7 +11,7 @@ import {
   Info, 
   AlertTriangle 
 } from 'lucide-react';
-
+import { toast } from 'react-hot-toast';
 interface BillingRecord {
   id: string;
   date: string;
@@ -74,7 +74,7 @@ export default function SubscriptionPage() {
 
   const handleConfirmCancel = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Subscription cancelled. Reason: ${cancelReason || 'None provided'}`);
+    toast.success(`Subscription cancelled. Reason: ${cancelReason || 'None provided'}`);
     setIsCancelModalOpen(false);
   };
 
@@ -246,7 +246,7 @@ export default function SubscriptionPage() {
                       </td>
                       <td className="p-4 pr-6 text-right">
                         <button 
-                          onClick={() => alert(`Downloading ${bill.invoiceId} PDF...`)}
+                          onClick={() => toast.success(`Downloading ${bill.invoiceId} PDF...`)}
                           className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
                         >
                           <Download size={13} />
@@ -278,7 +278,7 @@ export default function SubscriptionPage() {
                       <span className="text-white font-bold">{bill.amount}</span>
                     </div>
                     <button 
-                      onClick={() => alert(`Downloading ${bill.invoiceId} PDF...`)}
+                      onClick={() => toast.success(`Downloading ${bill.invoiceId} PDF...`)}
                       className="p-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
                     >
                       <Download size={14} />
@@ -316,7 +316,7 @@ export default function SubscriptionPage() {
               </div>
 
               <button 
-                onClick={() => alert('Update payment dialog...')}
+                onClick={() => toast.success('Update payment dialog opened.')}
                 className="w-full border border-[#FF4C00]/40 hover:border-[#FF4C00] text-[#FF4C00] hover:text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer hover:bg-[#FF4C00]/5 hover:scale-102 outline-none"
               >
                 Update Payment

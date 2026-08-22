@@ -13,6 +13,7 @@ import {
 import SearchBar from './SearchBar';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 interface NavItem {
   id: string;
@@ -61,7 +62,7 @@ const PROFILE_ITEMS: DropdownItem[] = [
   },
   {
     label: 'Sign Out',
-    onClick: () => alert('Sign out clicked'),
+    onClick: () => toast.success('Logged out successfully!'),
     isDividerBefore: true,
     isDanger: true,
   },
