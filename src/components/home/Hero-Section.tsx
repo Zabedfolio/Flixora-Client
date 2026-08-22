@@ -149,7 +149,7 @@ export default function HeroBanner() {
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md sm:px-5 sm:py-2">
                 <Film className="h-3.5 w-3.5 text-[#FF4C00] sm:h-4 sm:w-4" />
 
-                <span className="max-w-[240px] truncate text-[8px] font-bold tracking-wider text-[#E5E5E5] sm:max-w-none sm:text-[10px] sm:tracking-widest">
+                <span className="max-w-60 truncate text-[8px] font-bold tracking-wider text-[#E5E5E5] sm:max-w-none sm:text-[10px] sm:tracking-widest">
                   STREAMING NOW • EXCLUSIVE COLLECTION
                 </span>
               </div>

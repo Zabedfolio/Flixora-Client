@@ -17,6 +17,7 @@ import {
   Mail,
   AlertTriangle
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface Profile {
   id: string;
@@ -264,7 +265,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => alert('Change password flow initiated')}
+                    onClick={() => toast.success('Change password flow initiated!')}
                     className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
                   >
                     Change Password
@@ -448,7 +449,7 @@ export default function SettingsPage() {
                   <span className="text-xs font-bold text-white uppercase tracking-wide">Data Exports</span>
                   <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed mt-1 uppercase tracking-wide">Request a ZIP download archive of all watch history and ratings</p>
                   <button 
-                    onClick={() => alert('Data export compilation request sent to your registered email.')}
+                    onClick={() => toast.success('Data export compilation request sent to your registered email.')}
                     className="mt-4 border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
                   >
                     Download My Data
@@ -604,7 +605,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   disabled={deleteConfirmText !== 'DELETE'}
-                  onClick={() => { alert('Account successfully purged'); setIsDeleteAccountModalOpen(false); }}
+                  onClick={() => { toast.success('Account successfully purged'); setIsDeleteAccountModalOpen(false); }}
                   className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                     deleteConfirmText === 'DELETE'
                       ? 'bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow-lg shadow-red-600/10'

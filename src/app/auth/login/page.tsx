@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
+import { toast } from 'react-hot-toast';
+
 export const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -21,7 +23,7 @@ export const LoginForm: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // console.log('Login Form Submitted:', formData);
-    alert(JSON.stringify(formData))
+    toast.success('Form submitted successfully!');
   };
 
   return (
