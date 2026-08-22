@@ -69,18 +69,6 @@ export default function LoadingScreen({
             ? 'A cinematic intro keeps the project alive while the first view settles in.'
             : 'We are preparing the route before the content appears so the transition feels deliberate.'}
         </p>
-
-        <div
-          className={`mt-12 grid w-full gap-4 ${
-            variant === 'intro' ? 'sm:grid-cols-3' : 'sm:grid-cols-4'
-          }`}
-        >
-          {Array.from({
-            length: cardCount,
-          }).map((_, index) => (
-            <LoadingCard key={index} />
-          ))}
-        </div>
       </div>
     </div>
   );
