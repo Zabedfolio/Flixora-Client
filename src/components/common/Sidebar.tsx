@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -279,7 +280,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
               ) : (
                 <>
                   <button 
-                    onClick={() => alert('Switch profile clicked')}
+                    onClick={() => toast.success('Switch profile flow initiated!')}
                     className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
                   >
                     <UserIcon size={14} className="text-[#FF4C00]" />
@@ -298,7 +299,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
               <div className="h-px bg-[#1A1A1A] my-1" />
               
               <button 
-                onClick={() => alert('Sign out clicked')}
+                onClick={() => toast.success('Logged out successfully!')}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left cursor-pointer"
               >
                 <LogOut size={14} />
