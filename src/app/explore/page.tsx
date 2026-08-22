@@ -233,7 +233,7 @@ const SAMPLE_MOVIES: Movie[] = [
     genres: ['Action', 'Sci-Fi', 'Thriller'],
     moods: ['adrenaline', 'mind-bending'],
     posterUrl:
-      'https://images.unsplash.com/photo-1522120692538-7b6b14b2b0aa?w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop',
   },
 ];
 
