@@ -5,6 +5,13 @@ import Image from "next/image";
 
 import { toast } from "react-hot-toast";
 import { authClient } from "@/app/(auth)/lib/auth-client";
+import { Eye, EyeOff } from "lucide-react";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(1, { message: "Password is required" }),
+});
 
 export const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -13,17 +20,57 @@ export const LoginForm: React.FC = () => {
     rememberMe: false,
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const updatedValue = type === "checkbox" ? checked : value;
+    const updatedData = {
+      ...formData,
+      [name]: updatedValue,
+    };
+    
+    setFormData(updatedData);
+
+    // Instant validation on input change
+    const result = loginSchema.safeParse(updatedData);
+    if (!result.success) {
+      const issue = result.error.issues.find((issue) => issue.path[0] === name);
+      if (issue) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: issue.message,
+        }));
+      } else {
+        setErrors((prev) => {
+          const copy = { ...prev };
+          delete copy[name];
+          return copy;
+        });
+      }
+    } else {
+      setErrors({});
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // console.log('Login Form Submitted:', formData);
+    setErrors({});
+
+    const result = loginSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path[0];
+        if (typeof path === "string") {
+          fieldErrors[path] = issue.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
     try {
       const { data, error } = await authClient.signIn.email({
         email: formData.email,
@@ -36,7 +83,7 @@ export const LoginForm: React.FC = () => {
         toast.error(error.message || "Invalid credentials. Please try again.");
         return;
       }
-      toast.success("Form submitted successfully!");
+      toast.success("Logged in successfully!");
     } catch (err) {
       console.error("Login error:", err);
       toast.error("An unexpected error occurred. Please try again later.");
@@ -79,23 +126,38 @@ export const LoginForm: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF4C00] focus:ring-1 focus:ring-[#FF4C00]/20 hover:border-zinc-700 transition-all placeholder:text-zinc-600"
+              className={`w-full bg-[#141414] border ${errors.email ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-655`}
             />
+            {errors.email && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.email}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF4C00] focus:ring-1 focus:ring-[#FF4C00]/20 hover:border-zinc-700 transition-all placeholder:text-zinc-600"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className={`w-full bg-[#141414] border ${errors.password ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.password && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.password}</span>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-xs">
