@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Star, ChevronLeft, ChevronRight, Film } from "lucide-react";
+import { getFeaturedActors } from "@/data/home/featuredActors";
 
 interface Actor {
   id: number;
@@ -13,24 +14,22 @@ interface Actor {
   rating: number;
 }
 
-/**
- * NOTE: this project's /public/movies folder only has poster art, no headshots.
- * These use pravatar.cc as stand-in avatars — swap `image` for real actor
- * photos (e.g. /public/actors/*.jpg) when you wire this up to real data.
- */
-const ACTORS: Actor[] = [
-  { id: 1, name: "Elena Marsh", image: "https://i.pravatar.cc/300?img=47", role: "Actress", knownFor: "The Silent Cosmos", rating: 9.2 },
-  { id: 2, name: "Daniel Ortiz", image: "https://i.pravatar.cc/300?img=13", role: "Actor", knownFor: "Fury: Born of War", rating: 8.9 },
-  { id: 3, name: "Ayumi Sato", image: "https://i.pravatar.cc/300?img=32", role: "Actress", knownFor: "Tokyo Cyber-Run", rating: 9.0 },
-  { id: 4, name: "Marcus Reign", image: "https://i.pravatar.cc/300?img=52", role: "Actor", knownFor: "Project Zero: Genesis", rating: 8.7 },
-  { id: 5, name: "Sofia Kane", image: "https://i.pravatar.cc/300?img=45", role: "Actress", knownFor: "Shadows in the Neon", rating: 8.6 },
-  { id: 6, name: "Victor Cross", image: "https://i.pravatar.cc/300?img=59", role: "Actor", knownFor: "Chrono Drift", rating: 8.3 },
-  { id: 7, name: "Lena Whitfield", image: "https://i.pravatar.cc/300?img=44", role: "Actress", knownFor: "Echoes of Eternity", rating: 8.5 },
-  { id: 8, name: "Theo Nakamura", image: "https://i.pravatar.cc/300?img=51", role: "Actor", knownFor: "Tokyo Cyber-Run", rating: 8.8 },
-];
-
 export default function FeaturedActors() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [actors, setActors] = useState<Actor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getFeaturedActors()
+      .then((data) => {
+        setActors(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading actors:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -39,6 +38,17 @@ export default function FeaturedActors() {
       scrollRef.current.scrollTo({ left: scrollLeft + offset, behavior: "smooth" });
     }
   };
+
+  if (loading) {
+    return (
+      <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[300px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Summoning Stars...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative bg-black py-16 px-4 md:px-8 select-none overflow-hidden z-10 border-t border-[#121212]">
@@ -83,7 +93,7 @@ export default function FeaturedActors() {
           ref={scrollRef}
           className="flex gap-6 overflow-x-auto pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
         >
-          {ACTORS.map((actor, index) => (
+          {actors.map((actor, index) => (
             <motion.div
               key={actor.id}
               initial={{ opacity: 0, y: 24 }}

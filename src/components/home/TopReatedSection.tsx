@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Award, Star, Play, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Award, ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "@/components/ui/card";
+import { getTopRated } from "@/data/home/topRated";
 
 interface TopRatedItem {
   id: number;
@@ -15,18 +16,22 @@ interface TopRatedItem {
   certified: boolean;
 }
 
-const TOP_RATED: TopRatedItem[] = [
-  { id: 1, title: "The Silent Cosmos", image: "/movies/cosmos.jpg", category: "Documentary", year: 2026, rating: 9.4, certified: true },
-  { id: 2, title: "Project Zero: Genesis", image: "/movies/fury.jpg", category: "Sci-Fi / Action", year: 2026, rating: 9.1, certified: true },
-  { id: 3, title: "Tokyo Cyber-Run", image: "/movies/tokyo.jpg", category: "Anime / Cyberpunk", year: 2026, rating: 8.9, certified: true },
-  { id: 4, title: "Shadows in the Neon", image: "/movies/neon.jpg", category: "Thriller / Cyberpunk", year: 2025, rating: 8.7, certified: false },
-  { id: 5, title: "Echoes of Eternity", image: "/movies/echoes.jpg", category: "Drama / Romance", year: 2024, rating: 8.5, certified: false },
-  { id: 6, title: "Fury: Born of War", image: "/movies/fury.jpg", category: "Action / War", year: 2025, rating: 8.3, certified: false },
-  { id: 7, title: "Chrono Drift", image: "/movies/chrono.jpg", category: "Adventure / Fantasy", year: 2025, rating: 8.0, certified: false },
-];
-
 export default function TopRated() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<TopRatedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTopRated()
+      .then((data) => {
+        setItems(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching top rated:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -35,6 +40,17 @@ export default function TopRated() {
       scrollRef.current.scrollTo({ left: scrollLeft + offset, behavior: "smooth" });
     }
   };
+
+  if (loading) {
+    return (
+      <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Querying Critically Acclaimed...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative bg-black py-16 px-4 md:px-8 select-none overflow-hidden z-10 border-t border-[#121212]">
@@ -79,7 +95,7 @@ export default function TopRated() {
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
         >
-          {TOP_RATED.map((item, index) => (
+          {items.map((item, index) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 24 }}
@@ -93,7 +109,7 @@ export default function TopRated() {
                 unsplash_url={item.image}
                 rating={item.rating.toFixed(1)}
                 year={item.year.toString()}
-                category={item.category.split(" / ")[0]}
+                category={item.category}
                 duration="2H 10M"
                 isNew={item.certified}
               />

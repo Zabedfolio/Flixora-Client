@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wand2,
@@ -11,17 +11,14 @@ import {
   Ghost,
   Cpu,
   Flame,
-  Play,
-  Plus,
-  Check,
   LayoutGrid,
   ListFilter,
   Sparkles,
   SlidersHorizontal,
-  Star,
   type LucideIcon,
 } from "lucide-react";
 import MediaCard from "@/components/ui/card";
+import { getMoodBasedPicks, MoviePick } from "@/data/home/moodBased";
 
 export type MoodId =
   | "feel-good"
@@ -41,19 +38,6 @@ interface MoodOption {
   icon: LucideIcon;
   color: string;
   bgGradient: string;
-  energy: "relaxed" | "balanced" | "high";
-}
-
-interface MoviePick {
-  id: number;
-  title: string;
-  image: string;
-  category: string;
-  year: number;
-  rating: number;
-  matchScore: number;
-  blurb: string;
-  moods: MoodId[];
   energy: "relaxed" | "balanced" | "high";
 }
 
@@ -123,105 +107,6 @@ const MOODS: MoodOption[] = [
   },
 ];
 
-const PICKS: MoviePick[] = [
-  {
-    id: 1,
-    title: "Echoes of Eternity",
-    image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop",
-    category: "Drama / Romance",
-    year: 2024,
-    rating: 8.8,
-    matchScore: 98,
-    blurb: "A slow-burn love story across two lifetimes.",
-    moods: ["romantic", "feel-good", "chill"],
-    energy: "relaxed",
-  },
-  {
-    id: 2,
-    title: "Chrono Drift",
-    image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop",
-    category: "Adventure / Fantasy",
-    year: 2025,
-    rating: 8.5,
-    matchScore: 94,
-    blurb: "A light, whimsical time-hopping adventure.",
-    moods: ["feel-good", "chill", "mind-bending"],
-    energy: "balanced",
-  },
-  {
-    id: 3,
-    title: "Fury: Born of War",
-    image: "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop",
-    category: "Action / War",
-    year: 2025,
-    rating: 9.1,
-    matchScore: 97,
-    blurb: "Relentless, high-stakes combat drama.",
-    moods: ["thrilling", "dark", "adrenaline"],
-    energy: "high",
-  },
-  {
-    id: 4,
-    title: "Shadows in the Neon",
-    image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop",
-    category: "Thriller / Cyberpunk",
-    year: 2025,
-    rating: 8.9,
-    matchScore: 96,
-    blurb: "A tense neon-soaked cat-and-mouse chase.",
-    moods: ["thrilling", "dark", "mind-bending"],
-    energy: "high",
-  },
-  {
-    id: 5,
-    title: "Tokyo Cyber-Run",
-    image: "https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=800&auto=format&fit=crop",
-    category: "Anime / Cyberpunk",
-    year: 2026,
-    rating: 8.7,
-    matchScore: 93,
-    blurb: "Fast-paced anime chaos with heart.",
-    moods: ["thrilling", "feel-good", "adrenaline"],
-    energy: "high",
-  },
-  {
-    id: 6,
-    title: "The Silent Cosmos",
-    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop",
-    category: "Documentary / Sci-Fi",
-    year: 2026,
-    rating: 9.3,
-    matchScore: 99,
-    blurb: "A meditative, awe-filled journey through space.",
-    moods: ["chill", "romantic", "mind-bending"],
-    energy: "relaxed",
-  },
-  {
-    id: 7,
-    title: "Project Zero: Genesis",
-    image: "https://images.unsplash.com/photo-1511715282680-fbf93a50e721?w=800&auto=format&fit=crop",
-    category: "Sci-Fi / Action",
-    year: 2026,
-    rating: 8.6,
-    matchScore: 92,
-    blurb: "Brooding sci-fi with a dark moral core.",
-    moods: ["dark", "thrilling", "mind-bending"],
-    energy: "high",
-  },
-  {
-    id: 8,
-    title: "Velvet Singularity",
-    image: "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&auto=format&fit=crop",
-    category: "Mystery / Thriller",
-    year: 2025,
-    rating: 8.4,
-    matchScore: 90,
-    blurb: "An atmospheric mystery unraveling digital secrets.",
-    moods: ["mind-bending", "chill", "romantic"],
-    energy: "relaxed",
-  },
-];
-
 const containerVariants = {
   hidden: {},
   visible: {
@@ -245,26 +130,44 @@ export default function MoodBasedPicks() {
   const [activeMood, setActiveMood] = useState<MoodId>("feel-good");
   const [selectorMode, setSelectorMode] = useState<"chips" | "grid">("chips");
   const [energyFilter, setEnergyFilter] = useState<EnergyLevel>("all");
-  const [savedIds, setSavedIds] = useState<number[]>([]);
+  const [picks, setPicks] = useState<MoviePick[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMoodBasedPicks()
+      .then((data) => {
+        setPicks(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading mood-based picks:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const filteredMovies = useMemo(() => {
-    return PICKS.filter((item) => {
+    return picks.filter((item) => {
       const matchesMood = item.moods.includes(activeMood);
       const matchesEnergy =
         energyFilter === "all" || item.energy === energyFilter;
       return matchesMood && matchesEnergy;
     });
-  }, [activeMood, energyFilter]);
+  }, [picks, activeMood, energyFilter]);
 
   const activeMoodData = useMemo(() => {
     return MOODS.find((m) => m.id === activeMood) || MOODS[0];
   }, [activeMood]);
 
-  const toggleSave = (id: number) => {
-    setSavedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  if (loading) {
+    return (
+      <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Scanning Your Vibes...</p>
+        </div>
+      </section>
     );
-  };
+  }
 
   return (
     <section className="relative bg-black py-16 px-4 md:px-8 select-none overflow-hidden z-10 border-t border-[#121212]">
@@ -317,7 +220,7 @@ export default function MoodBasedPicks() {
           </div>
         </div>
 
-        {/* MOOD SELECTOR AREA (ANIMATED TRANSITION BETWEEN CHIPS & GRID) */}
+        {/* MOOD SELECTOR AREA */}
         <AnimatePresence mode="wait">
           {selectorMode === "chips" ? (
             /* CHIPS SELECTOR VIEW */
@@ -332,7 +235,7 @@ export default function MoodBasedPicks() {
               {MOODS.map((mood) => {
                 const Icon = mood.icon;
                 const isActive = activeMood === mood.id;
-                const moodMovieCount = PICKS.filter((p) =>
+                const moodMovieCount = picks.filter((p) =>
                   p.moods.includes(mood.id)
                 ).length;
 
@@ -389,7 +292,7 @@ export default function MoodBasedPicks() {
               {MOODS.map((mood) => {
                 const Icon = mood.icon;
                 const isActive = activeMood === mood.id;
-                const moodMovieCount = PICKS.filter((p) =>
+                const moodMovieCount = picks.filter((p) =>
                   p.moods.includes(mood.id)
                 ).length;
 
@@ -478,7 +381,7 @@ export default function MoodBasedPicks() {
           </div>
         </div>
 
-        {/* MOOD RESULTS GRID WITH FRAMER MOTION ANIMATIONS */}
+        {/* MOOD RESULTS GRID */}
         <div className="min-h-[300px]">
           <AnimatePresence mode="wait">
             <motion.div

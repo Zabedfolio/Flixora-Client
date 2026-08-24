@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Play, Plus, Star } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
+import { getNewReleases } from '@/data/home/newReleases';
 
 interface Movie {
   id: number;
@@ -15,91 +16,22 @@ interface Movie {
   duration: string;
 }
 
-const NEW_RELEASES: Movie[] = [
-  {
-    id: 1,
-    title: 'The Last Horizon',
-    image:
-      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop',
-    rating: '9.1',
-    year: '2026',
-    genre: 'Sci-Fi',
-    duration: '2h 18m',
-  },
-  {
-    id: 2,
-    title: 'Dark Pursuit',
-    image:
-      'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=800&auto=format&fit=crop',
-    rating: '8.8',
-    year: '2026',
-    genre: 'Action',
-    duration: '2h 06m',
-  },
-  {
-    id: 3,
-    title: 'Beyond The Stars',
-    image:
-      'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=800&auto=format&fit=crop',
-    rating: '9.0',
-    year: '2026',
-    genre: 'Adventure',
-    duration: '2h 24m',
-  },
-  {
-    id: 4,
-    title: 'Neon District',
-    image:
-      'https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=800&auto=format&fit=crop',
-    rating: '8.7',
-    year: '2026',
-    genre: 'Thriller',
-    duration: '1h 58m',
-  },
-  {
-    id: 5,
-    title: 'Silent Kingdom',
-    image:
-      'https://images.unsplash.com/photo-1500534623283-312aade485b7?q=80&w=800&auto=format&fit=crop',
-    rating: '8.9',
-    year: '2026',
-    genre: 'Drama',
-    duration: '2h 11m',
-  },
-  {
-    id: 6,
-    title: 'Final Mission',
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=800&auto=format&fit=crop',
-    rating: '8.6',
-    year: '2026',
-    genre: 'Action',
-    duration: '2h 02m',
-  },
-  {
-    id: 7,
-    title: 'Midnight Signal',
-    image:
-      'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=800&auto=format&fit=crop',
-    rating: '8.5',
-    year: '2026',
-    genre: 'Mystery',
-    duration: '1h 52m',
-  },
-  {
-    id: 8,
-    title: 'The Forgotten World',
-    image:
-      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800&auto=format&fit=crop',
-    rating: '9.2',
-    year: '2026',
-    genre: 'Fantasy',
-    duration: '2h 31m',
-  },
-];
-
 export default function NewReleases() {
-  const sliderRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement | null>(null);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getNewReleases()
+      .then((data) => {
+        setMovies(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching new releases:', err);
+        setLoading(false);
+      });
+  }, []);
 
   const scrollLeft = () => {
     sliderRef.current?.scrollBy({
@@ -114,6 +46,17 @@ export default function NewReleases() {
       behavior: 'smooth',
     });
   };
+
+  if (loading) {
+    return (
+      <section className="relative overflow-hidden bg-black py-20 sm:py-24">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Initializing Catalog...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative overflow-hidden bg-black py-20 sm:py-24">
@@ -200,7 +143,7 @@ export default function NewReleases() {
           ref={sliderRef}
           className="scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
         >
-          {NEW_RELEASES.map((movie) => (
+          {movies.map((movie) => (
             <div
               key={movie.id}
               className="min-w-[185px] snap-start sm:min-w-[210px] md:min-w-[225px] lg:min-w-[230px]"
