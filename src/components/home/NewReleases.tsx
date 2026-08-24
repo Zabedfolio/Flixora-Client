@@ -141,7 +141,7 @@ export default function NewReleases() {
         {/* Movie Slider */}
         <div
           ref={sliderRef}
-          className="scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
+          className="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden pb-4"
         >
           {movies.map((movie) => (
             <div
