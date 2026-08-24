@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { toast } from "react-hot-toast";
-import { authClient } from "../lib/auth-client";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
 export const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({

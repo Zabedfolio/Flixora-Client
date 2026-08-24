@@ -17,6 +17,7 @@ import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import MyListModal from './MyListModal';
 import { getWatchlistCount } from '@/data/watchlistStore';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface NavItem {
   id: string;
@@ -96,6 +97,8 @@ export default function Navbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMyListModalOpen, setIsMyListModalOpen] = useState(false);
   const [watchlistCount, setWatchlistCount] = useState(0);
+
+  const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
     const updateCount = () => {
@@ -236,74 +239,80 @@ export default function Navbar({
               PROFILE DROPDOWN
               >= 768px
           ========================================== */}
-          <div className="relative hidden md:block" ref={profileRef}>
-            <button
-              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-              className="flex items-center gap-1.5 focus:outline-none group"
-              aria-label="Profile"
-              aria-expanded={isProfileDropdownOpen}
+          {isPending ? (
+            <div className="w-8 h-8 rounded-full bg-zinc-900 animate-pulse hidden md:block" />
+          ) : session ? (
+            <div className="relative hidden md:block" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="flex items-center gap-1.5 focus:outline-none group"
+                aria-label="Profile"
+                aria-expanded={isProfileDropdownOpen}
+              >
+                {/* Avatar */}
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-[#FF4C00] transition-transform group-hover:scale-105 bg-zinc-950 flex items-center justify-center font-bold text-white text-xs">
+                  {session.user.image ? (
+                    <Image
+                      width={32}
+                      height={32}
+                      src={session.user.image}
+                      alt="Avatar"
+                      className="w-full h-full object-cover cursor-pointer"
+                    />
+                  ) : (
+                    session.user.name?.charAt(0).toUpperCase() || 'U'
+                  )}
+                </div>
+
+                {/* Chevron */}
+                <FaChevronDown className="text-[10px] text-[#E5E5E5] group-hover:text-white transition-colors hidden sm:inline" />
+              </button>
+
+              {/* Profile Dropdown */}
+              {isProfileDropdownOpen && (
+                <div className="absolute right-0 top-full mt-3 w-48 bg-black border border-[#1A1A1A] rounded-xl shadow-2xl p-2 z-50">
+                  <div className="px-4 py-2 border-b border-[#1A1A1A] mb-1">
+                    <p className="text-xs font-bold text-white truncate">{session.user.name}</p>
+                    <p className="text-[10px] text-zinc-500 truncate">{session.user.email}</p>
+                  </div>
+                  <Link
+                    href="/profile"
+                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <div className="h-px bg-[#1A1A1A] my-1" />
+                  <button
+                    onClick={async () => {
+                      setIsProfileDropdownOpen(false);
+                      await authClient.signOut({
+                        callbackURL: '/login',
+                      });
+                      toast.success('Logged out successfully!');
+                    }}
+                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="hidden md:inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold bg-[#FF4C00] hover:bg-[#e04300] text-white shadow-md shadow-[#FF4C00]/10 hover:scale-105 active:scale-95 transition-all duration-200"
             >
-              {/* Avatar */}
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-[#FF4C00] transition-transform group-hover:scale-105">
-                <Image
-                  width={32}
-                  height={32}
-                  src={profileAvatarSrc}
-                  alt="Avatar"
-                  className="w-full h-full object-cover cursor-pointer"
-                />
-              </div>
-
-              {/* Chevron */}
-              <FaChevronDown className="text-[10px] text-[#E5E5E5] group-hover:text-white transition-colors hidden sm:inline" />
-            </button>
-
-            {/* Profile Dropdown */}
-            {isProfileDropdownOpen && (
-              <div className="absolute right-0 top-full mt-3 w-48 bg-black border border-[#1A1A1A] rounded-xl shadow-2xl p-2 z-50">
-                {PROFILE_ITEMS.map((item, index) => {
-                  const classNames = `block w-full text-left px-4 py-2.5 text-sm rounded-lg transition-colors ${
-                    item.isDanger
-                      ? 'text-red-500 hover:bg-red-500/10'
-                      : 'text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00]'
-                  }`;
-
-                  return (
-                    <React.Fragment key={index}>
-                      {/* Divider */}
-                      {item.isDividerBefore && (
-                        <div className="h-px bg-[#1A1A1A] my-1" />
-                      )}
-
-                      {/* Link */}
-                      {item.href ? (
-                        <Link
-                          href={item.href}
-                          className={classNames}
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                        >
-                          {item.label}
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            if (item.onClick) {
-                              item.onClick();
-                            }
-
-                            setIsProfileDropdownOpen(false);
-                          }}
-                          className={classNames}
-                        >
-                          {item.label}
-                        </button>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+              Login
+            </Link>
+          )}
 
           {/* =========================================
               MOBILE SEARCH
@@ -405,70 +414,85 @@ export default function Navbar({
                 MOBILE PROFILE
             ========================================== */}
             <div className="flex flex-col gap-4">
-              {/* Profile Info */}
-              <div className="flex items-center gap-3 px-4 py-2 border-b border-[#1A1A1A] pb-4">
-                <div className="w-10 h-10 rounded-full overflow-hidden border border-[#FF4C00] shrink-0">
-                  <Image
-                    width={40}
-                    height={40}
-                    src={profileAvatarSrc}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                <div className="flex flex-col min-w-0">
-                  <span className="text-white text-sm font-bold">
-                    My Account
-                  </span>
-
-                  <span className="text-zinc-500 text-[10px]">
-                    Premium Member
-                  </span>
-                </div>
-              </div>
-
-              {/* Profile Menu */}
-              <div className="flex flex-col gap-1.5">
-                {PROFILE_ITEMS.map((item, idx) => {
-                  const classNames = `block w-full text-left px-4 py-2.5 text-sm rounded-lg transition-colors ${
-                    item.isDanger
-                      ? 'text-red-500 hover:bg-red-500/10'
-                      : 'text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00]'
-                  }`;
-
-                  return (
-                    <React.Fragment key={idx}>
-                      {item.isDividerBefore && (
-                        <div className="h-px bg-[#1A1A1A] my-1" />
-                      )}
-
-                      {item.href ? (
-                        <Link
-                          href={item.href}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={classNames}
-                        >
-                          {item.label}
-                        </Link>
+              {isPending ? (
+                <div className="h-14 bg-zinc-900 rounded-xl animate-pulse w-full" />
+              ) : session ? (
+                <>
+                  {/* Profile Info */}
+                  <div className="flex items-center gap-3 px-4 py-2 border-b border-[#1A1A1A] pb-4">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#FF4C00] shrink-0 bg-zinc-950 flex items-center justify-center font-bold text-white">
+                      {session.user.image ? (
+                        <Image
+                          width={40}
+                          height={40}
+                          src={session.user.image}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <button
-                          onClick={() => {
-                            if (item.onClick) {
-                              item.onClick();
-                            }
-
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={classNames}
-                        >
-                          {item.label}
-                        </button>
+                        session.user.name?.charAt(0).toUpperCase() || 'U'
                       )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
+                    </div>
+
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-white text-sm font-bold truncate">
+                        {session.user.name}
+                      </span>
+                      <span className="text-zinc-550 text-[9px] font-bold uppercase tracking-wider truncate">
+                        {session.user.email}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Profile Menu */}
+                  <div className="flex flex-col gap-1">
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <div className="h-px bg-[#1A1A1A] my-1" />
+                    <button
+                      onClick={async () => {
+                        setIsMobileMenuOpen(false);
+                        await authClient.signOut({
+                          callbackURL: '/login',
+                        });
+                        toast.success('Logged out successfully!');
+                      }}
+                      className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="px-4 py-2 flex flex-col gap-2">
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold bg-[#FF4C00] hover:bg-[#e04300] text-white shadow-md shadow-[#FF4C00]/10 transition-colors duration-200"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold border border-zinc-800 bg-[#0A0A0A] hover:bg-[#121212] hover:border-zinc-700 text-white transition-colors duration-200"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Separator */}
