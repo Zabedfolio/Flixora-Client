@@ -25,6 +25,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -65,22 +66,20 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
-  // Mock Session state
-  const [sessionRole, setSessionRole] = useState<'user' | 'admin' | 'loading'>('loading');
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const [sessionRole, setSessionRole] = useState<'user' | 'admin'>('user');
 
   useEffect(() => {
-    // Check if role is saved in localStorage, default to user for demonstration
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('flixora-session-role') as 'user' | 'admin';
-      const timer = setTimeout(() => {
-        setSessionRole(saved || 'user');
-      }, 1000); // 1s simulation of session load
-      return () => clearTimeout(timer);
+      if (saved) {
+        setSessionRole(saved);
+      }
     }
   }, []);
 
-  const currentRole = forcedRole || sessionRole;
-  const isLoading = currentRole === 'loading';
+  const currentRole = forcedRole || (sessionLoading ? 'loading' : (session ? sessionRole : 'user'));
+  const isLoading = sessionLoading || currentRole === 'loading';
 
   const handleRoleToggle = () => {
     const nextRole = currentRole === 'admin' ? 'user' : 'admin';
@@ -255,14 +254,22 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="flex items-center gap-3 text-left focus:outline-none group rounded-full md:rounded-lg cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center font-bold text-white shadow-inner group-hover:border-[#FF4C00]/60 transition-colors shrink-0">
-                {currentRole === 'admin' ? 'A' : 'U'}
+              <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 overflow-hidden flex items-center justify-center font-bold text-white shadow-inner group-hover:border-[#FF4C00]/60 transition-colors shrink-0 bg-zinc-950">
+                {session?.user.image ? (
+                  <img
+                    src={session.user.image}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  session?.user.name?.charAt(0).toUpperCase() || (currentRole === 'admin' ? 'A' : 'U')
+                )}
               </div>
               
               {!isCollapsed && (
                 <div className="flex flex-col min-w-0 pr-4">
                   <span className="text-xs font-black text-white truncate">
-                    {currentRole === 'admin' ? 'Admin Portal' : 'User Portal'}
+                    {session?.user.name || (currentRole === 'admin' ? 'Admin Portal' : 'User Portal')}
                   </span>
                   <span className="text-[10px] text-zinc-550 truncate font-semibold uppercase tracking-wider">
                     {currentRole === 'admin' ? 'Super Admin' : 'Premium Member'}
@@ -313,7 +320,13 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
               <div className="h-px bg-[#1A1A1A] my-1" />
               
               <button 
-                onClick={() => toast.success('Logged out successfully!')}
+                onClick={async () => {
+                  setIsProfileOpen(false);
+                  await authClient.signOut({
+                    callbackURL: '/login',
+                  });
+                  toast.success('Logged out successfully!');
+                }}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left cursor-pointer"
               >
                 <LogOut size={14} />

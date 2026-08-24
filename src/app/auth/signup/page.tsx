@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { toast } from 'react-hot-toast';
-import { authClient } from '../lib/auth-client';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -165,7 +165,7 @@ export const RegisterForm: React.FC = () => {
         <p className="text-center text-xs text-zinc-400 mt-6 select-none">
           Already have an account?{' '}
           <Link
-            href="/login"
+            href="/auth/login"
             className="text-[#FF4C00] font-black hover:underline"
           >
             Sign In
