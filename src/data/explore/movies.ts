@@ -21,11 +21,17 @@ const EXPLORE_GENRE_MAP: Record<string, number> = {
   'Fantasy': 14,
 };
 
-export async function getExploreMovies(query: string, genre: string, page: number = 1) {
+export async function getExploreMovies(query: string, genre: string, page: number = 1, filter?: string) {
   let endpoint = `/movie/popular?language=en-US&page=${page}`;
 
   if (query) {
     endpoint = `/search/movie?query=${encodeURIComponent(query)}&language=en-US&page=${page}`;
+  } else if (filter === 'trending') {
+    endpoint = `/trending/movie/day?language=en-US&page=${page}`;
+  } else if (filter === 'top-rated') {
+    endpoint = `/movie/top_rated?language=en-US&page=${page}`;
+  } else if (filter === 'new-releases') {
+    endpoint = `/movie/now_playing?language=en-US&page=${page}`;
   } else if (genre && genre !== 'All') {
     const genreId = EXPLORE_GENRE_MAP[genre];
     if (genreId) {

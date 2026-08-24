@@ -113,6 +113,7 @@ function ExploreContent() {
   const query = searchParams.get('q') || '';
 
   const [selectedGenre, setSelectedGenre] = useState('All');
+  const [activeFilter, setActiveFilter] = useState('');
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -123,10 +124,30 @@ function ExploreContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // Sync search parameters from URL
+  useEffect(() => {
+    const genreParam = searchParams.get('genre');
+    const filterParam = searchParams.get('filter');
+
+    if (genreParam) {
+      setSelectedGenre(genreParam);
+    } else {
+      setSelectedGenre('All');
+    }
+
+    if (filterParam) {
+      setActiveFilter(filterParam);
+    } else {
+      setActiveFilter('');
+    }
+
+    setCurrentPage(1);
+  }, [searchParams]);
+
   // Fetch movies from TMDB API on page/filter change
   useEffect(() => {
     setLoading(true);
-    getExploreMovies(query, selectedGenre, currentPage)
+    getExploreMovies(query, selectedGenre, currentPage, activeFilter)
       .then((data) => {
         // Map explore data and dynamic moods client side
         const mapped = data.movies.map((m) => {
@@ -149,7 +170,7 @@ function ExploreContent() {
         console.error('Error fetching explore movies:', err);
         setLoading(false);
       });
-  }, [query, selectedGenre, currentPage]);
+  }, [query, selectedGenre, currentPage, activeFilter]);
 
   const filteredMovies = useMemo(() => {
     return movies.filter((movie) => {
@@ -171,6 +192,7 @@ function ExploreContent() {
     setSelectedGenre('All');
     setSelectedMood(null);
     setShowAiFilter(false);
+    setActiveFilter('');
     setCurrentPage(1);
   };
 
@@ -179,7 +201,7 @@ function ExploreContent() {
   };
 
   const hasActiveFilters =
-    selectedGenre !== 'All' || selectedMood !== null || showAiFilter || query;
+    selectedGenre !== 'All' || selectedMood !== null || showAiFilter || query || activeFilter;
 
   return (
     <section className="min-h-screen w-full bg-black text-[#E5E5E5]">
@@ -198,7 +220,10 @@ function ExploreContent() {
             </h1>
 
             <p className="max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-              Discover movies tailored by AI algorithms and personal mood preferences.
+              {activeFilter === 'trending' && 'Discover the most popular movies trending across the globe today.'}
+              {activeFilter === 'top-rated' && 'Browse critically acclaimed cinematic masterpieces loved by the community.'}
+              {activeFilter === 'new-releases' && 'Explore the latest theater blockbusters and fresh digital releases.'}
+              {!activeFilter && 'Discover movies tailored by AI algorithms and personal mood preferences.'}
             </p>
           </div>
         </section>
@@ -271,6 +296,7 @@ function ExploreContent() {
                     type="button"
                     onClick={() => {
                       setSelectedGenre(genre);
+                      setActiveFilter('');
                       setCurrentPage(1);
                     }}
                     className={`shrink-0 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${

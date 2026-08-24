@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import React, { useRef, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Flame, ChevronLeft, ChevronRight } from "lucide-react";
-import MediaCard from "@/components/ui/card";
-import { getTrendingNow } from "@/data/home/trendingNow";
+import React, { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Flame, ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import MediaCard from '@/components/ui/card';
+import { getTrendingNow } from '@/data/home/trendingNow';
 
 interface TrendingItem {
   id: number;
@@ -23,21 +24,25 @@ export default function TrendingNow() {
 
   useEffect(() => {
     getTrendingNow()
-      .then((data) => {
+      .then(data => {
         setItems(data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Error loading trending:", err);
+      .catch(err => {
+        console.error('Error loading trending:', err);
         setLoading(false);
       });
   }, []);
 
-  const scroll = (direction: "left" | "right") => {
+  const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
-      const offset = direction === "left" ? -clientWidth * 0.8 : clientWidth * 0.8;
-      scrollRef.current.scrollTo({ left: scrollLeft + offset, behavior: "smooth" });
+      const offset =
+        direction === 'left' ? -clientWidth * 0.8 : clientWidth * 0.8;
+      scrollRef.current.scrollTo({
+        left: scrollLeft + offset,
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -46,7 +51,9 @@ export default function TrendingNow() {
       <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
           <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
-          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Calculating Trends...</p>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">
+            Calculating Trends...
+          </p>
         </div>
       </section>
     );
@@ -70,22 +77,22 @@ export default function TrendingNow() {
             What everyone&apos;s watching on Flixora this week
           </p>
         </div>
-        <button className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
+        <Link href="/explore?filter=trending" className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
           See All
-        </button>
+        </Link>
       </div>
 
       {/* SCROLL ROW */}
       <div className="relative z-10 max-w-7xl mx-auto group/row">
         <button
-          onClick={() => scroll("left")}
+          onClick={() => scroll('left')}
           className="absolute -left-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
           aria-label="Scroll left"
         >
           <ChevronLeft size={20} />
         </button>
         <button
-          onClick={() => scroll("right")}
+          onClick={() => scroll('right')}
           className="absolute -right-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
           aria-label="Scroll right"
         >
@@ -108,7 +115,7 @@ export default function TrendingNow() {
               {/* Big rank numeral behind the poster */}
               <span
                 className="absolute -left-4 sm:-left-6 bottom-4 text-[7rem] sm:text-[9rem] font-black leading-none text-transparent select-none pointer-events-none z-0"
-                style={{ WebkitTextStroke: "2px rgba(255,255,255,0.12)" }}
+                style={{ WebkitTextStroke: '2px rgba(255,255,255,0.12)' }}
               >
                 {item.rank}
               </span>
