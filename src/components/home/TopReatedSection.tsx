@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
 import { getTopRated } from '@/data/home/topRated';
 
@@ -75,9 +76,9 @@ export default function TopRated() {
             Critically acclaimed titles, loved by the Flixora community
           </p>
         </div>
-        <button className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
+        <Link href="/explore?filter=top-rated" className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
           See All
-        </button>
+        </Link>
       </div>
 
       {/* SCROLL ROW */}

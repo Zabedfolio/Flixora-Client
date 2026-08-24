@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Users, Star, ChevronLeft, ChevronRight, Film } from 'lucide-react';
 import { getFeaturedActors } from '@/data/home/featuredActors';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface Actor {
   id: number;

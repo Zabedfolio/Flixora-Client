@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
 import { getTrendingNow } from '@/data/home/trendingNow';
 
@@ -76,9 +77,9 @@ export default function TrendingNow() {
             What everyone&apos;s watching on Flixora this week
           </p>
         </div>
-        <button className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
+        <Link href="/explore?filter=trending" className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
           See All
-        </button>
+        </Link>
       </div>
 
       {/* SCROLL ROW */}
