@@ -127,19 +127,19 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans relative">
-      <main className="pt-28 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-8">
+      <main className="pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-8">
         
         {/* PAGE HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1A1A1A] pb-5">
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2.5">
               <LayoutGrid className="text-[#FF4C00] shrink-0" size={24} />
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase">
-                Your Dashboard
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase">
+                <span className="text-white">User</span> <span className="text-[#FF4C00]">Dashboard</span>
               </h1>
             </div>
-            <p className="text-xs md:text-sm text-zinc-500 font-medium max-w-2xl leading-relaxed">
-              Your viewing activity and analytics at a glance.
+            <p className="text-xs md:text-sm text-zinc-400 font-medium max-w-2xl leading-relaxed">
+              Welcome back. Here's your viewing activity and analytics at a glance.
             </p>
           </div>
 

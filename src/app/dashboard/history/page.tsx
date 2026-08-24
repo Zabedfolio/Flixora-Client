@@ -133,7 +133,7 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans relative">
-      <main className="pt-28 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-10">
+      <main className="pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-10">
         
         {/* PAGE HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-0.5 border-b border-[#1A1A1A] pb-5">

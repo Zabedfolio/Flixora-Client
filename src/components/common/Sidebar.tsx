@@ -18,7 +18,9 @@ import {
   User as UserIcon,
   LogOut,
   Clock,
-  Crown
+  Crown,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -109,20 +111,31 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     <div className="flex flex-col h-full bg-[#0A0A0A] text-white select-none relative font-sans overflow-visible">
       
       {/* BRAND LOGO HEADER */}
-      <div className={`flex items-center justify-between px-6 pt-6 pb-4 overflow-visible ${isCollapsed ? 'justify-center px-2' : ''}`}>
+      <div className={`flex items-center justify-between px-6 pt-6 pb-4 overflow-visible w-full ${isCollapsed ? 'justify-center px-2' : ''}`}>
         {!isCollapsed ? (
-          <Link href="/" className="flex items-center gap-2.5 outline-none">
-            <img 
-              src="/logo.png" 
-              alt="Flixora Logo" 
-              className="h-10 w-auto object-contain" 
-            />
-            {currentRole === 'admin' && (
-              <span className="text-[#FF4C00] text-[8px] font-black font-mono border border-[#FF4C00]/30 px-1 py-0.5 rounded uppercase tracking-widest bg-[#FF4C00]/5 shrink-0 align-middle">
-                Admin
-              </span>
+          <div className="flex items-center justify-between w-full">
+            <Link href="/" className="flex items-center gap-2.5 outline-none">
+              <img 
+                src="/logo.png" 
+                alt="Flixora Logo" 
+                className="h-10 w-auto object-contain" 
+              />
+              {currentRole === 'admin' && (
+                <span className="text-[#FF4C00] text-[8px] font-black font-mono border border-[#FF4C00]/30 px-1 py-0.5 rounded uppercase tracking-widest bg-[#FF4C00]/5 shrink-0 align-middle">
+                  Admin
+                </span>
+              )}
+            </Link>
+            {onClose && (
+              <button 
+                onClick={onClose}
+                className="md:hidden flex items-center justify-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-[#FF4C00] hover:border-[#FF4C00]/40 transition-all outline-none cursor-pointer"
+                aria-label="Close sidebar menu"
+              >
+                <PanelLeftClose size={16} />
+              </button>
             )}
-          </Link>
+          </div>
         ) : (
           <Link href="/" className="flex items-center justify-center outline-none">
             <span className="w-6 h-6 rounded-lg bg-[#FF4C00] flex items-center justify-center font-black text-black text-[10px] font-mono">
