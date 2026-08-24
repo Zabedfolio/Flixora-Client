@@ -2,9 +2,24 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { z } from 'zod';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+
+const registerSchema = z.object({
+  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string(),
+  agreeTerms: z.boolean().refine(val => val === true, {
+    message: "You must agree to the Terms & Conditions"
+  })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
+});
 
 export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,39 +30,92 @@ export const RegisterForm: React.FC = () => {
     agreeTerms: false,
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    const updatedValue = type === 'checkbox' ? checked : value;
+    const updatedData = {
+      ...formData,
+      [name]: updatedValue,
+    };
+    
+    setFormData(updatedData);
+
+    // Instant validation on input change
+    const result = registerSchema.safeParse(updatedData);
+    if (!result.success) {
+      const issue = result.error.issues.find(issue => issue.path[0] === name);
+      if (issue) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: issue.message
+        }));
+      } else {
+        setErrors(prev => {
+          const copy = { ...prev };
+          delete copy[name];
+          return copy;
+        });
+      }
+
+      // Sync mismatch password validation
+      if (name === 'password' || name === 'confirmPassword') {
+        const confirmIssue = result.error.issues.find(issue => issue.path[0] === 'confirmPassword');
+        if (confirmIssue) {
+          setErrors(prev => ({
+            ...prev,
+            confirmPassword: confirmIssue.message
+          }));
+        } else {
+          setErrors(prev => {
+            const copy = { ...prev };
+            delete copy.confirmPassword;
+            return copy;
+          });
+        }
+      }
+    } else {
+      setErrors({});
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (formData.password !== formData.confirmPassword) {
-    toast.error('Passwords do not match!');
-    return;
-  }
+    e.preventDefault();
+    setErrors({});
 
-  const { data, error } = await authClient.signUp.email({
-    email: formData.email,
-    password: formData.password,
-    name: formData.fullName, 
-    callbackURL: "/", 
-  }, {
-    onRequest: (ctx) => {
-      // Optional: handle loading state
-    },
-    onSuccess: (ctx) => {
-      toast.success('Account created successfully!');
-    },
-    onError: (ctx) => {
-      toast.error(ctx.error.message);
-    },
-  });
-};
+    const result = registerSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path[0];
+        if (typeof path === 'string') {
+          fieldErrors[path] = issue.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    const { data, error } = await authClient.signUp.email({
+      email: formData.email,
+      password: formData.password,
+      name: formData.fullName, 
+      callbackURL: "/", 
+    }, {
+      onRequest: (ctx) => {
+        // Optional: handle loading state
+      },
+      onSuccess: (ctx) => {
+        toast.success('Account created successfully!');
+      },
+      onError: (ctx) => {
+        toast.error(ctx.error.message);
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 selection:bg-[#FF4C00] selection:text-white relative overflow-hidden">
@@ -82,8 +150,11 @@ export const RegisterForm: React.FC = () => {
               value={formData.fullName}
               onChange={handleChange}
               required
-              className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF4C00] focus:ring-1 focus:ring-[#FF4C00]/20 hover:border-zinc-700 transition-all placeholder:text-zinc-650"
+              className={`w-full bg-[#141414] border ${errors.fullName ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
             />
+            {errors.fullName && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.fullName}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -97,41 +168,68 @@ export const RegisterForm: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF4C00] focus:ring-1 focus:ring-[#FF4C00]/20 hover:border-zinc-700 transition-all placeholder:text-zinc-650"
+              className={`w-full bg-[#141414] border ${errors.email ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
             />
+            {errors.email && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.email}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF4C00] focus:ring-1 focus:ring-[#FF4C00]/20 hover:border-zinc-700 transition-all placeholder:text-zinc-650"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className={`w-full bg-[#141414] border ${errors.password ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none cursor-pointer"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.password && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.password}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
               Confirm Password
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="••••••••"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF4C00] focus:ring-1 focus:ring-[#FF4C00]/20 hover:border-zinc-700 transition-all placeholder:text-zinc-650"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                className={`w-full bg-[#141414] border ${errors.confirmPassword ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none cursor-pointer"
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.confirmPassword}</span>
+            )}
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label className="flex items-start gap-3 cursor-pointer select-none group">
               <input
                 type="checkbox"
@@ -152,6 +250,9 @@ export const RegisterForm: React.FC = () => {
                 </a>
               </span>
             </label>
+            {errors.agreeTerms && (
+              <span className="text-xs font-semibold text-red-500 mt-1">{errors.agreeTerms}</span>
+            )}
           </div>
 
           <button
