@@ -66,7 +66,7 @@ const MovieRow = ({ genre }: MovieRowProps) => {
         {/* Movie Cards */}
         <div
           ref={sliderRef}
-          className="flex gap-4 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {genre.movies.map((movie, index) => (
             <motion.div

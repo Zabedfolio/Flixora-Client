@@ -168,6 +168,7 @@ export default function TitleRow() {
               snap-mandatory
               gap-5
               overflow-x-auto
+              overflow-y-hidden
               scroll-smooth
               pb-4
               [scrollbar-width:none]
