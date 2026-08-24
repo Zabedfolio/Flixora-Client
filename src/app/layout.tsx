@@ -52,7 +52,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           />
 
           {/* Navbar */}
-          <Navbar myListCount={5} />
+          <Navbar />
 
           {/* Main Content */}
           <main className="flex-1">{children}</main>

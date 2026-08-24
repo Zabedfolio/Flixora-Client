@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bookmark, Plus, Star, Play } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { isInWatchlist, addToWatchlist, removeFromWatchlist } from '@/data/watchlistStore';
 
 interface CardProps {
   title: string;
@@ -41,12 +42,27 @@ export default function MediaCard({
   const [inMyList, setInMyList] = useState(false);
   const [inPlaylist, setInPlaylist] = useState(false);
 
+  useEffect(() => {
+    setInMyList(isInWatchlist(title));
+    const handleUpdate = () => {
+      setInMyList(isInWatchlist(title));
+    };
+    window.addEventListener('watchlist-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('watchlist-updated', handleUpdate);
+    };
+  }, [title]);
+
   const handleMyListToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setInMyList(!inMyList);
-    if (!inMyList) {
-      toast.success(`Added "${title}" to My List`, {
-        icon: '🔖',
+
+    const itemKey = title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const exists = isInWatchlist(title);
+
+    if (exists) {
+      removeFromWatchlist(title);
+      toast.success(`Removed "${title}" from My List`, {
+        icon: '🗑️',
         style: {
           background: '#141414',
           color: '#fff',
@@ -54,8 +70,16 @@ export default function MediaCard({
         }
       });
     } else {
-      toast.success(`Removed "${title}" from My List`, {
-        icon: '🗑️',
+      addToWatchlist({
+        id: itemKey,
+        title,
+        year,
+        duration,
+        category,
+        unsplash_url
+      });
+      toast.success(`Added "${title}" to My List`, {
+        icon: '🔖',
         style: {
           background: '#141414',
           color: '#fff',

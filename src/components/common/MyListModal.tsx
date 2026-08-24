@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { getWatchlist, removeFromWatchlist } from '@/data/watchlistStore';
 
 interface WatchlistItem {
   id: string;
@@ -21,43 +22,24 @@ interface WatchlistItem {
   unsplash_url: string;
 }
 
-const INITIAL_WATCHLIST: WatchlistItem[] = [
-  { 
-    id: 'wl-1', 
-    title: 'Wednesday', 
-    year: '2022', 
-    duration: 'Season 1', 
-    category: 'TV Show',
-    unsplash_url: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=200&auto=format&fit=crop' 
-  },
-  { 
-    id: 'wl-2', 
-    title: 'Stranger Things', 
-    year: '2016', 
-    duration: '4 Seasons', 
-    category: 'TV Show',
-    unsplash_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=200&auto=format&fit=crop' 
-  },
-  { 
-    id: 'wl-3', 
-    title: 'Oppenheimer', 
-    year: '2023', 
-    duration: '3h 0m', 
-    category: 'Movie',
-    unsplash_url: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=200&auto=format&fit=crop' 
-  }
-];
-
 interface MyListModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function MyListModal({ isOpen, onClose }: MyListModalProps) {
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(INITIAL_WATCHLIST);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setWatchlist(getWatchlist());
+    }
+  }, [isOpen]);
 
   const handleRemoveItem = (id: string, title: string) => {
-    setWatchlist(prev => prev.filter(item => item.id !== id));
+    removeFromWatchlist(title);
+    setWatchlist(getWatchlist());
+
     toast.success(`Removed "${title}" from your list`, {
       icon: '🗑️',
       style: {

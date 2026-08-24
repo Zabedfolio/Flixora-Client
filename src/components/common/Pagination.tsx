@@ -53,56 +53,54 @@ export default function Pagination({
   const pageItems = buildPageItems(currentPage, totalPages);
 
   return (
-    <div className="mt-10 flex flex-col gap-4 border-t border-[#1A1A1A] pt-6 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+    <div className="mt-10 flex flex-col items-center gap-4 border-t border-[#1A1A1A] pt-6 sm:flex-row sm:justify-between">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 text-center sm:text-left">
         {label} - page {currentPage} of {totalPages}
       </p>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         <button
           type="button"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-[#1A1A1A] bg-[#0D0D0D] px-3.5 py-2 text-xs font-bold text-zinc-400 transition-all hover:border-[#FF4C00]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#1A1A1A] bg-[#0D0D0D] px-3 py-2 text-xs font-bold text-zinc-450 transition-all hover:border-[#FF4C00]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronLeft className="h-4 w-4" />
-          Previous
+          <span className="hidden xs:inline">Previous</span>
         </button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {pageItems.map(pageItem =>
-            pageItem === 'ellipsis-start' || pageItem === 'ellipsis-end' ? (
-              <span
-                key={pageItem}
-                className="px-2 text-sm font-bold text-zinc-600"
-              >
-                ...
-              </span>
-            ) : (
-              <button
-                key={pageItem}
-                type="button"
-                onClick={() => onPageChange(pageItem)}
-                className={`flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 text-sm font-bold transition-all ${
-                  currentPage === pageItem
-                    ? 'border-[#FF4C00] bg-[#FF4C00] text-white shadow-lg shadow-[#FF4C00]/20'
-                    : 'border-[#1A1A1A] bg-[#0D0D0D] text-zinc-400 hover:border-[#FF4C00]/40 hover:text-white'
-                }`}
-                aria-current={currentPage === pageItem ? 'page' : undefined}
-              >
-                {pageItem}
-              </button>
-            ),
-          )}
-        </div>
+        {pageItems.map(pageItem =>
+          pageItem === 'ellipsis-start' || pageItem === 'ellipsis-end' ? (
+            <span
+              key={pageItem}
+              className="px-1 text-sm font-bold text-zinc-600"
+            >
+              ...
+            </span>
+          ) : (
+            <button
+              key={pageItem}
+              type="button"
+              onClick={() => onPageChange(pageItem)}
+              className={`flex h-9 min-w-9 items-center justify-center rounded-xl border px-2 text-xs sm:text-sm font-bold transition-all ${
+                currentPage === pageItem
+                  ? 'border-[#FF4C00] bg-[#FF4C00] text-white shadow-lg shadow-[#FF4C00]/20'
+                  : 'border-[#1A1A1A] bg-[#0D0D0D] text-zinc-400 hover:border-[#FF4C00]/40 hover:text-white'
+              }`}
+              aria-current={currentPage === pageItem ? 'page' : undefined}
+            >
+              {pageItem}
+            </button>
+          )
+        )}
 
         <button
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-[#1A1A1A] bg-[#0D0D0D] px-3.5 py-2 text-xs font-bold text-zinc-400 transition-all hover:border-[#FF4C00]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#1A1A1A] bg-[#0D0D0D] px-3 py-2 text-xs font-bold text-zinc-450 transition-all hover:border-[#FF4C00]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Next
+          <span className="hidden xs:inline">Next</span>
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
