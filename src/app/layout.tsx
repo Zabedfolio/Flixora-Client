@@ -33,7 +33,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" className="antialiased">
+    <html lang="en" className="antialiased overflow-x-hidden">
       <body className="min-h-screen w-full overflow-x-hidden bg-black">
         <RouteTransition>
           {/* Toast */}

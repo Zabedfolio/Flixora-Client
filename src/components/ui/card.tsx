@@ -173,7 +173,7 @@ export default function MediaCard({
         <h4 className="text-sm font-extrabold text-white group-hover:text-[#FF4C00] transition-colors truncate">
           {title}
         </h4>
-        <div className="flex items-center gap-2 text-[10px] text-zinc-450 font-bold uppercase tracking-wider">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-zinc-450 font-bold uppercase tracking-wider">
           <span className="text-zinc-500">{year}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] shrink-0" />
           <span>{category}</span>
