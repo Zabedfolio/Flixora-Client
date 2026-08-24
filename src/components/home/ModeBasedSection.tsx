@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useMemo, useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wand2,
   Smile,
@@ -16,20 +16,20 @@ import {
   Sparkles,
   SlidersHorizontal,
   type LucideIcon,
-} from "lucide-react";
-import MediaCard from "@/components/ui/card";
-import { getMoodBasedPicks, MoviePick } from "@/data/home/moodBased";
+} from 'lucide-react';
+import MediaCard from '@/components/ui/card';
+import { getMoodBasedPicks, MoviePick } from '@/data/home/moodBased';
 
 export type MoodId =
-  | "feel-good"
-  | "thrilling"
-  | "romantic"
-  | "chill"
-  | "dark"
-  | "mind-bending"
-  | "adrenaline";
+  | 'feel-good'
+  | 'thrilling'
+  | 'romantic'
+  | 'chill'
+  | 'dark'
+  | 'mind-bending'
+  | 'adrenaline';
 
-export type EnergyLevel = "all" | "relaxed" | "balanced" | "high";
+export type EnergyLevel = 'all' | 'relaxed' | 'balanced' | 'high';
 
 interface MoodOption {
   id: MoodId;
@@ -38,72 +38,72 @@ interface MoodOption {
   icon: LucideIcon;
   color: string;
   bgGradient: string;
-  energy: "relaxed" | "balanced" | "high";
+  energy: 'relaxed' | 'balanced' | 'high';
 }
 
 const MOODS: MoodOption[] = [
   {
-    id: "feel-good",
-    label: "Feel-Good",
-    tagline: "Heartwarming, uplifting stories to boost your spirits",
+    id: 'feel-good',
+    label: 'Feel-Good',
+    tagline: 'Heartwarming, uplifting stories to boost your spirits',
     icon: Smile,
-    color: "#FF4C00",
-    bgGradient: "from-[#FF4C00]/20 via-[#FF4C00]/5 to-transparent",
-    energy: "balanced",
+    color: '#FF4C00',
+    bgGradient: 'from-[#FF4C00]/20 via-[#FF4C00]/5 to-transparent',
+    energy: 'balanced',
   },
   {
-    id: "thrilling",
-    label: "Thrilling",
-    tagline: "Edge-of-your-seat suspense and high-stakes twists",
+    id: 'thrilling',
+    label: 'Thrilling',
+    tagline: 'Edge-of-your-seat suspense and high-stakes twists',
     icon: Zap,
-    color: "#FF8C00",
-    bgGradient: "from-[#FF8C00]/20 via-[#FF8C00]/5 to-transparent",
-    energy: "high",
+    color: '#FF8C00',
+    bgGradient: 'from-[#FF8C00]/20 via-[#FF8C00]/5 to-transparent',
+    energy: 'high',
   },
   {
-    id: "romantic",
-    label: "Romantic",
-    tagline: "Deep emotional connections and passionate tales",
+    id: 'romantic',
+    label: 'Romantic',
+    tagline: 'Deep emotional connections and passionate tales',
     icon: Heart,
-    color: "#FF3366",
-    bgGradient: "from-[#FF3366]/20 via-[#FF3366]/5 to-transparent",
-    energy: "relaxed",
+    color: '#FF3366',
+    bgGradient: 'from-[#FF3366]/20 via-[#FF3366]/5 to-transparent',
+    energy: 'relaxed',
   },
   {
-    id: "chill",
-    label: "Chill & Cozy",
-    tagline: "Laid-back, comforting visuals for a easy night in",
+    id: 'chill',
+    label: 'Chill & Cozy',
+    tagline: 'Laid-back, comforting visuals for a easy night in',
     icon: Moon,
-    color: "#00E5FF",
-    bgGradient: "from-[#00E5FF]/20 via-[#00E5FF]/5 to-transparent",
-    energy: "relaxed",
+    color: '#00E5FF',
+    bgGradient: 'from-[#00E5FF]/20 via-[#00E5FF]/5 to-transparent',
+    energy: 'relaxed',
   },
   {
-    id: "dark",
-    label: "Dark & Gritty",
-    tagline: "Raw, intense noir mysteries and psychological depth",
+    id: 'dark',
+    label: 'Dark & Gritty',
+    tagline: 'Raw, intense noir mysteries and psychological depth',
     icon: Ghost,
-    color: "#A855F7",
-    bgGradient: "from-[#A855F7]/20 via-[#A855F7]/5 to-transparent",
-    energy: "high",
+    color: '#A855F7',
+    bgGradient: 'from-[#A855F7]/20 via-[#A855F7]/5 to-transparent',
+    energy: 'high',
   },
   {
-    id: "mind-bending",
-    label: "Mind-Bending",
-    tagline: "Complex sci-fi, time loops, and reality-altering plots",
+    id: 'mind-bending',
+    label: 'Mind-Bending',
+    tagline: 'Complex sci-fi, time loops, and reality-altering plots',
     icon: Cpu,
-    color: "#3B82F6",
-    bgGradient: "from-[#3B82F6]/20 via-[#3B82F6]/5 to-transparent",
-    energy: "balanced",
+    color: '#3B82F6',
+    bgGradient: 'from-[#3B82F6]/20 via-[#3B82F6]/5 to-transparent',
+    energy: 'balanced',
   },
   {
-    id: "adrenaline",
-    label: "Adrenaline Rush",
-    tagline: "Non-stop action sequences and fast-paced thrill rides",
+    id: 'adrenaline',
+    label: 'Adrenaline Rush',
+    tagline: 'Non-stop action sequences and fast-paced thrill rides',
     icon: Flame,
-    color: "#FF2A00",
-    bgGradient: "from-[#FF2A00]/20 via-[#FF2A00]/5 to-transparent",
-    energy: "high",
+    color: '#FF2A00',
+    bgGradient: 'from-[#FF2A00]/20 via-[#FF2A00]/5 to-transparent',
+    energy: 'high',
   },
 ];
 
@@ -122,40 +122,40 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.35, ease: "easeOut" as const },
+    transition: { duration: 0.35, ease: 'easeOut' as const },
   },
 };
 
 export default function MoodBasedPicks() {
-  const [activeMood, setActiveMood] = useState<MoodId>("feel-good");
-  const [selectorMode, setSelectorMode] = useState<"chips" | "grid">("chips");
-  const [energyFilter, setEnergyFilter] = useState<EnergyLevel>("all");
+  const [activeMood, setActiveMood] = useState<MoodId>('feel-good');
+  const [selectorMode, setSelectorMode] = useState<'chips' | 'grid'>('chips');
+  const [energyFilter, setEnergyFilter] = useState<EnergyLevel>('all');
   const [picks, setPicks] = useState<MoviePick[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getMoodBasedPicks()
-      .then((data) => {
+      .then(data => {
         setPicks(data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Error loading mood-based picks:", err);
+      .catch(err => {
+        console.error('Error loading mood-based picks:', err);
         setLoading(false);
       });
   }, []);
 
   const filteredMovies = useMemo(() => {
-    return picks.filter((item) => {
+    return picks.filter(item => {
       const matchesMood = item.moods.includes(activeMood);
       const matchesEnergy =
-        energyFilter === "all" || item.energy === energyFilter;
+        energyFilter === 'all' || item.energy === energyFilter;
       return matchesMood && matchesEnergy;
     });
   }, [picks, activeMood, energyFilter]);
 
   const activeMoodData = useMemo(() => {
-    return MOODS.find((m) => m.id === activeMood) || MOODS[0];
+    return MOODS.find(m => m.id === activeMood) || MOODS[0];
   }, [activeMood]);
 
   if (loading) {
@@ -163,7 +163,9 @@ export default function MoodBasedPicks() {
       <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
           <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
-          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Scanning Your Vibes...</p>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">
+            Scanning Your Vibes...
+          </p>
         </div>
       </section>
     );
@@ -195,11 +197,11 @@ export default function MoodBasedPicks() {
           {/* VIEW MODE SWITCHER (Chips vs Grid) */}
           <div className="flex items-center gap-2 bg-[#0E0E0E] border border-white/10 rounded-full p-1 self-start sm:self-auto">
             <button
-              onClick={() => setSelectorMode("chips")}
+              onClick={() => setSelectorMode('chips')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                selectorMode === "chips"
-                  ? "bg-[#FF4C00] text-black shadow-md shadow-[#FF4C00]/20"
-                  : "text-zinc-400 hover:text-white"
+                selectorMode === 'chips'
+                  ? 'bg-[#FF4C00] text-black shadow-md shadow-[#FF4C00]/20'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               <ListFilter size={14} />
@@ -207,11 +209,11 @@ export default function MoodBasedPicks() {
             </button>
 
             <button
-              onClick={() => setSelectorMode("grid")}
+              onClick={() => setSelectorMode('grid')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                selectorMode === "grid"
-                  ? "bg-[#FF4C00] text-black shadow-md shadow-[#FF4C00]/20"
-                  : "text-zinc-400 hover:text-white"
+                selectorMode === 'grid'
+                  ? 'bg-[#FF4C00] text-black shadow-md shadow-[#FF4C00]/20'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
               <LayoutGrid size={14} />
@@ -222,7 +224,7 @@ export default function MoodBasedPicks() {
 
         {/* MOOD SELECTOR AREA */}
         <AnimatePresence mode="wait">
-          {selectorMode === "chips" ? (
+          {selectorMode === 'chips' ? (
             /* CHIPS SELECTOR VIEW */
             <motion.div
               key="chips-view"
@@ -232,11 +234,11 @@ export default function MoodBasedPicks() {
               transition={{ duration: 0.25 }}
               className="mb-8 flex overflow-x-auto sm:flex-wrap items-center gap-2.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {MOODS.map((mood) => {
+              {MOODS.map(mood => {
                 const Icon = mood.icon;
                 const isActive = activeMood === mood.id;
-                const moodMovieCount = picks.filter((p) =>
-                  p.moods.includes(mood.id)
+                const moodMovieCount = picks.filter(p =>
+                  p.moods.includes(mood.id),
                 ).length;
 
                 return (
@@ -245,20 +247,20 @@ export default function MoodBasedPicks() {
                     onClick={() => setActiveMood(mood.id)}
                     className={`relative flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-200 outline-none cursor-pointer ${
                       isActive
-                        ? "bg-[#FF4C00] border-[#FF4C00] text-black shadow-[0_0_20px_rgba(255,76,0,0.25)]"
-                        : "bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:border-white/20"
+                        ? 'bg-[#FF4C00] border-[#FF4C00] text-black shadow-[0_0_20px_rgba(255,76,0,0.25)]'
+                        : 'bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:border-white/20'
                     }`}
                   >
                     <Icon
                       size={16}
-                      className={isActive ? "text-black" : "text-[#FF4C00]"}
+                      className={isActive ? 'text-black' : 'text-[#FF4C00]'}
                     />
                     <span>{mood.label}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                         isActive
-                          ? "bg-black/20 text-black font-extrabold"
-                          : "bg-white/10 text-zinc-400"
+                          ? 'bg-black/20 text-black font-extrabold'
+                          : 'bg-white/10 text-zinc-400'
                       }`}
                     >
                       {moodMovieCount}
@@ -269,7 +271,7 @@ export default function MoodBasedPicks() {
                         layoutId="activeMoodChip"
                         className="pointer-events-none absolute inset-0 rounded-full border-2 border-[#FF4C00]"
                         transition={{
-                          type: "spring",
+                          type: 'spring',
                           stiffness: 400,
                           damping: 30,
                         }}
@@ -289,11 +291,11 @@ export default function MoodBasedPicks() {
               transition={{ duration: 0.25 }}
               className="mb-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3"
             >
-              {MOODS.map((mood) => {
+              {MOODS.map(mood => {
                 const Icon = mood.icon;
                 const isActive = activeMood === mood.id;
-                const moodMovieCount = picks.filter((p) =>
-                  p.moods.includes(mood.id)
+                const moodMovieCount = picks.filter(p =>
+                  p.moods.includes(mood.id),
                 ).length;
 
                 return (
@@ -304,21 +306,21 @@ export default function MoodBasedPicks() {
                     onClick={() => setActiveMood(mood.id)}
                     className={`relative p-3.5 rounded-2xl border cursor-pointer flex flex-col justify-between min-h-[110px] overflow-hidden transition-all duration-300 ${
                       isActive
-                        ? "bg-[#141414] border-[#FF4C00] shadow-[0_0_25px_rgba(255,76,0,0.3)]"
-                        : "bg-[#0B0B0B] border-white/10 hover:border-white/20 hover:bg-[#121212]"
+                        ? 'bg-[#141414] border-[#FF4C00] shadow-[0_0_25px_rgba(255,76,0,0.3)]'
+                        : 'bg-[#0B0B0B] border-white/10 hover:border-white/20 hover:bg-[#121212]'
                     }`}
                   >
                     {/* Background Subtle Gradient */}
                     <div
-                      className={`absolute inset-0 bg-gradient-to-br ${mood.bgGradient} opacity-40 pointer-events-none`}
+                      className={`absolute inset-0 bg-linear-to-br ${mood.bgGradient} opacity-40 pointer-events-none`}
                     />
 
                     <div className="relative z-10 flex items-center justify-between">
                       <div
                         className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                           isActive
-                            ? "bg-[#FF4C00] text-black"
-                            : "bg-white/5 text-white"
+                            ? 'bg-[#FF4C00] text-black'
+                            : 'bg-white/5 text-white'
                         }`}
                       >
                         <Icon size={18} />
@@ -331,7 +333,7 @@ export default function MoodBasedPicks() {
                     <div className="relative z-10 mt-3">
                       <h4
                         className={`text-xs font-extrabold truncate ${
-                          isActive ? "text-[#FF4C00]" : "text-white"
+                          isActive ? 'text-[#FF4C00]' : 'text-white'
                         }`}
                       >
                         {mood.label}
@@ -359,27 +361,33 @@ export default function MoodBasedPicks() {
               Energy Intensity:
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              {(["all", "relaxed", "balanced", "high"] as EnergyLevel[]).map(
-                (lvl) => (
+              {(['all', 'relaxed', 'balanced', 'high'] as EnergyLevel[]).map(
+                lvl => (
                   <button
                     key={lvl}
                     onClick={() => setEnergyFilter(lvl)}
                     className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${
                       energyFilter === lvl
-                        ? "bg-white/10 text-white border border-white/20"
-                        : "text-zinc-500 hover:text-zinc-300"
+                        ? 'bg-white/10 text-white border border-white/20'
+                        : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
                     {lvl}
                   </button>
-                )
+                ),
               )}
             </div>
           </div>
 
           <div className="text-xs text-zinc-400 font-medium">
-            Showing <span className="text-white font-bold">{filteredMovies.length}</span> titles for{" "}
-            <span className="text-[#FF4C00] font-bold">{activeMoodData.label}</span>
+            Showing{' '}
+            <span className="text-white font-bold">
+              {filteredMovies.length}
+            </span>{' '}
+            titles for{' '}
+            <span className="text-[#FF4C00] font-bold">
+              {activeMoodData.label}
+            </span>
           </div>
         </div>
 
@@ -402,17 +410,18 @@ export default function MoodBasedPicks() {
                     No matching titles for this energy filter
                   </p>
                   <p className="text-xs text-zinc-500 mt-1">
-                    Try switching energy levels or selecting a different mood chip.
+                    Try switching energy levels or selecting a different mood
+                    chip.
                   </p>
                   <button
-                    onClick={() => setEnergyFilter("all")}
+                    onClick={() => setEnergyFilter('all')}
                     className="mt-4 px-4 py-2 bg-[#FF4C00] text-black text-xs font-bold rounded-full hover:bg-[#E04300] transition-colors"
                   >
                     Reset Energy Filter
                   </button>
                 </div>
               ) : (
-                filteredMovies.map((item) => (
+                filteredMovies.map(item => (
                   <motion.div
                     key={item.id}
                     variants={cardVariants}

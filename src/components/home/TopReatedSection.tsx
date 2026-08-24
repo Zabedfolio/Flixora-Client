@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useRef, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Award, ChevronLeft, ChevronRight } from "lucide-react";
-import MediaCard from "@/components/ui/card";
-import { getTopRated } from "@/data/home/topRated";
+import React, { useRef, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import MediaCard from '@/components/ui/card';
+import { getTopRated } from '@/data/home/topRated';
 
 interface TopRatedItem {
   id: number;
@@ -23,21 +23,25 @@ export default function TopRated() {
 
   useEffect(() => {
     getTopRated()
-      .then((data) => {
+      .then(data => {
         setItems(data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Error fetching top rated:", err);
+      .catch(err => {
+        console.error('Error fetching top rated:', err);
         setLoading(false);
       });
   }, []);
 
-  const scroll = (direction: "left" | "right") => {
+  const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
-      const offset = direction === "left" ? -clientWidth * 0.8 : clientWidth * 0.8;
-      scrollRef.current.scrollTo({ left: scrollLeft + offset, behavior: "smooth" });
+      const offset =
+        direction === 'left' ? -clientWidth * 0.8 : clientWidth * 0.8;
+      scrollRef.current.scrollTo({
+        left: scrollLeft + offset,
+        behavior: 'smooth',
+      });
     }
   };
 
@@ -46,7 +50,9 @@ export default function TopRated() {
       <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
           <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
-          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Querying Critically Acclaimed...</p>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">
+            Querying Critically Acclaimed...
+          </p>
         </div>
       </section>
     );
@@ -77,14 +83,14 @@ export default function TopRated() {
       {/* SCROLL ROW */}
       <div className="relative z-10 max-w-7xl mx-auto group/row">
         <button
-          onClick={() => scroll("left")}
+          onClick={() => scroll('left')}
           className="absolute -left-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
           aria-label="Scroll left"
         >
           <ChevronLeft size={20} />
         </button>
         <button
-          onClick={() => scroll("right")}
+          onClick={() => scroll('right')}
           className="absolute -right-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
           aria-label="Scroll right"
         >

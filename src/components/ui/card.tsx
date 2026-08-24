@@ -3,7 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Plus, Star, Play } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { isInWatchlist, addToWatchlist, removeFromWatchlist } from '@/data/watchlistStore';
+import {
+  isInWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+} from '@/data/watchlistStore';
 
 interface CardProps {
   title: string;
@@ -16,16 +20,18 @@ interface CardProps {
 }
 
 const getColorFromTitle = (title: string): string => {
-  const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = title
+    .split('')
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const colors = [
-    'rgba(255, 76, 0, 0.35)',   // Orange
+    'rgba(255, 76, 0, 0.35)', // Orange
     'rgba(168, 85, 247, 0.35)', // Purple
-    'rgba(0, 229, 255, 0.35)',  // Cyan
-    'rgba(255, 215, 0, 0.35)',  // Gold
-    'rgba(236, 72, 153, 0.35)',  // Pink
-    'rgba(59, 130, 246, 0.35)',  // Blue
-    'rgba(14, 165, 233, 0.35)',  // Light Blue
-    'rgba(244, 63, 94, 0.35)',   // Rose
+    'rgba(0, 229, 255, 0.35)', // Cyan
+    'rgba(255, 215, 0, 0.35)', // Gold
+    'rgba(236, 72, 153, 0.35)', // Pink
+    'rgba(59, 130, 246, 0.35)', // Blue
+    'rgba(14, 165, 233, 0.35)', // Light Blue
+    'rgba(244, 63, 94, 0.35)', // Rose
   ];
   return colors[hash % colors.length];
 };
@@ -37,7 +43,7 @@ export default function MediaCard({
   year = '2026',
   category = 'Adventure',
   duration = '2H 24M',
-  isNew = false
+  isNew = false,
 }: CardProps) {
   const [inMyList, setInMyList] = useState(false);
   const [inPlaylist, setInPlaylist] = useState(false);
@@ -66,8 +72,8 @@ export default function MediaCard({
         style: {
           background: '#141414',
           color: '#fff',
-          border: '1px solid #1A1A1A'
-        }
+          border: '1px solid #1A1A1A',
+        },
       });
     } else {
       addToWatchlist({
@@ -76,15 +82,15 @@ export default function MediaCard({
         year,
         duration,
         category,
-        unsplash_url
+        unsplash_url,
       });
       toast.success(`Added "${title}" to My List`, {
         icon: '🔖',
         style: {
           background: '#141414',
           color: '#fff',
-          border: '1px solid #1A1A1A'
-        }
+          border: '1px solid #1A1A1A',
+        },
       });
     }
   };
@@ -98,8 +104,8 @@ export default function MediaCard({
         style: {
           background: '#141414',
           color: '#fff',
-          border: '1px solid #1A1A1A'
-        }
+          border: '1px solid #1A1A1A',
+        },
       });
     } else {
       toast.success(`Removed "${title}" from your playlist`, {
@@ -107,8 +113,8 @@ export default function MediaCard({
         style: {
           background: '#141414',
           color: '#fff',
-          border: '1px solid #1A1A1A'
-        }
+          border: '1px solid #1A1A1A',
+        },
       });
     }
   };
@@ -116,26 +122,25 @@ export default function MediaCard({
   return (
     <div className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer">
       {/* Blurred Poster-Colored Glow behind the Card */}
-      <div 
+      <div
         className="absolute inset-x-[-50px] inset-y-[-50px] rounded-[50px] opacity-0 group-hover:opacity-100 blur-[50px] pointer-events-none transition-all duration-500 z-0"
         style={{
-          background: `radial-gradient(circle, ${getColorFromTitle(title)} 0%, transparent 70%)`
+          background: `radial-gradient(circle, ${getColorFromTitle(title)} 0%, transparent 70%)`,
         }}
       />
-      
+
       {/* CARD POSTER WRAPPER */}
       <div className="relative z-10 aspect-[2/3] w-full rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/40 group-hover:shadow-[0_0_20px_rgba(255,76,0,0.15)] transition-all duration-300">
-        
         {/* Poster Image */}
-        <img 
-          src={unsplash_url} 
+        <img
+          src={unsplash_url}
           alt={title}
           className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-103 transition-all duration-500 ease-out"
           loading="lazy"
         />
 
         {/* Dark Vignette Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+        <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
 
         {/* Top-Left: "NEW" Badge */}
         {isNew && (
@@ -164,11 +169,11 @@ export default function MediaCard({
         {/* Bottom-Right Actions Stack (Always visible but highlighted on hover) */}
         <div className="absolute bottom-4 right-4 flex items-center gap-2 z-20">
           {/* Add/Remove My List */}
-          <button 
+          <button
             onClick={handleMyListToggle}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md backdrop-blur-sm border outline-none cursor-pointer ${
-              inMyList 
-                ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105' 
+              inMyList
+                ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105'
                 : 'bg-black/60 border-zinc-800 text-zinc-350 hover:text-white hover:border-[#FF4C00]'
             }`}
             title={inMyList ? 'Remove from My List' : 'Add to My List'}
@@ -177,19 +182,21 @@ export default function MediaCard({
           </button>
 
           {/* Add/Remove Playlist */}
-          <button 
+          <button
             onClick={handlePlaylistToggle}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md backdrop-blur-sm border outline-none cursor-pointer ${
-              inPlaylist 
-                ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105' 
+              inPlaylist
+                ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105'
                 : 'bg-black/60 border-zinc-800 text-zinc-350 hover:text-white hover:border-[#FF4C00]'
             }`}
             title={inPlaylist ? 'Remove from Playlist' : 'Add to Playlist'}
           >
-            <Plus size={14} className={inPlaylist ? 'rotate-45 transition-transform' : ''} />
+            <Plus
+              size={14}
+              className={inPlaylist ? 'rotate-45 transition-transform' : ''}
+            />
           </button>
         </div>
-
       </div>
 
       {/* METADATA CONTENT AREA */}
@@ -205,7 +212,6 @@ export default function MediaCard({
           <span className="text-zinc-500">{duration}</span>
         </div>
       </div>
-
     </div>
   );
 }

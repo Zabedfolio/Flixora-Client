@@ -23,11 +23,11 @@ export default function NewReleases() {
 
   useEffect(() => {
     getNewReleases()
-      .then((data) => {
+      .then(data => {
         setMovies(data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(err => {
         console.error('Error fetching new releases:', err);
         setLoading(false);
       });
@@ -52,7 +52,9 @@ export default function NewReleases() {
       <section className="relative overflow-hidden bg-black py-20 sm:py-24">
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
           <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
-          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Initializing Catalog...</p>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">
+            Initializing Catalog...
+          </p>
         </div>
       </section>
     );
@@ -143,7 +145,7 @@ export default function NewReleases() {
           ref={sliderRef}
           className="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden pb-4"
         >
-          {movies.map((movie) => (
+          {movies.map(movie => (
             <div
               key={movie.id}
               className="min-w-[185px] snap-start sm:min-w-[210px] md:min-w-[225px] lg:min-w-[230px]"
@@ -184,13 +186,13 @@ export default function NewReleases() {
 
         {/* Bottom Line */}
         <div className="mt-8 flex items-center gap-4">
-          <div className="h-px flex-1 bg-gradient-to-r from-[#FF4C00]/30 to-transparent" />
+          <div className="h-px flex-1 bg-linear-to-r from-[#FF4C00]/30 to-transparent" />
 
           <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-zinc-700">
             New stories. New worlds.
           </span>
 
-          <div className="h-px flex-1 bg-gradient-to-l from-[#FF4C00]/30 to-transparent" />
+          <div className="h-px flex-1 bg-linear-to-l from-[#FF4C00]/30 to-transparent" />
         </div>
       </div>
     </section>
