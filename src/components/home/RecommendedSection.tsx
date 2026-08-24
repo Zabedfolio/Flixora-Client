@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Sparkles, Play, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "@/components/ui/card";
+import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
+import { getGenreName, formatDuration } from "@/data/home/newReleases";
 
 interface TopPick {
   title: string;
@@ -25,129 +27,46 @@ interface SecondaryPick {
   year: number;
 }
 
-const INITIAL_TOP_PICK: TopPick = {
-  title: "The Silent Cosmos",
-  image: "/movies/cosmos.jpg",
-  matchPercentage: 97,
-  category: "Sci-Fi / Space",
-  reason: "Matches your love for Sci-Fi",
-  description: "Journey into the darkest corners of outer space. Discover cosmic secrets, supermassive black holes, and the beautiful stellar nurseries shaping our universe.",
-  duration: "1h 42m",
-  year: 2026
-};
-
-const ALTERNATE_TOP_PICK: TopPick = {
-  title: "Fury: Born of War",
-  image: "/movies/fury.jpg",
-  matchPercentage: 99,
-  category: "Action / War",
-  reason: "Because you watched Project Zero: Genesis",
-  description: "A grizzled tank commander makes tough decisions as he and his crew fight their way across Germany in April, 1945.",
-  duration: "2h 15m",
-  year: 2025
-};
-
-const INITIAL_SECONDARY: SecondaryPick[] = [
-  {
-    id: 1,
-    title: "Shadows in the Neon",
-    image: "/movies/neon.jpg",
-    reasonTag: "Similar to My List",
-    category: "Thriller / Cyberpunk",
-    rating: 8.4,
-    year: 2025
-  },
-  {
-    id: 2,
-    title: "Project Zero: Genesis",
-    image: "/movies/fury.jpg",
-    reasonTag: "Trending in Sci-Fi",
-    category: "Sci-Fi / Action",
-    rating: 8.9,
-    year: 2026
-  },
-  {
-    id: 3,
-    title: "Tokyo Cyber-Run",
-    image: "/movies/tokyo.jpg",
-    reasonTag: "New in Anime",
-    category: "Anime / Cyberpunk",
-    rating: 8.7,
-    year: 2026
-  },
-  {
-    id: 4,
-    title: "Chrono Drift",
-    image: "/movies/chrono.jpg",
-    reasonTag: "Popular Action",
-    category: "Adventure / Fantasy",
-    rating: 7.9,
-    year: 2025
-  },
-  {
-    id: 5,
-    title: "Echoes of Eternity",
-    image: "/movies/echoes.jpg",
-    reasonTag: "Because you liked Drama",
-    category: "Drama / Romance",
-    rating: 8.2,
-    year: 2024
-  }
-];
-
-const ALTERNATE_SECONDARY: SecondaryPick[] = [
-  {
-    id: 6,
-    title: "Project Zero: Genesis",
-    image: "/movies/fury.jpg",
-    reasonTag: "Top Recommendation",
-    category: "Sci-Fi / Action",
-    rating: 8.9,
-    year: 2026
-  },
-  {
-    id: 7,
-    title: "The Silent Cosmos",
-    image: "/movies/cosmos.jpg",
-    reasonTag: "97% Match",
-    category: "Documentary",
-    rating: 9.1,
-    year: 2026
-  },
-  {
-    id: 8,
-    title: "Shadows in the Neon",
-    image: "/movies/neon.jpg",
-    reasonTag: "Similar to My List",
-    category: "Thriller / Cyberpunk",
-    rating: 8.4,
-    year: 2025
-  },
-  {
-    id: 9,
-    title: "Tokyo Cyber-Run",
-    image: "/movies/tokyo.jpg",
-    reasonTag: "Trending in Sci-Fi",
-    category: "Anime / Cyberpunk",
-    rating: 8.7,
-    year: 2026
-  },
-  {
-    id: 10,
-    title: "Chrono Drift",
-    image: "/movies/chrono.jpg",
-    reasonTag: "Matches your taste",
-    category: "Adventure / Fantasy",
-    rating: 7.9,
-    year: 2025
-  }
-];
-
 export default function RecommendedSection() {
-  const [topPick] = useState<TopPick>(INITIAL_TOP_PICK);
-  const [secondaryPicks] = useState<SecondaryPick[]>(INITIAL_SECONDARY);
+  const [topPick, setTopPick] = useState<TopPick | null>(null);
+  const [secondaryPicks, setSecondaryPicks] = useState<SecondaryPick[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=3')
+      .then((data) => {
+        if (data.results && data.results.length > 0) {
+          const first = data.results[0];
+          setTopPick({
+            title: first.title,
+            image: getTMDBImageUrl(first.poster_path, 'w500'),
+            matchPercentage: 95 + (first.id % 5),
+            category: getGenreName(first.genre_ids),
+            reason: "Top Pick for you this week",
+            description: first.overview || "A special cinematic selection curated based on your favorite movies.",
+            duration: formatDuration(first.id),
+            year: first.release_date ? new Date(first.release_date).getFullYear() : 2026
+          });
+
+          setSecondaryPicks(data.results.slice(1, 10).map((movie) => ({
+            id: movie.id,
+            title: movie.title,
+            image: getTMDBImageUrl(movie.poster_path, 'w500'),
+            reasonTag: `${90 + (movie.id % 10)}% Match`,
+            category: getGenreName(movie.genre_ids),
+            rating: movie.vote_average || 8.0,
+            year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2026
+          })));
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading recommendations:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -157,9 +76,19 @@ export default function RecommendedSection() {
     }
   };
 
+  if (loading || !topPick) {
+    return (
+      <section className="relative bg-[#000000] py-16 px-4 md:px-8 border-t border-[#121212]">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Predicting Taste Matrix...</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative bg-[#000000] py-16 px-4 md:px-8 select-none overflow-hidden z-10 border-t border-[#121212]">
-      
       {/* Dynamic low-opacity radial highlight glow behind Spotlight Card */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-[550px] h-[550px] bg-[#FF4C00]/5 blur-[130px] rounded-full pointer-events-none z-0 hidden lg:block" />
 
@@ -180,73 +109,64 @@ export default function RecommendedSection() {
 
       {/* MAIN CONTENT AREA */}
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* ZONE 1: TOP PICK SPOTLIGHT (Left, ~35% on Desktop - 4 of 12 cols) */}
+        {/* ZONE 1: TOP PICK SPOTLIGHT */}
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="group relative w-full rounded-2xl overflow-hidden border border-[#FF4C00]/30 hover:border-[#FF4C00] shadow-[0_0_15px_rgba(255,76,0,0.05)] hover:shadow-[0_0_20px_rgba(255,76,0,0.18)] transition-all duration-500 aspect-video lg:aspect-[2/3] max-h-[460px] lg:max-h-none">
             {/* Poster Image */}
             <img 
               src={topPick.image} 
               alt={topPick.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             />
+            {/* Dark Scrim overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
 
-            {/* Hover Actions Scrim */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 z-20">
-              <button className="flex items-center justify-center w-12 h-12 rounded-full bg-[#FF4C00] hover:bg-[#E04300] text-white hover:scale-110 transition-transform shadow-lg shadow-[#FF4C00]/20">
-                <Play size={20} fill="currentColor" className="ml-0.5" />
-              </button>
-              <button className="flex items-center justify-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white hover:scale-110 transition-transform">
-                <Plus size={20} />
-              </button>
+            {/* Match badge (Top Left) */}
+            <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] animate-pulse" />
+              <span className="text-[10px] font-black tracking-widest text-[#FF4C00] uppercase">
+                {topPick.matchPercentage}% AI MATCH
+              </span>
             </div>
 
-            {/* Top Match Badge (Top-Left) */}
-            <div className="absolute top-4 left-4 z-25 bg-[#FF4C00] text-black text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-lg">
-              ✦ Top Match
-            </div>
-
-            {/* Match Percentage Badge (Top-Right) */}
-            <div className="absolute top-4 right-4 z-25 bg-black border border-[#FF4C00] text-[#FF4C00] text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg">
-              {topPick.matchPercentage}% Match
-            </div>
-
-            {/* Subtle Gradient Shadow under Poster Details on Mobile */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent lg:hidden z-10" />
-            <div className="absolute bottom-4 left-4 right-4 z-15 lg:hidden">
-              <h3 className="text-xl font-bold text-white mb-0.5 leading-none">
+            {/* Spotlight Content Overlay */}
+            <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 z-20 flex flex-col gap-2.5">
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#FF4C00] uppercase tracking-widest">
+                {topPick.reason}
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-white leading-tight truncate">
                 {topPick.title}
               </h3>
-              <p className="text-[10px] font-medium text-zinc-400">
-                {topPick.reason}
+              <p className="text-xs text-zinc-300 font-medium leading-relaxed line-clamp-3 hidden sm:block">
+                {topPick.description}
               </p>
-            </div>
-          </div>
+              
+              <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-semibold mt-1">
+                <span>{topPick.year}</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                <span>{topPick.category}</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                <span>{topPick.duration}</span>
+              </div>
 
-          {/* Desktop Title & Details */}
-          <div className="hidden lg:flex flex-col gap-2 mt-1">
-            <h3 className="text-2xl font-black text-white leading-tight">
-              {topPick.title}
-            </h3>
-            <p className="text-sm font-semibold text-zinc-300">
-              {topPick.category} • <span className="text-zinc-500 font-medium">{topPick.duration} • {topPick.year}</span>
-            </p>
-            <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
-              {topPick.description}
-            </p>
-            <div className="inline-flex items-center gap-2 mt-1 bg-white/5 border border-white/5 rounded-xl px-4 py-2 self-start text-xs font-semibold text-zinc-300">
-              <span className="text-[#FF4C00]">★</span> {topPick.reason}
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 mt-3">
+                <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#FF4C00] hover:bg-[#E04300] active:scale-98 text-black text-xs font-black uppercase rounded-lg transition-all shadow-lg shadow-[#FF4C00]/20">
+                  <Play size={12} fill="currentColor" /> Play Now
+                </button>
+                <button className="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10">
+                  <Plus size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ZONE 2: SECONDARY PICKS SCROLL (Right, ~65% on Desktop - 8 of 12 cols) */}
-        <div className="lg:col-span-8 relative group/row w-full self-center">
-          
-          {/* Scroll Navigation Chevrons */}
-          <button
+        {/* ZONE 2: CAROUSEL ROW */}
+        <div className="lg:col-span-8 flex flex-col gap-4 group/row relative w-full overflow-hidden">
+          <button 
             onClick={() => scroll("left")}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
+            className="absolute -left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
             aria-label="Scroll left"
           >
             <ChevronLeft size={20} />
@@ -254,7 +174,7 @@ export default function RecommendedSection() {
 
           <button
             onClick={() => scroll("right")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
             aria-label="Scroll right"
           >
             <ChevronRight size={20} />
@@ -282,11 +202,8 @@ export default function RecommendedSection() {
               </div>
             ))}
           </div>
-
         </div>
-
       </div>
-
     </section>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import Image from 'next/image';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { IconType } from 'react-icons';
 import {
@@ -15,15 +14,16 @@ import {
   FiList,
   FiMoon,
   FiPlay,
-  FiPlus,
   FiSearch,
   FiSmile,
   FiStar,
   FiTrendingUp,
   FiZap,
 } from 'react-icons/fi';
+import { useSearchParams } from 'next/navigation';
 import Pagination from '@/components/common/Pagination';
 import MediaCard from '@/components/ui/card';
+import { getExploreMovies } from '@/data/explore/movies';
 
 interface Movie {
   id: string;
@@ -84,165 +84,11 @@ const MOODS: Mood[] = [
   },
 ];
 
-const SAMPLE_MOVIES: Movie[] = [
-  {
-    id: '1',
-    title: 'CyberPulse 2088',
-    rating: 8.9,
-    year: 2026,
-    duration: '2h 14m',
-    matchScore: 98,
-    genres: ['Sci-Fi', 'Cyberpunk', 'Action'],
-    moods: ['mind-bending', 'adrenaline'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '2',
-    title: 'Echoes of Eternity',
-    rating: 8.4,
-    year: 2025,
-    duration: '1h 58m',
-    matchScore: 92,
-    genres: ['Drama', 'Mystery'],
-    moods: ['emotional', 'mind-bending'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '3',
-    title: 'Neonate Drift',
-    rating: 7.8,
-    year: 2026,
-    duration: '2h 05m',
-    matchScore: 88,
-    genres: ['Action', 'Thriller'],
-    moods: ['adrenaline', 'dark-grim'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop',
-  },
-  {
-    id: '4',
-    title: 'Shadows in the Void',
-    rating: 9.1,
-    year: 2025,
-    duration: '2h 30m',
-    matchScore: 95,
-    genres: ['Sci-Fi', 'Horror'],
-    moods: ['dark-grim', 'mind-bending'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '5',
-    title: 'Midnight Horizon',
-    rating: 8.7,
-    year: 2026,
-    duration: '2h 08m',
-    matchScore: 94,
-    genres: ['Action', 'Mystery', 'Thriller'],
-    moods: ['adrenaline', 'dark-grim', 'emotional'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '6',
-    title: 'Quantum Rift',
-    rating: 9.0,
-    year: 2026,
-    duration: '2h 21m',
-    matchScore: 97,
-    genres: ['Sci-Fi', 'Mystery', 'Thriller'],
-    moods: ['mind-bending', 'emotional'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '7',
-    title: 'Iron Neon',
-    rating: 7.9,
-    year: 2025,
-    duration: '1h 49m',
-    matchScore: 86,
-    genres: ['Action', 'Cyberpunk'],
-    moods: ['adrenaline', 'dark-grim'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=800&auto=format&fit=crop',
-  },
-  {
-    id: '8',
-    title: 'Moonlit Protocol',
-    rating: 8.2,
-    year: 2024,
-    duration: '2h 03m',
-    matchScore: 90,
-    genres: ['Drama', 'Mystery', 'Sci-Fi'],
-    moods: ['emotional', 'mind-bending'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop',
-  },
-  {
-    id: '9',
-    title: 'Ashes of Tomorrow',
-    rating: 8.5,
-    year: 2026,
-    duration: '2h 17m',
-    matchScore: 93,
-    genres: ['Action', 'Drama', 'Thriller'],
-    moods: ['adrenaline', 'emotional'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '10',
-    title: 'Velvet Singularity',
-    rating: 7.6,
-    year: 2025,
-    duration: '1h 55m',
-    matchScore: 84,
-    genres: ['Drama', 'Mystery'],
-    moods: ['cozy', 'emotional'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&auto=format&fit=crop',
-  },
-  {
-    id: '11',
-    title: 'Ghost Signal',
-    rating: 8.8,
-    year: 2026,
-    duration: '2h 11m',
-    matchScore: 96,
-    genres: ['Horror', 'Sci-Fi', 'Mystery'],
-    moods: ['dark-grim', 'mind-bending'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1511715282680-fbf93a50e721?w=800&auto=format&fit=crop',
-    isAiRecommended: true,
-  },
-  {
-    id: '12',
-    title: 'Protocol Zero',
-    rating: 8.1,
-    year: 2024,
-    duration: '1h 52m',
-    matchScore: 89,
-    genres: ['Action', 'Sci-Fi', 'Thriller'],
-    moods: ['adrenaline', 'mind-bending'],
-    posterUrl:
-      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop',
-  },
-];
-
 const containerVariants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.07,
+      staggerChildren: 0.05,
     },
   },
 };
@@ -262,9 +108,10 @@ const itemVariants = {
   },
 };
 
-const PAGE_SIZE = 8;
+function ExploreContent() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q') || '';
 
-export default function ExplorePage() {
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -272,30 +119,51 @@ export default function ExplorePage() {
   const [showAiFilter, setShowAiFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch movies from TMDB API on page/filter change
+  useEffect(() => {
+    setLoading(true);
+    getExploreMovies(query, selectedGenre, currentPage)
+      .then((data) => {
+        // Map explore data and dynamic moods client side
+        const mapped = data.movies.map((m) => {
+          const moodsList: string[] = [];
+          if (m.genres.includes('Action') || m.genres.includes('Adventure')) moodsList.push('adrenaline');
+          if (m.genres.includes('Sci-Fi') || m.genres.includes('Mystery')) moodsList.push('mind-bending');
+          if (m.genres.includes('Animation') || m.genres.includes('Comedy')) moodsList.push('cozy');
+          if (m.genres.includes('Drama')) moodsList.push('emotional');
+          if (m.genres.includes('Horror') || m.genres.includes('Thriller')) moodsList.push('dark-grim');
+          
+          if (moodsList.length === 0) moodsList.push('cozy');
+
+          return { ...m, moods: moodsList };
+        });
+        setMovies(mapped);
+        setTotalPages(data.totalPages);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching explore movies:', err);
+        setLoading(false);
+      });
+  }, [query, selectedGenre, currentPage]);
+
   const filteredMovies = useMemo(() => {
-    return SAMPLE_MOVIES.filter(movie => {
-      const matchesGenre =
-        selectedGenre === 'All' || movie.genres.includes(selectedGenre);
+    return movies.filter((movie) => {
       const matchesMood = !selectedMood || movie.moods.includes(selectedMood);
       const matchesAi = !showAiFilter || movie.isAiRecommended === true;
-
-      return matchesGenre && matchesMood && matchesAi;
+      return matchesMood && matchesAi;
     });
-  }, [selectedGenre, selectedMood, showAiFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredMovies.length / PAGE_SIZE));
-
-  const paginatedMovies = useMemo(() => {
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
-
-    return filteredMovies.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [currentPage, filteredMovies]);
+  }, [movies, selectedMood, showAiFilter]);
 
   const toggleSave = (movieId: string) => {
-    setSavedIds(currentIds =>
+    setSavedIds((currentIds) =>
       currentIds.includes(movieId)
-        ? currentIds.filter(id => id !== movieId)
-        : [...currentIds, movieId],
+        ? currentIds.filter((id) => id !== movieId)
+        : [...currentIds, movieId]
     );
   };
 
@@ -306,16 +174,12 @@ export default function ExplorePage() {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters =
-    selectedGenre !== 'All' || selectedMood !== null || showAiFilter;
-
-  const startItem = filteredMovies.length
-    ? (currentPage - 1) * PAGE_SIZE + 1
-    : 0;
-  const endItem = Math.min(currentPage * PAGE_SIZE, filteredMovies.length);
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
   };
+
+  const hasActiveFilters =
+    selectedGenre !== 'All' || selectedMood !== null || showAiFilter || query;
 
   return (
     <section className="min-h-screen w-full bg-black text-[#E5E5E5]">
@@ -324,7 +188,6 @@ export default function ExplorePage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <FiTrendingUp className="h-4 w-4 text-[#FF4C00]" />
-
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#FF4C00]">
                 Explore
               </span>
@@ -335,23 +198,22 @@ export default function ExplorePage() {
             </h1>
 
             <p className="max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-              Discover movies tailored by AI algorithms and personal mood
-              preferences.
+              Discover movies tailored by AI algorithms and personal mood preferences.
             </p>
           </div>
         </section>
 
+        {/* AI MOOD ENGINE */}
         <section className="mt-8 space-y-4">
           <div className="flex items-center gap-2">
             <FiSmile className="h-4 w-4 text-[#FF4C00]" />
-
             <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#FF4C00]">
               AI Mood Engine
             </h2>
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {MOODS.map(mood => {
+            {MOODS.map((mood) => {
               const isActive = selectedMood === mood.id;
               const MoodIcon = mood.Icon;
 
@@ -374,9 +236,7 @@ export default function ExplorePage() {
                       isActive ? 'text-[#FF4C00]' : 'text-zinc-500'
                     }`}
                   />
-
                   <span>{mood.label}</span>
-
                   {isActive && (
                     <motion.div
                       layoutId="activeMood"
@@ -394,6 +254,7 @@ export default function ExplorePage() {
           </div>
         </section>
 
+        {/* GENRES & CONTROLS */}
         <section className="mt-8 rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] p-3 sm:p-4">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto scrollbar-none">
@@ -401,7 +262,7 @@ export default function ExplorePage() {
                 <FiFilter className="h-3.5 w-3.5" />
               </div>
 
-              {GENRES.map(genre => {
+              {GENRES.map((genre) => {
                 const isActive = selectedGenre === genre;
 
                 return (
@@ -428,7 +289,7 @@ export default function ExplorePage() {
               <button
                 type="button"
                 onClick={() => {
-                  setShowAiFilter(current => !current);
+                  setShowAiFilter((current) => !current);
                   setCurrentPage(1);
                 }}
                 className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
@@ -442,7 +303,6 @@ export default function ExplorePage() {
                     showAiFilter ? 'text-[#FF4C00]' : 'text-zinc-600'
                   }`}
                 />
-
                 <span className="hidden sm:inline">90%+ AI Match</span>
                 <span className="sm:hidden">AI</span>
               </button>
@@ -486,16 +346,12 @@ export default function ExplorePage() {
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-zinc-500">
-            <span className="font-semibold text-white">
-              {filteredMovies.length}
-            </span>{' '}
-            {filteredMovies.length === 1 ? 'movie' : 'movies'} found
-            {filteredMovies.length > 0 && (
-              <>
-                {' '}
-                - showing {startItem}-{endItem} of {filteredMovies.length}
-              </>
+            {query && (
+              <span className="mr-2">
+                Search results for: <span className="font-semibold text-white">"{query}"</span>
+              </span>
             )}
+            <span className="font-semibold text-white">{filteredMovies.length}</span> titles found
           </p>
 
           {hasActiveFilters && (
@@ -509,67 +365,64 @@ export default function ExplorePage() {
           )}
         </div>
 
-        <AnimatePresence mode="wait">
-          {filteredMovies.length > 0 ? (
-            <motion.div
-              key={`${viewMode}-${selectedGenre}-${selectedMood}-${showAiFilter}-${currentPage}`}
-              initial={{
-                opacity: 0,
-                y: 12,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={{
-                opacity: 0,
-                y: -12,
-              }}
-              transition={{
-                duration: 0.25,
-              }}
-              className="mt-6"
-            >
-              {viewMode === 'grid' ? (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4"
-                >
-                  {paginatedMovies.map(movie => (
-                    <MovieCard
-                      key={movie.id}
-                      movie={movie}
-                      isSaved={savedIds.includes(movie.id)}
-                      onToggleSave={toggleSave}
-                    />
-                  ))}
-                </motion.div>
-              ) : (
-                <motion.div
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="flex flex-col gap-4"
-                >
-                  {paginatedMovies.map(movie => (
-                    <MovieListItem
-                      key={movie.id}
-                      movie={movie}
-                      isSaved={savedIds.includes(movie.id)}
-                      onToggleSave={toggleSave}
-                    />
-                  ))}
-                </motion.div>
-              )}
-            </motion.div>
-          ) : (
-            <EmptyState onReset={resetFilters} />
-          )}
-        </AnimatePresence>
+        {/* LOADER / RESULTS */}
+        {loading ? (
+          <div className="flex min-h-[350px] flex-col items-center justify-center">
+            <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+            <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Scanning database...</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {filteredMovies.length > 0 ? (
+              <motion.div
+                key={`${viewMode}-${selectedGenre}-${selectedMood}-${showAiFilter}-${currentPage}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+                className="mt-6"
+              >
+                {viewMode === 'grid' ? (
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4"
+                  >
+                    {filteredMovies.map((movie) => (
+                      <MovieCard
+                        key={movie.id}
+                        movie={movie}
+                        isSaved={savedIds.includes(movie.id)}
+                        onToggleSave={toggleSave}
+                      />
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="flex flex-col gap-4"
+                  >
+                    {filteredMovies.map((movie) => (
+                      <MovieListItem
+                        key={movie.id}
+                        movie={movie}
+                        isSaved={savedIds.includes(movie.id)}
+                        onToggleSave={toggleSave}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+              </motion.div>
+            ) : (
+              <EmptyState onReset={resetFilters} />
+            )}
+          </AnimatePresence>
+        )}
 
-        {filteredMovies.length > 0 && (
+        {!loading && filteredMovies.length > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -579,6 +432,18 @@ export default function ExplorePage() {
         )}
       </div>
     </section>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={
+      <section className="min-h-screen w-full bg-black flex flex-col items-center justify-center">
+        <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+      </section>
+    }>
+      <ExploreContent />
+    </Suspense>
   );
 }
 
@@ -606,22 +471,15 @@ function MovieListItem({ movie, isSaved, onToggleSave }: MovieCardProps) {
   return (
     <motion.article
       variants={itemVariants}
-      whileHover={{
-        x: 4,
-      }}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] transition-all hover:border-[#FF4C00]/40 sm:flex-row"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] transition-all hover:border-[#FF4C00]/30 hover:bg-[#121212] sm:flex-row"
     >
-      <div className="relative h-64 w-full shrink-0 overflow-hidden sm:h-44 sm:w-32">
-        <Image
+      <div className="relative aspect-[16/9] w-full overflow-hidden sm:aspect-[2/3] sm:w-[140px] md:w-[160px] shrink-0">
+        <img
           src={movie.posterUrl}
           alt={movie.title}
-          fill
-          sizes="128px"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
-
         <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent" />
-
         <div className="absolute left-3 top-3 rounded-full bg-black/70 px-2 py-1 text-[10px] font-bold text-[#FF6A2A] backdrop-blur-md">
           {movie.matchScore}% Match
         </div>
@@ -633,10 +491,9 @@ function MovieListItem({ movie, isSaved, onToggleSave }: MovieCardProps) {
             <span>
               {movie.year} - {movie.duration}
             </span>
-
             <span className="flex items-center gap-1 text-amber-400">
               <FiStar className="h-3.5 w-3.5 fill-current" />
-              {movie.rating}
+              {movie.rating.toFixed(1)}
             </span>
           </div>
 
@@ -645,7 +502,7 @@ function MovieListItem({ movie, isSaved, onToggleSave }: MovieCardProps) {
           </h3>
 
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {movie.genres.map(genre => (
+            {movie.genres.map((genre) => (
               <span
                 key={genre}
                 className="rounded-md bg-[#1A1A1A] px-2 py-1 text-[10px] text-zinc-500"
@@ -694,14 +551,8 @@ function MovieListItem({ movie, isSaved, onToggleSave }: MovieCardProps) {
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
     <motion.div
-      initial={{
-        opacity: 0,
-        scale: 0.98,
-      }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-      }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
       className="mt-6 flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] px-6 text-center"
     >
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FF4C00]/10">
@@ -709,7 +560,6 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       </div>
 
       <h3 className="text-lg font-bold text-white">No movies found</h3>
-
       <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">
         No movies match your current search and filter preferences.
       </p>

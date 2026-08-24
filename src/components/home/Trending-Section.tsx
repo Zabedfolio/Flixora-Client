@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Flame, Play, Plus, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Flame, ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "@/components/ui/card";
+import { getTrendingNow } from "@/data/home/trendingNow";
 
 interface TrendingItem {
   id: number;
@@ -15,19 +16,22 @@ interface TrendingItem {
   views: string;
 }
 
-const TRENDING_ITEMS: TrendingItem[] = [
-  { id: 1, rank: 1, title: "Project Zero: Genesis", image: "/movies/fury.jpg", category: "Sci-Fi / Action", year: 2026, views: "4.2M" },
-  { id: 2, rank: 2, title: "Tokyo Cyber-Run", image: "/movies/tokyo.jpg", category: "Anime / Cyberpunk", year: 2026, views: "3.8M" },
-  { id: 3, rank: 3, title: "The Silent Cosmos", image: "/movies/cosmos.jpg", category: "Documentary", year: 2026, views: "3.1M" },
-  { id: 4, rank: 4, title: "Shadows in the Neon", image: "/movies/neon.jpg", category: "Thriller / Cyberpunk", year: 2025, views: "2.7M" },
-  { id: 5, rank: 5, title: "Chrono Drift", image: "/movies/chrono.jpg", category: "Adventure / Fantasy", year: 2025, views: "2.3M" },
-  { id: 6, rank: 6, title: "Echoes of Eternity", image: "/movies/echoes.jpg", category: "Drama / Romance", year: 2024, views: "1.9M" },
-  { id: 7, rank: 7, title: "Fury: Born of War", image: "/movies/fury.jpg", category: "Action / War", year: 2025, views: "1.6M" },
-  { id: 8, rank: 8, title: "The Silent Cosmos II", image: "/movies/cosmos.jpg", category: "Sci-Fi / Space", year: 2026, views: "1.2M" },
-];
-
 export default function TrendingNow() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<TrendingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTrendingNow()
+      .then((data) => {
+        setItems(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading trending:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -36,6 +40,17 @@ export default function TrendingNow() {
       scrollRef.current.scrollTo({ left: scrollLeft + offset, behavior: "smooth" });
     }
   };
+
+  if (loading) {
+    return (
+      <section className="relative bg-black py-16 px-4 md:px-8 border-t border-[#121212]">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Calculating Trends...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative bg-black py-16 px-4 md:px-8 select-none overflow-hidden z-10 border-t border-[#121212]">
@@ -81,7 +96,7 @@ export default function TrendingNow() {
           ref={scrollRef}
           className="flex gap-6 overflow-x-auto pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
         >
-          {TRENDING_ITEMS.map((item, index) => (
+          {items.map((item, index) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 24 }}
@@ -104,7 +119,7 @@ export default function TrendingNow() {
                   unsplash_url={item.image}
                   rating="9.0"
                   year={item.year.toString()}
-                  category={item.category.split(" / ")[0]}
+                  category={item.category}
                   duration={item.views}
                   isNew={item.rank <= 3}
                 />

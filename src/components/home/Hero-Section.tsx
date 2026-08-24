@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  Film,
-  Play,
   Send,
   Sparkles,
 } from 'lucide-react';
-import Link from 'next/link';
+import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
+import { getGenreName } from '@/data/home/newReleases';
 
 interface Slide {
   id: number;
@@ -22,51 +21,13 @@ interface Slide {
   aiMatch: number;
 }
 
-const SLIDES: Slide[] = [
-  {
-    id: 1,
-    image:
-      'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1600&auto=format&fit=crop',
-    title: 'Fury: Born of War',
-    subtitle:
-      'A grizzled tank commander makes tough decisions as he and his crew fight their way across Germany in April, 1945.',
-    highlight: 'Critically Acclaimed Action',
-    aiMatch: 96,
-  },
-  {
-    id: 2,
-    image:
-      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
-    title: 'The Silent Cosmos',
-    subtitle:
-      "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival and discover deep stellar secrets.",
-    highlight: 'Top Sci-Fi Blockbuster',
-    aiMatch: 99,
-  },
-  {
-    id: 3,
-    image:
-      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1600&auto=format&fit=crop',
-    title: 'Neon Shadows',
-    subtitle:
-      'When a ruthless crime syndicate threatens the cyberpunk streets of Gotham, a rogue detective takes the law into his own hands.',
-    highlight: "Viewer's Choice Thriller",
-    aiMatch: 93,
-  },
-];
-
-const AUTO_PLAY_INTERVAL = 5000;
+const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
 
-// --- AI quick-recommendation demo data -------------------------------------
-// Static/mock keyword matcher standing in for a real AI backend. Swap this
-// out for an actual API call (e.g. to your assistant/LLM endpoint) later.
 interface AiSuggestion {
   title: string;
   reason: string;
 }
-
-const AI_SUGGESTION_CHIPS = ['Something intense', 'Feel-good pick', 'Surprise me'];
 
 const AI_KEYWORD_MAP: { keywords: string[]; suggestion: AiSuggestion }[] = [
   {
@@ -107,16 +68,41 @@ function getAiSuggestion(query: string): AiSuggestion {
     Math.floor(Math.random() * AI_FALLBACK_SUGGESTIONS.length)
   ];
 }
-// -----------------------------------------------------------------------------
 
 export default function HeroBanner() {
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const [aiQuery, setAiQuery] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
   const [username, setUsername] = useState('Viewer');
+
+  // Load popular widescreen backdrops dynamically from TMDB API
+  useEffect(() => {
+    fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=1')
+      .then((data) => {
+        if (data.results && data.results.length > 0) {
+          // Take top 5 popular backdrops for widescreen banner slides
+          const mapped = data.results.slice(0, 5).map((movie) => ({
+            id: movie.id,
+            image: getTMDBImageUrl(movie.backdrop_path || movie.poster_path, 'original'),
+            title: movie.title,
+            subtitle: movie.overview,
+            highlight: `Popular in ${getGenreName(movie.genre_ids)}`,
+            aiMatch: 92 + (movie.id % 8),
+          }));
+          setSlides(mapped);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching banner backdrops:', err);
+        setLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -129,19 +115,17 @@ export default function HeroBanner() {
     }
   }, []);
 
-  const currentMovie = SLIDES[currentSlide];
-
   useEffect(() => {
-    if (!isAutoPlaying) {
+    if (!isAutoPlaying || slides.length === 0) {
       return;
     }
 
     const timer = setInterval(() => {
-      setCurrentSlide(previous => (previous + 1) % SLIDES.length);
+      setCurrentSlide(previous => (previous + 1) % slides.length);
     }, AUTO_PLAY_INTERVAL);
 
     return () => clearInterval(timer);
-  }, [isAutoPlaying]);
+  }, [isAutoPlaying, slides.length]);
 
   const pauseAutoPlay = () => {
     setIsAutoPlaying(false);
@@ -157,14 +141,14 @@ export default function HeroBanner() {
   };
 
   const goToNextSlide = () => {
-    setCurrentSlide(previous => (previous + 1) % SLIDES.length);
-
+    if (slides.length === 0) return;
+    setCurrentSlide(previous => (previous + 1) % slides.length);
     pauseAutoPlay();
   };
 
   const goToPreviousSlide = () => {
-    setCurrentSlide(previous => (previous - 1 + SLIDES.length) % SLIDES.length);
-
+    if (slides.length === 0) return;
+    setCurrentSlide(previous => (previous - 1 + slides.length) % slides.length);
     pauseAutoPlay();
   };
 
@@ -179,7 +163,6 @@ export default function HeroBanner() {
     setAiLoading(true);
     setAiSuggestion(null);
 
-    // Simulated "thinking" delay — replace with a real API call.
     window.setTimeout(() => {
       setAiSuggestion(getAiSuggestion(trimmed));
       setAiLoading(false);
@@ -191,15 +174,16 @@ export default function HeroBanner() {
     runAiSearch(aiQuery);
   };
 
-  const handleChipClick = (chip: string) => {
-    setAiQuery(chip);
-    runAiSearch(chip);
-  };
+  const currentMovie = slides[currentSlide];
 
-  const matchLabel = useMemo(
-    () => `${currentMovie.aiMatch}% AI Match`,
-    [currentMovie.aiMatch]
-  );
+  if (loading || slides.length === 0) {
+    return (
+      <section className="relative h-screen min-h-[640px] w-full bg-black flex flex-col items-center justify-center">
+        <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+        <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Synchronizing Spotlight...</p>
+      </section>
+    );
+  }
 
   return (
     <section className="relative h-screen min-h-[640px] w-full overflow-hidden bg-black">
@@ -231,115 +215,97 @@ export default function HeroBanner() {
               backgroundImage: `url(${currentMovie.image})`,
             }}
           />
-
-          
-
         </motion.div>
       </AnimatePresence>
 
-      {/* Static Overlays (z-index 1, stays persistent across image transitions) */}
-      <div className="absolute inset-0 bg-linear-to-t from-black via-black/35 to-black/60 z-1" />
-      <div className="absolute inset-0 bg-black/60 z-1" />
+      {/* Static Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-1" />
+      <div className="absolute inset-0 bg-black/20 z-1" />
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:40px_40px] opacity-25 z-1" />
 
       {/* Content */}
       <div className="flex h-full items-center relative z-10">
-            {/* Ask Flix AI — quick recommendation bar */}
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 20,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.7,
-                delay: 0.7,
-              }}
-              className="mt-50  w-8/12   mx-auto "
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 20,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.7,
+            delay: 0.7,
+          }}
+          className="mt-50 w-11/12 md:w-8/12 mx-auto"
+        >
+          <div className="mb-6 text-center sm:text-left animate-in fade-in duration-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+            <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
+              Welcome, <span className="text-[#FF4C00]">{username}</span>!
+            </h2>
+            <p className="text-xs md:text-sm text-zinc-300 font-bold uppercase tracking-widest mt-2">
+              Our bot will help you find movies based on your mood
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleAiSubmit}
+            className="flex items-center gap-2 rounded-2xl border border-white/20 bg-[#000000]/60 p-2.5 backdrop-blur-lg focus-within:border-[#FF4C00] focus-within:shadow-[0_0_20px_rgba(255,76,0,0.25)] transition-all duration-300"
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00]/15 border border-[#FF4C00]/30">
+              <Bot size={16} className="text-[#FF4C00]" />
+            </div>
+
+            <input
+              type="text"
+              value={aiQuery}
+              onChange={(event) => setAiQuery(event.target.value)}
+              placeholder="Ask Flix AI what to watch tonight..."
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-zinc-400 focus:outline-none"
+            />
+
+            <button
+              type="submit"
+              disabled={aiLoading || !aiQuery.trim()}
+              aria-label="Ask Flix AI"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00] text-black transition-transform duration-200 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
             >
-              <div className="mb-6 text-center sm:text-left animate-in fade-in duration-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-                <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
-                  Welcome, <span className="text-[#FF4C00]">{username}</span>!
-                </h2>
-                <p className="text-xs md:text-sm text-zinc-350 font-bold uppercase tracking-widest mt-2">
-                  Our bot will help you find movies based on your mood
-                </p>
-              </div>
+              <Send size={14} />
+            </button>
+          </form>
 
-              <form
-                onSubmit={handleAiSubmit}
-                className="flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 p-2.5 backdrop-blur-lg focus-within:border-[#FF4C00] focus-within:shadow-[0_0_20px_rgba(255,76,0,0.25)] transition-all duration-300"
+          {/* AI response */}
+          <AnimatePresence mode="wait">
+            {(aiLoading || aiSuggestion) && (
+              <motion.div
+                key={aiLoading ? 'loading' : aiSuggestion?.title}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+                className="mt-3 flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
               >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00]/15 border border-[#FF4C00]/30">
-                  <Bot size={16} className="text-[#FF4C00]" />
-                </div>
+                <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
 
-                <input
-                  type="text"
-                  value={aiQuery}
-                  onChange={(event) => setAiQuery(event.target.value)}
-                  placeholder="Ask Flix AI what to watch tonight..."
-                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white placeholder:text-zinc-350 focus:outline-none"
-                />
-
-                <button
-                  type="submit"
-                  disabled={aiLoading || !aiQuery.trim()}
-                  aria-label="Ask Flix AI"
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00] text-black transition-transform duration-200 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
-                >
-                  <Send size={14} />
-                </button>
-              </form>
-
-              {/* Quick suggestion chips */}
-              {/* <div className="mt-3 flex flex-wrap gap-2">
-                {AI_SUGGESTION_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => handleChipClick(chip)}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold text-zinc-300 transition-colors hover:border-[#FF4C00]/40 hover:text-[#FF4C00]"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div> */}
-
-              {/* AI response */}
-              <AnimatePresence mode="wait">
-                {(aiLoading || aiSuggestion) && (
-                  <motion.div
-                    key={aiLoading ? 'loading' : aiSuggestion?.title}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.25 }}
-                    className="mt-3 flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
-                  >
-                    <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
-
-                    {aiLoading ? (
-                      <span className="text-xs font-medium text-zinc-400">
-                        Flix is thinking
-                        <span className="animate-pulse">...</span>
-                      </span>
-                    ) : (
-                      <p className="text-xs font-medium leading-relaxed text-zinc-300">
-                        Try{' '}
-                        <span className="font-bold text-white">
-                          {aiSuggestion?.title}
-                        </span>{' '}
-                        — {aiSuggestion?.reason}.
-                      </p>
-                    )}
-                  </motion.div>
+                {aiLoading ? (
+                  <span className="text-xs font-medium text-zinc-400">
+                    Flix is thinking
+                    <span className="animate-pulse">...</span>
+                  </span>
+                ) : (
+                  <p className="text-xs font-medium leading-relaxed text-zinc-300">
+                    Try{' '}
+                    <span className="font-bold text-white">
+                      {aiSuggestion?.title}
+                    </span>{' '}
+                    — {aiSuggestion?.reason}.
+                  </p>
                 )}
-              </AnimatePresence>
-            </motion.div>       
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>       
       </div>
 
       {/* Previous */}
@@ -364,7 +330,7 @@ export default function HeroBanner() {
 
       {/* Indicators */}
       <div className="absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 gap-3">
-        {SLIDES.map((slide, index) => (
+        {slides.map((slide, index) => (
           <button
             key={slide.id}
             type="button"

@@ -1,15 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Star,
-  Play,
-  ArrowUpRight,
-} from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "@/components/ui/card";
+import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
+import { getGenreName, formatDuration } from "@/data/home/newReleases";
 
 type Movie = {
   id: number;
@@ -21,253 +16,148 @@ type Movie = {
   duration: string;
 };
 
-const movies: Movie[] = [
-  {
-    id: 1,
-    title: "The Last Stand",
-    category: "ACTION • DRAMA",
-    rating: "8.9",
-    year: "2026",
-    duration: "2h 12m",
-    image: "https://picsum.photos/seed/laststandmovie/700/1000",
-  },
-  {
-    id: 2,
-    title: "Dark Mission",
-    category: "ACTION • THRILLER",
-    rating: "8.7",
-    year: "2026",
-    duration: "2h 08m",
-    image: "https://picsum.photos/seed/darkmissionmovie/700/1000",
-  },
-  {
-    id: 3,
-    title: "Edge of Tomorrow",
-    category: "SCI-FI • ACTION",
-    rating: "8.5",
-    year: "2025",
-    duration: "2h 18m",
-    image: "https://picsum.photos/seed/edgeoftomorrowmovie/700/1000",
-  },
-  {
-    id: 4,
-    title: "After Rain",
-    category: "DRAMA • ROMANCE",
-    rating: "8.2",
-    year: "2025",
-    duration: "1h 56m",
-    image: "https://picsum.photos/seed/afterrainmovie/700/1000",
-  },
-  {
-    id: 5,
-    title: "The Final Target",
-    category: "ACTION • CRIME",
-    rating: "8.3",
-    year: "2026",
-    duration: "2h 05m",
-    image: "https://picsum.photos/seed/finaltargetmovie/700/1000",
-  },
-  {
-    id: 6,
-    title: "Neon Shadows",
-    category: "THRILLER • CYBERPUNK",
-    rating: "8.6",
-    year: "2026",
-    duration: "2h 21m",
-    image: "https://picsum.photos/seed/neonshadowsmovie/700/1000",
-  },
-  {
-    id: 7,
-    title: "Chrono Drift",
-    category: "ADVENTURE • FANTASY",
-    rating: "8.8",
-    year: "2026",
-    duration: "2h 14m",
-    image: "https://picsum.photos/seed/chronodriftmovie/700/1000",
-  },
-  {
-    id: 8,
-    title: "The Silent Cosmos",
-    category: "SCI-FI • SPACE",
-    rating: "9.0",
-    year: "2026",
-    duration: "2h 28m",
-    image: "https://picsum.photos/seed/silentcosmosmovie/700/1000",
-  },
-  {
-    id: 9,
-    title: "Echoes of Eternity",
-    category: "DRAMA • MYSTERY",
-    rating: "8.4",
-    year: "2025",
-    duration: "2h 02m",
-    image: "https://picsum.photos/seed/echoeseternitymovie/700/1000",
-  },
-  {
-    id: 10,
-    title: "Fury Born of War",
-    category: "ACTION • WAR",
-    rating: "8.7",
-    year: "2026",
-    duration: "2h 16m",
-    image: "https://picsum.photos/seed/furywarmovie/700/1000",
-  },
-  {
-    id: 11,
-    title: "Beyond the Unknown",
-    category: "SCI-FI • MYSTERY",
-    rating: "8.9",
-    year: "2026",
-    duration: "2h 24m",
-    image: "https://picsum.photos/seed/beyondunknownmovie/700/1000",
-  },
-  {
-    id: 12,
-    title: "Broken Silence",
-    category: "DRAMA • MYSTERY",
-    rating: "8.1",
-    year: "2025",
-    duration: "1h 49m",
-    image: "https://picsum.photos/seed/brokensilencemovie/700/1000",
-  },
-];
-
 export default function TitleRow() {
   const carouselRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [hoveredMovie, setHoveredMovie] = useState<number | null>(null);
+  useEffect(() => {
+    fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=4')
+      .then((data) => {
+        if (data.results && data.results.length > 0) {
+          setMovies(data.results.slice(0, 10).map((movie) => ({
+            id: movie.id,
+            title: movie.title,
+            category: getGenreName(movie.genre_ids),
+            rating: movie.vote_average > 0 ? movie.vote_average.toFixed(1) : '8.5',
+            image: getTMDBImageUrl(movie.poster_path, 'w500'),
+            year: movie.release_date ? new Date(movie.release_date).getFullYear().toString() : '2026',
+            duration: formatDuration(movie.id),
+          })));
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading popular films:", err);
+        setLoading(false);
+      });
+  }, []);
 
-  const scrollRight = () => {
-    if (!carouselRef.current) return;
-
-    carouselRef.current.scrollBy({
-      left: carouselRef.current.clientWidth,
-      behavior: "smooth",
-    });
+  const handleScrollLeft = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({
+        left: -800,
+        behavior: "smooth",
+      });
+    }
   };
 
-  const scrollLeft = () => {
-    if (!carouselRef.current) return;
-
-    carouselRef.current.scrollBy({
-      left: -carouselRef.current.clientWidth,
-      behavior: "smooth",
-    });
+  const handleScrollRight = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({
+        left: 800,
+        behavior: "smooth",
+      });
+    }
   };
 
-  const handleViewAll = () => {
-    router.push("/explore");
-  };
+  if (loading) {
+    return (
+      <section className="relative overflow-hidden bg-black py-16">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
+          <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
+          <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Populating Popular Hits...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="relative w-full overflow-hidden bg-black py-20">
-      {/* Background Glow */}
-      <div className="pointer-events-none absolute left-1/2 top-24 h-72 w-[650px] -translate-x-1/2 rounded-full bg-orange-500/[0.035] blur-[120px]" />
+    <section className="relative overflow-hidden bg-black py-16 sm:py-20 lg:py-24">
+      {/* Dynamic Background Highlights */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div className="absolute right-0 top-0 h-[450px] w-[600px] rounded-full bg-[#FF4C00]/5 blur-[120px]" />
+      </div>
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* ================= HEADER SECTION ================= */}
+        <div className="mb-10 flex items-end justify-between gap-6">
+          <div>
+            <div className="mb-2.5 flex items-center gap-2">
+              <span className="h-5 w-1 rounded-full bg-[#FF4C00]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF4C00]">
+                Trending Blocks
+              </span>
+            </div>
 
-        {/* ================= HEADER ================= */}
-        <div className="mb-7">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="h-5 w-1 rounded-full bg-orange-500" />
+            <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+              Popular <span className="text-[#FF4C00]">Movies</span>
+            </h2>
 
-            <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-orange-500">
-              Curated For You
-            </span>
+            <div className="mt-4 h-[2px] w-12 bg-[#FF4C00]" />
           </div>
 
-          <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl">
-            Popular{" "}
-            <span className="text-orange-500">Movies</span>
-          </h2>
+          {/* Controls */}
+          <div className="flex items-center gap-2.5 max-[500px]:hidden">
+            <button
+              onClick={handleScrollLeft}
+              className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-white/10
+                bg-black/60
+                text-white
+                transition-all
+                duration-300
+                hover:border-orange-500/50
+                hover:bg-orange-500
+                hover:text-black
+                active:scale-95
+              "
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={18} />
+            </button>
 
-          <p className="mt-2 text-sm text-zinc-400 sm:text-base">
-            Handpicked stories worth watching tonight
-          </p>
-        </div>
-
-        {/* Divider */}
-        <div className="mb-8 h-px w-full bg-white/10">
-          <div className="h-px w-20 bg-orange-500" />
+            <button
+              onClick={handleScrollRight}
+              className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-white/10
+                bg-black/60
+                text-white
+                transition-all
+                duration-300
+                hover:border-orange-500/50
+                hover:bg-orange-500
+                hover:text-black
+                active:scale-95
+              "
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
 
         {/* ================= CAROUSEL WRAPPER ================= */}
-        <div className="relative">
+        <div className="relative group/carousel">
+          {/* Left Shadow Scrim */}
+          <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-20 w-16 bg-gradient-to-r from-black to-transparent opacity-80" />
 
-          {/* LEFT ARROW */}
-          <button
-            onClick={scrollLeft}
-            aria-label="Previous movies"
-            className="
-              group
-              absolute
-              left-1
-              top-1/2
-              z-40
-              hidden
-              h-11
-              w-11
-              -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/15
-              bg-black/80
-              text-white
-              shadow-xl
-              backdrop-blur-md
-              transition-all
-              duration-300
-              hover:border-orange-500
-              hover:bg-orange-500
-              hover:shadow-[0_0_25px_rgba(249,115,22,0.35)]
-              sm:flex
-            "
-          >
-            <ChevronLeft
-              size={20}
-              className="transition-transform duration-300 group-hover:-translate-x-1"
-            />
-          </button>
-
-          {/* RIGHT ARROW */}
-          <button
-            onClick={scrollRight}
-            aria-label="Next movies"
-            className="
-              group
-              absolute
-              right-1
-              top-1/2
-              z-40
-              hidden
-              h-11
-              w-11
-              -translate-y-1/2
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/15
-              bg-black/80
-              text-white
-              shadow-xl
-              backdrop-blur-md
-              transition-all
-              duration-300
-              hover:border-orange-500
-              hover:bg-orange-500
-              hover:shadow-[0_0_25px_rgba(249,115,22,0.35)]
-              sm:flex
-            "
-          >
-            <ChevronRight
-              size={20}
-              className="transition-transform duration-300 group-hover:translate-x-1"
-            />
-          </button>
+          {/* Right Shadow Scrim */}
+          <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-20 w-16 bg-gradient-to-l from-black to-transparent opacity-80" />
 
           {/* ================= MOVIE CARDS ================= */}
           <div
@@ -312,7 +202,7 @@ export default function TitleRow() {
                     unsplash_url={movie.image}
                     rating={movie.rating}
                     year={movie.year}
-                    category={movie.category.split(" • ")[0]}
+                    category={movie.category}
                     duration={movie.duration}
                     isNew={index % 3 === 0}
                   />
@@ -321,95 +211,7 @@ export default function TitleRow() {
             })}
           </div>
         </div>
-
-        {/* ================= MOBILE ARROWS ================= */}
-        <div className="mt-5 flex justify-center gap-3 sm:hidden">
-          <button
-            onClick={scrollLeft}
-            aria-label="Previous movies"
-            className="
-              flex
-              h-10
-              w-10
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/15
-              bg-zinc-900
-              text-white
-              transition-all
-              hover:border-orange-500
-              hover:bg-orange-500
-            "
-          >
-            <ChevronLeft size={18} />
-          </button>
-
-          <button
-            onClick={scrollRight}
-            aria-label="Next movies"
-            className="
-              flex
-              h-10
-              w-10
-              items-center
-              justify-center
-              rounded-full
-              border
-              border-white/15
-              bg-zinc-900
-              text-white
-              transition-all
-              hover:border-orange-500
-              hover:bg-orange-500
-            "
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-
-        {/* ================= BOTTOM ================= */}
-        <div className="mt-7 flex items-center justify-between border-t border-white/10 pt-5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-300">
-            <span className="text-orange-500">{movies.length}</span>{" "}
-            Titles in Collection
-          </span>
-
-          <button
-            onClick={handleViewAll}
-            className="
-              group
-              flex
-              items-center
-              gap-2
-              text-xs
-              font-bold
-              uppercase
-              tracking-[0.12em]
-              text-white
-              transition-all
-              duration-300
-              hover:text-orange-500
-            "
-          >
-            View All
-
-            <ArrowUpRight
-              size={15}
-              className="
-                text-orange-500
-                transition-transform
-                duration-300
-                group-hover:-translate-y-1
-                group-hover:translate-x-1
-              "
-            />
-          </button>
-        </div>
       </div>
-
-    
     </section>
   );
 }
