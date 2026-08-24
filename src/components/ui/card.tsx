@@ -14,6 +14,21 @@ interface CardProps {
   isNew?: boolean;
 }
 
+const getColorFromTitle = (title: string): string => {
+  const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colors = [
+    'rgba(255, 76, 0, 0.35)',   // Orange
+    'rgba(168, 85, 247, 0.35)', // Purple
+    'rgba(0, 229, 255, 0.35)',  // Cyan
+    'rgba(255, 215, 0, 0.35)',  // Gold
+    'rgba(236, 72, 153, 0.35)',  // Pink
+    'rgba(59, 130, 246, 0.35)',  // Blue
+    'rgba(14, 165, 233, 0.35)',  // Light Blue
+    'rgba(244, 63, 94, 0.35)',   // Rose
+  ];
+  return colors[hash % colors.length];
+};
+
 export default function MediaCard({
   title,
   unsplash_url,
@@ -76,9 +91,16 @@ export default function MediaCard({
 
   return (
     <div className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer">
+      {/* Blurred Poster-Colored Glow behind the Card */}
+      <div 
+        className="absolute inset-x-[-50px] inset-y-[-50px] rounded-[50px] opacity-0 group-hover:opacity-100 blur-[50px] pointer-events-none transition-all duration-500 z-0"
+        style={{
+          background: `radial-gradient(circle, ${getColorFromTitle(title)} 0%, transparent 70%)`
+        }}
+      />
       
       {/* CARD POSTER WRAPPER */}
-      <div className="relative aspect-[2/3] w-full rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/40 group-hover:shadow-[0_0_20px_rgba(255,76,0,0.15)] transition-all duration-300">
+      <div className="relative z-10 aspect-[2/3] w-full rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/40 group-hover:shadow-[0_0_20px_rgba(255,76,0,0.15)] transition-all duration-300">
         
         {/* Poster Image */}
         <img 
@@ -147,7 +169,7 @@ export default function MediaCard({
       </div>
 
       {/* METADATA CONTENT AREA */}
-      <div className="flex flex-col gap-1 px-1">
+      <div className="relative z-10 flex flex-col gap-1 px-1">
         <h4 className="text-sm font-extrabold text-white group-hover:text-[#FF4C00] transition-colors truncate">
           {title}
         </h4>
