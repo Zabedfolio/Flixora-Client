@@ -9,6 +9,7 @@ import {
   Play,
   ArrowUpRight,
 } from "lucide-react";
+import MediaCard from "@/components/ui/card";
 
 type Movie = {
   id: number;
@@ -284,15 +285,10 @@ export default function TitleRow() {
             "
           >
             {movies.map((movie, index) => {
-              const isHovered = hoveredMovie === movie.id;
-
               return (
-                <article
+                <div
                   key={movie.id}
-                  onMouseEnter={() => setHoveredMovie(movie.id)}
-                  onMouseLeave={() => setHoveredMovie(null)}
                   className="
-                    group
                     min-w-[calc((100%-60px)/4)]
                     max-w-[calc((100%-60px)/4)]
                     flex-[0_0_calc((100%-60px)/4)]
@@ -311,247 +307,16 @@ export default function TitleRow() {
                     max-[500px]:flex-[0_0_100%]
                   "
                 >
-                  <div
-                    className="
-                      relative
-                      aspect-[3/4.35]
-                      overflow-hidden
-                      rounded-2xl
-                      border
-                      border-white/10
-                      bg-zinc-950
-                      shadow-2xl
-                      transition-all
-                      duration-500
-                      ease-out
-                      group-hover:-translate-y-2
-                      group-hover:border-orange-500/50
-                      group-hover:shadow-[0_25px_70px_rgba(0,0,0,0.75)]
-                    "
-                  >
-                    {/* ================= IMAGE ================= */}
-                    <div
-                      className={`
-                        absolute
-                        inset-0
-                        bg-cover
-                        bg-center
-                        ease-in-out
-                        ${
-                          isHovered
-                            ? "animate-[movieSpin_2s_ease-in-out]"
-                            : ""
-                        }
-                      `}
-                      style={{
-                        backgroundImage: `url("${movie.image}")`,
-                      }}
-                    />
-
-                    {/* Image Overlay */}
-                    <div
-                      className="
-                        pointer-events-none
-                        absolute
-                        inset-0
-                        bg-black/0
-                        transition-all
-                        duration-500
-                        group-hover:bg-black/10
-                      "
-                    />
-
-                    {/* Dark Gradient */}
-                    <div
-                      className="
-                        absolute
-                        inset-0
-                        bg-gradient-to-t
-                        from-black
-                        via-black/25
-                        to-transparent
-                        opacity-85
-                        transition-opacity
-                        duration-500
-                        group-hover:opacity-100
-                      "
-                    />
-
-                    {/* Orange Hover Glow */}
-                    <div
-                      className="
-                        pointer-events-none
-                        absolute
-                        -bottom-24
-                        left-1/2
-                        h-48
-                        w-48
-                        -translate-x-1/2
-                        rounded-full
-                        bg-orange-500/30
-                        opacity-0
-                        blur-[70px]
-                        transition-all
-                        duration-500
-                        group-hover:opacity-100
-                      "
-                    />
-
-                    {/* Top Shine */}
-                    <div
-                      className="
-                        pointer-events-none
-                        absolute
-                        inset-x-0
-                        top-0
-                        h-32
-                        bg-gradient-to-b
-                        from-white/15
-                        to-transparent
-                        opacity-0
-                        transition-opacity
-                        duration-500
-                        group-hover:opacity-100
-                      "
-                    />
-
-                    {/* ================= RATING ================= */}
-                    <div className="absolute right-3 top-3 z-20">
-                      <div
-                        className="
-                          flex
-                          items-center
-                          gap-1.5
-                          rounded-lg
-                          border
-                          border-white/15
-                          bg-black/75
-                          px-2.5
-                          py-1.5
-                          text-xs
-                          font-bold
-                          text-white
-                          backdrop-blur-md
-                          transition-all
-                          duration-300
-                          group-hover:scale-105
-                          group-hover:border-orange-500/60
-                        "
-                      >
-                        <Star
-                          size={12}
-                          fill="currentColor"
-                          className="text-orange-500"
-                        />
-
-                        {movie.rating}
-                      </div>
-                    </div>
-
-                    {/* ================= PLAY BUTTON ================= */}
-                    <button
-                      aria-label={`Play ${movie.title}`}
-                      className="
-                        absolute
-                        left-1/2
-                        top-1/2
-                        z-30
-                        flex
-                        h-12
-                        w-12
-                        -translate-x-1/2
-                        -translate-y-1/2
-                        scale-75
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-orange-500
-                        text-white
-                        opacity-0
-                        shadow-[0_0_35px_rgba(249,115,22,0.5)]
-                        transition-all
-                        duration-500
-                        group-hover:scale-100
-                        group-hover:opacity-100
-                        hover:scale-110
-                        hover:bg-orange-400
-                      "
-                    >
-                      <Play size={17} fill="currentColor" />
-                    </button>
-
-                    {/* ================= CARD CONTENT ================= */}
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span
-                          className="
-                            text-[10px]
-                            font-bold
-                            tracking-[0.25em]
-                            text-orange-500
-                            transition-all
-                            duration-300
-                            group-hover:tracking-[0.35em]
-                          "
-                        >
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-
-                        <span className="text-[10px] font-medium text-white/70">
-                          {movie.year}
-                        </span>
-                      </div>
-
-                      <h3
-                        className="
-                          translate-y-1
-                          text-lg
-                          font-extrabold
-                          leading-tight
-                          text-white
-                          transition-all
-                          duration-300
-                          group-hover:translate-y-0
-                          group-hover:text-orange-50
-                        "
-                      >
-                        {movie.title}
-                      </h3>
-
-                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-white/65">
-                        {movie.category}
-                      </p>
-
-                      {/* Hover Extra Info */}
-                      <div
-                        className="
-                          mt-3
-                          flex
-                          items-center
-                          justify-between
-                          overflow-hidden
-                          max-h-0
-                          translate-y-2
-                          opacity-0
-                          transition-all
-                          duration-500
-                          group-hover:max-h-10
-                          group-hover:translate-y-0
-                          group-hover:opacity-100
-                        "
-                      >
-                        <span className="text-[10px] font-medium text-white/60">
-                          {movie.duration}
-                        </span>
-
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-orange-500">
-                          Explore
-                          <ArrowUpRight size={12} />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
+                  <MediaCard
+                    title={movie.title}
+                    unsplash_url={movie.image}
+                    rating={movie.rating}
+                    year={movie.year}
+                    category={movie.category.split(" • ")[0]}
+                    duration={movie.duration}
+                    isNew={index % 3 === 0}
+                  />
+                </div>
               );
             })}
           </div>

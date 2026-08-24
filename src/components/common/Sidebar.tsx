@@ -184,6 +184,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
                 <Link
                   key={item.id}
                   href={item.href}
+                  onClick={onClose}
                   className={`group flex items-center gap-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-200 outline-none w-full relative rounded-xl overflow-visible ${
                     isCollapsed ? 'justify-center px-0' : 'pl-4 pr-3 ml-[-5px]'
                   } ${

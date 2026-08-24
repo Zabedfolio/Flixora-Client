@@ -23,6 +23,7 @@ import {
   FiZap,
 } from 'react-icons/fi';
 import Pagination from '@/components/common/Pagination';
+import MediaCard from '@/components/ui/card';
 
 interface Movie {
   id: string;
@@ -589,94 +590,15 @@ interface MovieCardProps {
 
 function MovieCard({ movie, isSaved, onToggleSave }: MovieCardProps) {
   return (
-    <motion.article
-      variants={itemVariants}
-      whileHover={{
-        y: -6,
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 20,
-      }}
-      className="group relative overflow-hidden rounded-2xl border border-[#1A1A1A] bg-[#0D0D0D] transition-all hover:border-[#FF4C00]/40 hover:shadow-xl hover:shadow-[#FF4C00]/5"
-    >
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#080808]">
-        <Image
-          src={movie.posterUrl}
-          alt={movie.title}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-
-        <div className="absolute inset-0 bg-linear-to-t from-[#0D0D0D] via-transparent to-black/50 opacity-90" />
-
-        <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full border border-[#FF4C00]/30 bg-black/70 px-2 py-1 text-[9px] font-bold text-[#FF6A2A] backdrop-blur-md sm:left-3 sm:top-3 sm:px-2.5 sm:py-1.5 sm:text-[11px]">
-          <FiZap className="h-3 w-3 text-[#FF4C00]" />
-          {movie.matchScore}% Match
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onToggleSave(movie.id)}
-          className={`absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur-md transition-all sm:right-3 sm:top-3 sm:h-9 sm:w-9 ${
-            isSaved
-              ? 'border-[#FF4C00] bg-[#FF4C00] text-white'
-              : 'border-[#1A1A1A] bg-black/60 text-zinc-300 hover:border-[#FF4C00]/50 hover:text-white'
-          }`}
-          aria-label={
-            isSaved
-              ? `Remove ${movie.title} from list`
-              : `Add ${movie.title} to list`
-          }
-        >
-          {isSaved ? (
-            <FiCheck className="h-4 w-4" />
-          ) : (
-            <FiPlus className="h-4 w-4" />
-          )}
-        </button>
-
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 backdrop-blur-[2px] transition-opacity duration-300 group-hover:opacity-100">
-          <button
-            type="button"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FF4C00] text-white shadow-lg shadow-[#FF4C00]/30 transition-transform duration-300 group-hover:scale-110 hover:bg-[#FF6A2A] sm:h-14 sm:w-14"
-            aria-label={`Play ${movie.title}`}
-          >
-            <FiPlay className="ml-0.5 h-5 w-5 fill-current sm:h-6 sm:w-6" />
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-3 p-3 sm:p-4">
-        <div className="flex items-center justify-between gap-2 text-[10px] text-zinc-500 sm:text-xs">
-          <span>
-            {movie.year} - {movie.duration}
-          </span>
-
-          <span className="flex items-center gap-1 font-semibold text-amber-400">
-            <FiStar className="h-3 w-3 fill-current sm:h-3.5 sm:w-3.5" />
-            {movie.rating}
-          </span>
-        </div>
-
-        <h3 className="line-clamp-1 text-sm font-bold text-[#E5E5E5] transition-colors group-hover:text-[#FF6A2A] sm:text-base">
-          {movie.title}
-        </h3>
-
-        <div className="flex flex-wrap gap-1.5">
-          {movie.genres.slice(0, 2).map(genre => (
-            <span
-              key={genre}
-              className="rounded-md bg-[#1A1A1A] px-2 py-1 text-[9px] font-medium text-zinc-500 sm:text-[10px]"
-            >
-              {genre}
-            </span>
-          ))}
-        </div>
-      </div>
-    </motion.article>
+    <MediaCard
+      title={movie.title}
+      unsplash_url={movie.posterUrl}
+      rating={movie.rating.toFixed(1)}
+      year={movie.year.toString()}
+      category={movie.genres[0] || 'Movie'}
+      duration={movie.duration}
+      isNew={movie.isAiRecommended}
+    />
   );
 }
 

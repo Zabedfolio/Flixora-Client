@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Bookmark, Star, Calendar, Play, Info } from 'lucide-react';
+import MediaCard from '@/components/ui/card';
 
 const MY_LIST_CATALOG = [
   {
@@ -78,80 +79,19 @@ export default function DashboardMyListPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
-              {MY_LIST_CATALOG.map((item) => {
-                const titleStr = item.title;
-                const rating = item.vote_average;
-                const releaseYear = item.release_year;
-
-                return (
-                  <div 
-                    key={item.id}
-                    className="group relative flex flex-col gap-3 transition-transform duration-300 w-full animate-in fade-in duration-300"
-                  >
-                    <div className="relative w-full aspect-[2/3] rounded-2xl overflow-visible">
-                      <div className="absolute inset-0 rounded-2xl border border-zinc-900 group-hover:border-[#FF4C00]/30 group-hover:scale-103 transition-all duration-300" />
-
-                      <div className="w-full h-full rounded-2xl overflow-hidden bg-zinc-950">
-                        <img 
-                          src={item.unsplash_url} 
-                          alt={titleStr}
-                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300"
-                          loading="lazy"
-                        />
-                      </div>
-
-                      <div className="absolute inset-0 bg-black/95 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-4 z-10 border border-[#FF4C00]/20 select-none">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-xs font-black text-white leading-tight block truncate pr-6" title={titleStr}>
-                            {titleStr}
-                          </span>
-                          
-                          <div className="flex items-center gap-2 text-[10px] text-zinc-550 font-bold">
-                            <span className="flex items-center gap-0.5 text-[#FF4C00]">
-                              <Star size={10} fill="currentColor" /> {rating.toFixed(1)}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-0.5">
-                              <Calendar size={10} /> {releaseYear}
-                            </span>
-                          </div>
-
-                          {item.genres.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {item.genres.map((g: string, i: number) => (
-                                <span 
-                                  key={i} 
-                                  className="text-[8px] font-black uppercase bg-[#FF4C00]/10 border border-[#FF4C00]/25 px-1.5 py-0.5 rounded-md text-[#FF4C00]"
-                                >
-                                  {g}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          <button className="mt-3 w-full bg-[#FF4C00] text-black font-black text-[10px] uppercase tracking-wider py-2 rounded-lg text-center flex items-center justify-center gap-1.5 hover:scale-102 transition-all outline-none">
-                            <Play size={10} fill="currentColor" /> Watch Now
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1 mt-1 min-w-0">
-                      <span className="text-xs font-bold text-white truncate w-full group-hover:text-[#FF4C00] transition-colors" title={titleStr}>
-                        {titleStr}
-                      </span>
-                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-555 font-bold">
-                        <span className="flex items-center gap-0.5 text-zinc-450">
-                          <Star size={10} className="text-[#FF4C00]" fill="currentColor" /> {rating.toFixed(1)}
-                        </span>
-                        <span>•</span>
-                        <span className="uppercase text-[9px]">{item.type === 'tv' ? 'Series' : 'Movie'}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-12">
+              {MY_LIST_CATALOG.map((item) => (
+                <MediaCard
+                  key={item.id}
+                  title={item.title}
+                  unsplash_url={item.unsplash_url}
+                  rating={item.vote_average.toFixed(1)}
+                  year={item.release_year}
+                  category={item.type === 'tv' ? 'Series' : 'Movie'}
+                  duration={item.genres[0] || 'Saved'}
+                  isNew={false}
+                />
+              ))}
             </div>
           )}
         </div>

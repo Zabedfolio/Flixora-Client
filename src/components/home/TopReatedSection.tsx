@@ -3,6 +3,7 @@
 import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { Award, Star, Play, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import MediaCard from "@/components/ui/card";
 
 interface TopRatedItem {
   id: number;
@@ -23,12 +24,6 @@ const TOP_RATED: TopRatedItem[] = [
   { id: 6, title: "Fury: Born of War", image: "/movies/fury.jpg", category: "Action / War", year: 2025, rating: 8.3, certified: false },
   { id: 7, title: "Chrono Drift", image: "/movies/chrono.jpg", category: "Adventure / Fantasy", year: 2025, rating: 8.0, certified: false },
 ];
-
-const RANK_COLORS: Record<number, string> = {
-  1: "text-[#FFD700] border-[#FFD700]/40",
-  2: "text-[#C0C0C0] border-[#C0C0C0]/40",
-  3: "text-[#CD7F32] border-[#CD7F32]/40",
-};
 
 export default function TopRated() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -91,49 +86,17 @@ export default function TopRated() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="group/card flex-none w-[170px] sm:w-[210px] snap-start flex flex-col gap-2.5"
+              className="group/card flex-none w-[170px] sm:w-[210px] snap-start flex flex-col gap-2.5 animate-in fade-in"
             >
-              <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden border border-white/5 hover:border-[#FF4C00]/50 hover:scale-[1.05] hover:shadow-[0_0_15px_rgba(255,76,0,0.12)] transition-all duration-300 ease-out cursor-pointer">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-
-                <div className="absolute inset-0 bg-black/55 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3 z-10">
-                  <button className="w-10 h-10 rounded-full bg-[#FF4C00] flex items-center justify-center text-white scale-75 group-hover/card:scale-100 transition-all duration-300">
-                    <Play size={16} fill="currentColor" className="ml-0.5" />
-                  </button>
-                  <button className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white scale-75 group-hover/card:scale-100 transition-all duration-300 delay-[50ms]">
-                    <Plus size={16} />
-                  </button>
-                </div>
-
-                {/* Rank badge (top 3 get medal colors) */}
-                <div
-                  className={`absolute top-3 left-3 z-20 w-7 h-7 rounded-full flex items-center justify-center bg-black/80 border text-[11px] font-black ${
-                    RANK_COLORS[index + 1] ?? "text-zinc-300 border-white/20"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-
-                {/* Rating badge */}
-                <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-black border border-[#FF4C00] text-[#FF4C00] text-[10px] font-black px-2 py-1 rounded-full shadow-lg">
-                  <Star size={10} fill="currentColor" /> {item.rating.toFixed(1)}
-                </div>
-
-                {item.certified && (
-                  <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-[#FF4C00] text-black text-[9px] font-black uppercase px-2 py-1 rounded-full shadow-lg">
-                    <Award size={10} /> Certified
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col">
-                <h4 className="text-sm font-bold text-white truncate w-full group-hover/card:text-[#FF4C00] transition-colors leading-tight">
-                  {item.title}
-                </h4>
-                <p className="text-[10px] text-zinc-500 font-semibold mt-0.5 truncate">
-                  {item.category} • <span className="text-zinc-600">{item.year}</span>
-                </p>
-              </div>
+              <MediaCard
+                title={item.title}
+                unsplash_url={item.image}
+                rating={item.rating.toFixed(1)}
+                year={item.year.toString()}
+                category={item.category.split(" / ")[0]}
+                duration="2H 10M"
+                isNew={item.certified}
+              />
             </motion.div>
           ))}
         </div>

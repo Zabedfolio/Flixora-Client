@@ -12,6 +12,7 @@ import {
   Star,
 } from 'lucide-react';
 import Pagination from '@/components/common/Pagination';
+import MediaCard from '@/components/ui/card';
 
 type TrendingCategory = 'all' | 'movie' | 'tv' | 'anime';
 type TrendingSort = 'popular' | 'rating' | 'discussed';
@@ -383,119 +384,38 @@ export default function TrendingPage() {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
+                className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6"
               >
                 {paginatedItems.map((item, idx) => {
                   const rank = (currentPage - 1) * PAGE_SIZE + idx + 1;
-                  const isTop3 = rank <= 3;
 
                   return (
                     <motion.div
                       key={item.id}
                       variants={itemVariants}
-                      className="group relative flex w-full flex-col gap-3 transition-transform duration-300"
+                      className="relative flex w-full flex-col gap-3 transition-transform duration-300"
                     >
-                      <div className="relative aspect-[2/3] w-full overflow-visible rounded-2xl">
+                      <div className="pl-6 relative">
+                        {/* Big rank number for trending */}
                         <div
-                          className={`absolute inset-0 rounded-2xl transition-all duration-300 ${
-                            isTop3
-                              ? 'scale-[1.02] border border-[#FF4C00]/40 shadow-lg shadow-[#FF4C00]/5 group-hover:scale-105 group-hover:border-[#FF4C00]/80 group-hover:shadow-[#FF4C00]/15'
-                              : 'border border-zinc-900 group-hover:scale-[1.03] group-hover:border-[#FF4C00]/30'
-                          }`}
-                        />
-
-                        <div className="h-full w-full overflow-hidden rounded-2xl bg-zinc-950">
-                          <Image
-                            src={item.unsplash_url}
-                            alt={item.title}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                            className="object-cover opacity-90 transition-all duration-300 group-hover:opacity-100"
-                          />
-                        </div>
-
-                        {item.is_rising && (
-                          <div className="absolute right-2.5 top-2.5 z-20 flex items-center gap-1 rounded-lg border border-[#FF4C00]/30 bg-black/75 px-2 py-1 text-[#FF4C00] backdrop-blur-md shadow-sm">
-                            <Flame size={10} fill="currentColor" className="animate-pulse" />
-                            <span className="text-[8px] font-black uppercase tracking-wider">
-                              Hot
-                            </span>
-                          </div>
-                        )}
-
-                        <div
-                          className="absolute bottom-[-24px] left-[-16px] z-20 select-none text-7xl font-black italic leading-none tracking-tighter drop-shadow-2xl md:text-8xl"
+                          className="absolute bottom-16 left-[-22px] z-35 select-none text-6xl font-black italic leading-none tracking-tighter drop-shadow-2xl md:text-7xl"
                           style={{
-                            WebkitTextStroke: '2.5px #FF4C00',
+                            WebkitTextStroke: '2px #FF4C00',
                             color: '#000000',
                           }}
                         >
                           {rank}
                         </div>
 
-                        <div className="absolute inset-0 z-10 flex flex-col justify-end rounded-2xl border border-[#FF4C00]/20 bg-black/95 p-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
-                          <div className="flex flex-col gap-2">
-                            <span
-                              className="block truncate pr-6 text-xs font-black leading-tight text-white"
-                              title={item.title}
-                            >
-                              {item.title}
-                            </span>
-
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500">
-                              <span className="flex items-center gap-0.5 text-[#FF4C00]">
-                                <Star size={10} fill="currentColor" />
-                                {item.vote_average.toFixed(1)}
-                              </span>
-                              <span>-</span>
-                              <span className="flex items-center gap-0.5">
-                                <Calendar size={10} />
-                                {item.release_year}
-                              </span>
-                            </div>
-
-                            {item.genres.length > 0 && (
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {item.genres.map(genre => (
-                                  <span
-                                    key={genre}
-                                    className="rounded-md border border-[#FF4C00]/25 bg-[#FF4C00]/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-[#FF4C00]"
-                                  >
-                                    {genre}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            <button
-                              type="button"
-                              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#FF4C00] py-2 text-[10px] font-black uppercase tracking-wider text-black transition-all outline-none hover:scale-[1.02]"
-                            >
-                              <Play size={10} fill="currentColor" />
-                              Watch Trailer
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-1 flex min-w-0 flex-col gap-1 pl-12">
-                        <span
-                          className="w-full truncate text-xs font-bold text-white transition-colors group-hover:text-[#FF4C00]"
+                        <MediaCard
                           title={item.title}
-                        >
-                          {item.title}
-                        </span>
-
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500">
-                          <span className="flex items-center gap-0.5 text-zinc-400">
-                            <Star size={10} className="text-[#FF4C00]" fill="currentColor" />
-                            {item.vote_average.toFixed(1)}
-                          </span>
-                          <span>-</span>
-                          <span className="text-[9px] uppercase">
-                            {item.type === 'tv' ? 'Series' : 'Movie'}
-                          </span>
-                        </div>
+                          unsplash_url={item.unsplash_url}
+                          rating={item.vote_average.toFixed(1)}
+                          year={item.release_year}
+                          category={item.type === 'tv' ? 'Series' : 'Movie'}
+                          duration={item.genres[0] || 'Popular'}
+                          isNew={item.is_rising}
+                        />
                       </div>
                     </motion.div>
                   );
