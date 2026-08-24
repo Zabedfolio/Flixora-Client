@@ -9,6 +9,7 @@ import {
   Star,
 } from 'lucide-react';
 import Link from 'next/link';
+import MediaCard from '@/components/ui/card';
 
 interface Movie {
   id: number;
@@ -386,58 +387,17 @@ const MovieRow = ({ genre }: MovieRowProps) => {
                 duration: 0.5,
                 delay: Math.min(index * 0.03, 0.5),
               }}
-              className="group relative w-[145px] shrink-0 sm:w-[175px] md:w-[200px] lg:w-[215px]"
+              className="w-[145px] shrink-0 sm:w-[175px] md:w-[200px] lg:w-[215px]"
             >
-              <Link href={`/movies/${movie.id}`}>
-                {/* Poster */}
-                <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/5 bg-zinc-950 shadow-xl transition-all duration-500 group-hover:-translate-y-1 group-hover:border-[#FF4C00]/40 group-hover:shadow-[#FF4C00]/10">
-                  {/* Movie Image */}
-                  <img
-                    src={movie.image}
-                    alt={movie.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-
-                  {/* Dark Overlay */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent opacity-90" />
-
-                  {/* Orange Hover Overlay */}
-                  <div className="absolute inset-0 bg-[#FF4C00]/0 transition-colors duration-500 group-hover:bg-[#FF4C00]/10" />
-
-                  {/* Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FF4C00] text-white shadow-xl shadow-[#FF4C00]/30">
-                      <Play
-                        size={17}
-                        fill="currentColor"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rating */}
-                  <div className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-white/10 bg-black/70 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">
-                    <Star
-                      size={10}
-                      fill="currentColor"
-                      className="text-[#FF4C00]"
-                    />
-
-                    {movie.rating}
-                  </div>
-
-                  {/* Movie Info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h3 className="truncate text-sm font-bold text-white">
-                      {movie.title}
-                    </h3>
-
-                    <span className="mt-1 block text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-                      HD • Movie
-                    </span>
-                  </div>
-                </div>
-              </Link>
+              <MediaCard
+                title={movie.title}
+                unsplash_url={movie.image}
+                rating={movie.rating}
+                year="2026"
+                category={genre.title}
+                duration="2H 15M"
+                isNew={index % 4 === 0}
+              />
             </motion.div>
           ))}
         </div>

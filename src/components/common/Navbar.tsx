@@ -14,6 +14,7 @@ import SearchBar from './SearchBar';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import MyListModal from './MyListModal';
 
 interface NavItem {
   id: string;
@@ -85,6 +86,7 @@ export default function Navbar({
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isMyListModalOpen, setIsMyListModalOpen] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -130,6 +132,7 @@ export default function Navbar({
   }
 
   return (
+    <>
     <header className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/65 backdrop-blur-md border-b border-[#1A1A1A]/80 px-4 sm:px-6 lg:px-8 select-none transition-colors duration-300">
       {/* =========================================
           MAIN NAVBAR
@@ -161,12 +164,22 @@ export default function Navbar({
             {NAV_ITEMS.map(item => {
               const Icon = item.icon;
               const isActive = currentActiveTab === item.id;
+              const isMyList = item.id === 'mylist';
+
+              const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                if (isMyList) {
+                  e.preventDefault();
+                  setIsMyListModalOpen(true);
+                } else {
+                  handleTabClick(item.id);
+                }
+              };
 
               return (
                 <Link
                   key={item.id}
                   href={item.path}
-                  onClick={() => handleTabClick(item.id)}
+                  onClick={handleClick}
                   className={`flex items-center gap-2 text-sm font-semibold tracking-wide transition-all duration-200 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] rounded ${
                     isActive
                       ? 'text-[#FF4C00]'
@@ -310,12 +323,23 @@ export default function Navbar({
               {NAV_ITEMS.map(item => {
                 const Icon = item.icon;
                 const isActive = currentActiveTab === item.id;
+                const isMyList = item.id === 'mylist';
+
+                const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                  if (isMyList) {
+                    e.preventDefault();
+                    setIsMyListModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  } else {
+                    handleTabClick(item.id);
+                  }
+                };
 
                 return (
                   <Link
                     key={item.id}
                     href={item.path}
-                    onClick={() => handleTabClick(item.id)}
+                    onClick={handleClick}
                     className={`flex items-center justify-between text-base font-semibold tracking-wide py-3 px-4 rounded-lg transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] ${
                       isActive
                         ? 'bg-[#1A1A1A] text-[#FF4C00]'
@@ -434,12 +458,23 @@ export default function Navbar({
               {NAV_ITEMS.map(item => {
                 const Icon = item.icon;
                 const isActive = currentActiveTab === item.id;
+                const isMyList = item.id === 'mylist';
+
+                const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                  if (isMyList) {
+                    e.preventDefault();
+                    setIsMyListModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  } else {
+                    handleTabClick(item.id);
+                  }
+                };
 
                 return (
                   <Link
                     key={item.id}
                     href={item.path}
-                    onClick={() => handleTabClick(item.id)}
+                    onClick={handleClick}
                     className={`flex items-center justify-between text-lg font-bold py-3 px-4 rounded-xl transition-all min-h-[48px] w-full outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] ${
                       isActive
                         ? 'bg-[#FF4C00]/10 text-[#FF4C00]'
@@ -465,5 +500,8 @@ export default function Navbar({
         </div>
       )}
     </header>
+
+    <MyListModal isOpen={isMyListModalOpen} onClose={() => setIsMyListModalOpen(false)} />
+    </>
   );
 }

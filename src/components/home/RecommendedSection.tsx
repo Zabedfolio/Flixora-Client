@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Sparkles, Play, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import MediaCard from "@/components/ui/card";
 
 interface TopPick {
   title: string;
@@ -267,42 +268,17 @@ export default function RecommendedSection() {
             {secondaryPicks.map((pick) => (
               <div
                 key={pick.id}
-                className="group/card flex-none w-[160px] sm:w-[200px] snap-start flex flex-col gap-2.5"
+                className="group/card flex-none w-[160px] sm:w-[200px] snap-start flex flex-col gap-2.5 animate-in fade-in"
               >
-                {/* Movie Card Media Container */}
-                <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden border border-white/5 hover:border-[#FF4C00]/50 hover:scale-[1.05] hover:shadow-[0_0_15px_rgba(255,76,0,0.12)] transition-all duration-300 ease-out z-10 cursor-pointer">
-                  {/* Backdrop */}
-                  <img
-                    src={pick.image}
-                    alt={pick.title}
-                    className="w-full h-full object-cover"
-                  />
-
-                  {/* Play Scrim on Hover */}
-                  <div className="absolute inset-0 bg-black/55 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10">
-                    <div className="w-10 h-10 rounded-full bg-[#FF4C00] flex items-center justify-center text-white scale-75 group-hover/card:scale-100 transition-all duration-300">
-                      <Play size={16} fill="currentColor" className="ml-0.5" />
-                    </div>
-                  </div>
-
-                  {/* AI Reason chip tag (appears on hover) */}
-                  <div className="absolute bottom-3 left-3 z-20 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 max-w-[90%]">
-                    <span className="inline-block bg-black text-[#FF4C00] text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-lg border border-[#FF4C00]/25 truncate w-full">
-                      {pick.reasonTag}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card Meta Content */}
-                <div className="flex flex-col">
-                  <h4 className="text-sm font-bold text-white truncate w-full group-hover/card:text-[#FF4C00] transition-colors leading-tight">
-                    {pick.title}
-                  </h4>
-                  <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">
-                    {pick.category} • <span className="text-zinc-600">{pick.year}</span>
-                  </p>
-                </div>
-
+                <MediaCard
+                  title={pick.title}
+                  unsplash_url={pick.image}
+                  rating={pick.rating.toFixed(1)}
+                  year={pick.year.toString()}
+                  category={pick.category.split(" / ")[0]}
+                  duration={pick.reasonTag}
+                  isNew={false}
+                />
               </div>
             ))}
           </div>

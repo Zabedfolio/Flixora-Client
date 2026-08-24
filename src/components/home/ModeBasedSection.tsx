@@ -21,6 +21,7 @@ import {
   Star,
   type LucideIcon,
 } from "lucide-react";
+import MediaCard from "@/components/ui/card";
 
 export type MoodId =
   | "feel-good"
@@ -506,90 +507,23 @@ export default function MoodBasedPicks() {
                   </button>
                 </div>
               ) : (
-                filteredMovies.map((item) => {
-                  const isSaved = savedIds.includes(item.id);
-
-                  return (
-                    <motion.div
-                      key={item.id}
-                      variants={cardVariants}
-                      className="group/card flex flex-col gap-2.5"
-                    >
-                      <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden border border-white/5 hover:border-[#FF4C00]/50 hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(255,76,0,0.18)] transition-all duration-300 ease-out cursor-pointer bg-[#0A0A0A]">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
-                        />
-
-                        {/* Top Rating & Match Badge */}
-                        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
-                          <span className="bg-black/70 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-[#FF4C00]">
-                            {item.matchScore}% Match
-                          </span>
-                        </div>
-
-                        {/* Top Save Bookmark Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSave(item.id);
-                          }}
-                          className={`absolute top-2.5 right-2.5 z-20 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-all ${
-                            isSaved
-                              ? "bg-[#FF4C00] text-black"
-                              : "bg-black/60 text-white border border-white/10 hover:border-[#FF4C00]"
-                          }`}
-                        >
-                          {isSaved ? <Check size={14} /> : <Plus size={14} />}
-                        </button>
-
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/80 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 z-10 p-4 text-center">
-                          <p className="text-[11px] text-zinc-300 leading-snug font-medium">
-                            {item.blurb}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <button className="w-10 h-10 rounded-full bg-[#FF4C00] hover:bg-[#E04300] flex items-center justify-center text-black shadow-lg shadow-[#FF4C00]/30 transition-transform active:scale-95">
-                              <Play
-                                size={16}
-                                fill="currentColor"
-                                className="ml-0.5"
-                              />
-                            </button>
-                            <button
-                              onClick={() => toggleSave(item.id)}
-                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                                isSaved
-                                  ? "bg-[#FF4C00] text-black"
-                                  : "bg-white/10 hover:bg-white/20 border border-white/20 text-white"
-                              }`}
-                            >
-                              {isSaved ? <Check size={16} /> : <Plus size={16} />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Movie Info */}
-                      <div className="flex flex-col">
-                        <div className="flex items-center justify-between gap-1">
-                          <h4 className="text-sm font-bold text-white truncate group-hover/card:text-[#FF4C00] transition-colors leading-tight">
-                            {item.title}
-                          </h4>
-                          <span className="flex items-center gap-1 text-[10px] text-amber-400 font-bold shrink-0">
-                            <Star size={10} fill="currentColor" />
-                            {item.rating}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-zinc-500 font-semibold mt-0.5 truncate">
-                          {item.category} •{" "}
-                          <span className="text-zinc-600">{item.year}</span>
-                        </p>
-                      </div>
-                    </motion.div>
-                  );
-                })
+                filteredMovies.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    variants={cardVariants}
+                    className="w-full"
+                  >
+                    <MediaCard
+                      title={item.title}
+                      unsplash_url={item.image}
+                      rating={item.rating.toFixed(1)}
+                      year={item.year.toString()}
+                      category={item.category}
+                      duration={`${item.matchScore}% Match`}
+                      isNew={item.matchScore >= 95}
+                    />
+                  </motion.div>
+                ))
               )}
             </motion.div>
           </AnimatePresence>
