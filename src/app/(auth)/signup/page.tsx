@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { toast } from 'react-hot-toast';
+import { authClient } from '../lib/auth-client';
 
 export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -22,14 +23,31 @@ export const RegisterForm: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match!');
-      return;
-    }
-    console.log('Form Submitted:', formData);
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (formData.password !== formData.confirmPassword) {
+    toast.error('Passwords do not match!');
+    return;
+  }
+
+  const { data, error } = await authClient.signUp.email({
+    email: formData.email,
+    password: formData.password,
+    name: formData.fullName, 
+    callbackURL: "/", 
+  }, {
+    onRequest: (ctx) => {
+      // Optional: handle loading state
+    },
+    onSuccess: (ctx) => {
+      toast.success('Account created successfully!');
+    },
+    onError: (ctx) => {
+      toast.error(ctx.error.message);
+    },
+  });
+};
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 selection:bg-[#FF4C00] selection:text-white relative overflow-hidden">
@@ -147,7 +165,7 @@ export const RegisterForm: React.FC = () => {
         <p className="text-center text-xs text-zinc-400 mt-6 select-none">
           Already have an account?{' '}
           <Link
-            href="/auth/login"
+            href="/login"
             className="text-[#FF4C00] font-black hover:underline"
           >
             Sign In
