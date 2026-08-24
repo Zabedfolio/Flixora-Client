@@ -120,7 +120,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans relative">
-      <main className="pt-28 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-8">
+      <main className="pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-8">
         
         {/* PAGE HEADER */}
         <div className="flex flex-col gap-1.5 border-b border-[#1A1A1A] pb-5">

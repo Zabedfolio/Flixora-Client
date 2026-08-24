@@ -230,7 +230,7 @@ export default function MoodBasedPicks() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.25 }}
-              className="mb-8 flex flex-wrap items-center gap-2.5"
+              className="mb-8 flex overflow-x-auto sm:flex-wrap items-center gap-2.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {MOODS.map((mood) => {
                 const Icon = mood.icon;
@@ -243,7 +243,7 @@ export default function MoodBasedPicks() {
                   <button
                     key={mood.id}
                     onClick={() => setActiveMood(mood.id)}
-                    className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-200 outline-none cursor-pointer ${
+                    className={`relative flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-200 outline-none cursor-pointer ${
                       isActive
                         ? "bg-[#FF4C00] border-[#FF4C00] text-black shadow-[0_0_20px_rgba(255,76,0,0.25)]"
                         : "bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:border-white/20"
@@ -353,26 +353,28 @@ export default function MoodBasedPicks() {
 
         {/* ENERGY INTENSITY FILTER & SUMMARY BAR */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-3 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 flex items-center gap-1.5 shrink-0">
               <SlidersHorizontal size={12} className="text-[#FF4C00]" />
               Energy Intensity:
             </span>
-            {(["all", "relaxed", "balanced", "high"] as EnergyLevel[]).map(
-              (lvl) => (
-                <button
-                  key={lvl}
-                  onClick={() => setEnergyFilter(lvl)}
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${
-                    energyFilter === lvl
-                      ? "bg-white/10 text-white border border-white/20"
-                      : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  {lvl}
-                </button>
-              )
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {(["all", "relaxed", "balanced", "high"] as EnergyLevel[]).map(
+                (lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => setEnergyFilter(lvl)}
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${
+                      energyFilter === lvl
+                        ? "bg-white/10 text-white border border-white/20"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                )
+              )}
+            </div>
           </div>
 
           <div className="text-xs text-zinc-400 font-medium">

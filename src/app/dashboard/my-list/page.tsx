@@ -46,7 +46,7 @@ const MY_LIST_CATALOG = [
 export default function DashboardMyListPage() {
   return (
     <div className="min-h-screen bg-black font-sans text-white overflow-x-hidden w-full relative flex flex-col justify-between">
-      <main className="flex-grow pt-28 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none">
+      <main className="flex-grow pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none">
         
         <div className="flex flex-col gap-2.5 mb-8">
           <div className="flex items-center gap-2.5">

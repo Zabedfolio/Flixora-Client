@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
+  FaHome,
   FaCompass,
   FaFire,
   FaBookmark,
@@ -15,6 +16,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import MyListModal from './MyListModal';
+import { getWatchlistCount } from '@/data/watchlistStore';
 
 interface NavItem {
   id: string;
@@ -24,6 +26,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  {
+    id: 'home',
+    label: 'Home',
+    icon: FaHome,
+    path: '/',
+  },
   {
     id: 'explore',
     label: 'Explore',
@@ -87,12 +95,26 @@ export default function Navbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMyListModalOpen, setIsMyListModalOpen] = useState(false);
+  const [watchlistCount, setWatchlistCount] = useState(0);
+
+  useEffect(() => {
+    const updateCount = () => {
+      setWatchlistCount(getWatchlistCount());
+    };
+
+    updateCount();
+    window.addEventListener('watchlist-updated', updateCount);
+    return () => {
+      window.removeEventListener('watchlist-updated', updateCount);
+    };
+  }, []);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   // Resolve current active tab from route pathname if activeTab prop is empty
   const currentActiveTab = activeTab || (
+    pathname === '/' ? 'home' :
     pathname === '/trending' ? 'trending' :
     pathname === '/explore' ? 'explore' :
     pathname === '/my-list' ? 'mylist' : ''
@@ -137,7 +159,7 @@ export default function Navbar({
       {/* =========================================
           MAIN NAVBAR
       ========================================== */}
-      <nav className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4 ">
+      <nav className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4 w-full">
         {/* =========================================
             LEFT SECTION
         ========================================== */}
@@ -192,7 +214,7 @@ export default function Navbar({
 
                   {item.id === 'mylist' && (
                     <span className="bg-[#FF4C00] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-md">
-                      {myListCount}
+                      {watchlistCount}
                     </span>
                   )}
                 </Link>
@@ -311,6 +333,7 @@ export default function Navbar({
           </div>
         </div>
       </nav>
+    </header>
 
       {/* =========================================
           TABLET SLIDE DOWN MENU
@@ -354,7 +377,7 @@ export default function Navbar({
 
                     {item.id === 'mylist' && (
                       <span className="bg-[#FF4C00] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
-                        {myListCount}
+                        {watchlistCount}
                       </span>
                     )}
                   </Link>
@@ -489,7 +512,7 @@ export default function Navbar({
 
                     {item.id === 'mylist' && (
                       <span className="bg-[#FF4C00] text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
-                        {myListCount}
+                        {watchlistCount}
                       </span>
                     )}
                   </Link>
@@ -499,7 +522,6 @@ export default function Navbar({
           </div>
         </div>
       )}
-    </header>
 
     <MyListModal isOpen={isMyListModalOpen} onClose={() => setIsMyListModalOpen(false)} />
     </>

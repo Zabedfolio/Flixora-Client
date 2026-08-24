@@ -111,7 +111,7 @@ export default function RecommendedSection() {
       <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* ZONE 1: TOP PICK SPOTLIGHT */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="group relative w-full rounded-2xl overflow-hidden border border-[#FF4C00]/30 hover:border-[#FF4C00] shadow-[0_0_15px_rgba(255,76,0,0.05)] hover:shadow-[0_0_20px_rgba(255,76,0,0.18)] transition-all duration-500 aspect-video lg:aspect-[2/3] max-h-[460px] lg:max-h-none">
+          <div className="group relative w-full rounded-2xl overflow-hidden border border-[#FF4C00]/30 hover:border-[#FF4C00] shadow-[0_0_15px_rgba(255,76,0,0.05)] hover:shadow-[0_0_20px_rgba(255,76,0,0.18)] transition-all duration-500 aspect-[4/5] xs:aspect-video lg:aspect-[2/3] max-h-[460px] lg:max-h-none">
             {/* Poster Image */}
             <img 
               src={topPick.image} 
@@ -121,23 +121,25 @@ export default function RecommendedSection() {
             {/* Dark Scrim overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
 
-            {/* Match badge (Top Left) */}
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] animate-pulse" />
-              <span className="text-[10px] font-black tracking-widest text-[#FF4C00] uppercase">
-                {topPick.matchPercentage}% AI MATCH
-              </span>
-            </div>
-
             {/* Spotlight Content Overlay */}
             <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 z-20 flex flex-col gap-2.5">
-              <span className="text-[9px] sm:text-[10px] font-bold text-[#FF4C00] uppercase tracking-widest">
-                {topPick.reason}
-              </span>
+              {/* Badges Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] animate-pulse" />
+                  <span className="text-[9px] font-black tracking-widest text-[#FF4C00] uppercase">
+                    {topPick.matchPercentage}% AI MATCH
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+                  {topPick.reason}
+                </span>
+              </div>
+
               <h3 className="text-xl sm:text-2xl font-black text-white leading-tight truncate">
                 {topPick.title}
               </h3>
-              <p className="text-xs text-zinc-300 font-medium leading-relaxed line-clamp-3 hidden sm:block">
+              <p className="text-xs text-zinc-350 font-medium leading-relaxed line-clamp-2 hidden sm:block">
                 {topPick.description}
               </p>
               
