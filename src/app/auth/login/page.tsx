@@ -30,7 +30,7 @@ export const LoginForm: React.FC = () => {
       ...formData,
       [name]: updatedValue,
     };
-    
+
     setFormData(updatedData);
 
     // Instant validation on input change
@@ -204,3 +204,5 @@ export const LoginForm: React.FC = () => {
 };
 
 export default LoginForm;
+
+// Remember: whole platform will be in dark theme and main theme color: #FF4C00
