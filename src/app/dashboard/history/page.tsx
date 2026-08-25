@@ -13,76 +13,15 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { getHistory, clearHistory, deleteHistoryItem, HistoryItem } from '@/data/historyStore';
+import EmptyState from '@/components/common/EmptyState';
 
-interface HistoryItem {
-  id: string;
-  title: string;
-  type: 'movie' | 'tv';
-  genres: string[];
-  unsplash_url: string;
-  watchedDate: string;
-  progressPercent?: number; // if continue watching
-  timeLeftMin?: number; // if continue watching
-}
 
-const INITIAL_HISTORY: HistoryItem[] = [
-  {
-    id: '1',
-    title: 'Wednesday',
-    type: 'tv',
-    genres: ['Mystery', 'Comedy'],
-    unsplash_url: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=400&auto=format&fit=crop',
-    watchedDate: '2026-08-20',
-    progressPercent: 75,
-    timeLeftMin: 12
-  },
-  {
-    id: '2',
-    title: 'Avatar: The Way of Water',
-    type: 'movie',
-    genres: ['Action', 'Adventure'],
-    unsplash_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400&auto=format&fit=crop',
-    watchedDate: '2026-08-19',
-    progressPercent: 40,
-    timeLeftMin: 110
-  },
-  {
-    id: '3',
-    title: 'Stranger Things',
-    type: 'tv',
-    genres: ['Sci-Fi', 'Mystery'],
-    unsplash_url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=400&auto=format&fit=crop',
-    watchedDate: '2026-08-18'
-  },
-  {
-    id: '4',
-    title: 'Demon Slayer: Kimetsu no Yaiba',
-    type: 'tv',
-    genres: ['Animation', 'Anime'],
-    unsplash_url: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=400&auto=format&fit=crop',
-    watchedDate: '2026-08-17'
-  },
-  {
-    id: '5',
-    title: 'Oppenheimer',
-    type: 'movie',
-    genres: ['Drama', 'History'],
-    unsplash_url: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=400&auto=format&fit=crop',
-    watchedDate: '2026-08-16',
-    progressPercent: 85,
-    timeLeftMin: 27
-  },
-  {
-    id: '6',
-    title: 'Attack on Titan',
-    type: 'tv',
-    genres: ['Animation', 'Anime'],
-    unsplash_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=400&auto=format&fit=crop',
-    watchedDate: '2026-08-15'
-  }
-];
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'continue' | 'completed'>('all');
@@ -90,21 +29,28 @@ export default function HistoryPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   useEffect(() => {
-    // Simulate initial loading skeleton state
-    const timer = setTimeout(() => {
-      setHistory(INITIAL_HISTORY);
-      setIsLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
+    setHistory(getHistory());
+    setIsLoading(false);
+
+    const handleUpdate = () => {
+      setHistory(getHistory());
+    };
+
+    window.addEventListener('history-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('history-updated', handleUpdate);
+    };
   }, []);
 
   const handleRemoveItem = (id: string) => {
-    setHistory(prev => prev.filter(item => item.id !== id));
+    deleteHistoryItem(id);
+    toast.success('Removed from history!');
   };
 
   const handleClearHistory = () => {
-    setHistory([]);
+    clearHistory();
     setIsConfirmOpen(false);
+    toast.success('History cleared!');
   };
 
   // Get items matching active filter tabs
@@ -220,34 +166,19 @@ export default function HistoryPage() {
               ))}
             </div>
           ) : history.length === 0 ? (
-            /* Empty State */
-            <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
-                <Clock size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white mb-1">No watch history yet</h3>
-              <p className="text-xs text-zinc-550 leading-relaxed mb-6">
-                Start watching movies and shows on Flixora to track progress here.
-              </p>
-              <Link 
-                href="/"
-                className="flex items-center gap-2 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider py-2.5 px-6 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10"
-              >
-                <Compass size={15} />
-                Browse Catalogue
-              </Link>
-            </div>
+            <EmptyState 
+              title="No watch history yet"
+              description="Start watching movies and shows on Flixora to track progress here."
+              icon={Clock}
+              actionText="Browse Catalogue"
+              onActionClick={() => router.push('/explore')}
+            />
           ) : displayedItems.length === 0 ? (
-            /* Matches Empty State */
-            <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
-                <Info size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white mb-1">No matches found</h3>
-              <p className="text-xs text-zinc-550 leading-relaxed">
-                There are no history entries matching the active filter.
-              </p>
-            </div>
+            <EmptyState 
+              title="No matches found"
+              description="There are no history entries matching the active filter."
+              icon={Info}
+            />
           ) : (
             /* History Content Grid */
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-10">

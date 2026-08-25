@@ -18,6 +18,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface Profile {
   id: string;
@@ -32,6 +33,7 @@ const INITIAL_PROFILES: Profile[] = [
 ];
 
 export default function SettingsPage() {
+  const { data: session } = authClient.useSession();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'account' | 'notifications' | 'playback' | 'privacy'>('profile');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -48,6 +50,14 @@ export default function SettingsPage() {
   const [twoFactor, setTwoFactor] = useState(false);
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  // Dynamically load session data into profiles list and account email field
+  useEffect(() => {
+    if (session) {
+      setEmail(session.user.email);
+      setProfiles(prev => prev.map(p => p.id === '1' ? { ...p, name: session.user.name || 'Primary Account' } : p));
+    }
+  }, [session]);
 
   // Notifications inputs
   const [notifyNewEpisodes, setNotifyNewEpisodes] = useState(true);

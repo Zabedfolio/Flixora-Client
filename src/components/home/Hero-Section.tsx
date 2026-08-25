@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
 import { getGenreName } from '@/data/home/newReleases';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface Slide {
   id: number;
@@ -78,14 +79,13 @@ export default function HeroBanner() {
   const [aiQuery, setAiQuery] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
-  const [username, setUsername] = useState('Viewer');
+  const { data: session } = authClient.useSession();
+  const username = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
 
-  // Load popular widescreen backdrops dynamically from TMDB API
   useEffect(() => {
     fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=1')
       .then((data) => {
         if (data.results && data.results.length > 0) {
-          // Take top 5 popular backdrops for widescreen banner slides
           const mapped = data.results.slice(0, 5).map((movie) => ({
             id: movie.id,
             image: getTMDBImageUrl(movie.backdrop_path || movie.poster_path, 'original'),
@@ -102,17 +102,6 @@ export default function HeroBanner() {
         console.error('Error fetching banner backdrops:', err);
         setLoading(false);
       });
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedRole = localStorage.getItem('flixora-session-role');
-      if (savedRole === 'admin') {
-        setUsername('Admin');
-      } else {
-        setUsername('Viewer');
-      }
-    }
   }, []);
 
   useEffect(() => {

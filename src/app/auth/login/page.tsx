@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { authClient } from "@/app/(auth)/lib/auth-client";
 import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -14,6 +15,7 @@ const loginSchema = z.object({
 });
 
 export const LoginForm: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -75,7 +77,7 @@ export const LoginForm: React.FC = () => {
       const { data, error } = await authClient.signIn.email({
         email: formData.email,
         password: formData.password,
-        callbackURL: "/",
+        callbackURL: "/dashboard",
         rememberMe: formData.rememberMe,
       });
 
@@ -84,6 +86,7 @@ export const LoginForm: React.FC = () => {
         return;
       }
       toast.success("Logged in successfully!");
+      router.push("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       toast.error("An unexpected error occurred. Please try again later.");
