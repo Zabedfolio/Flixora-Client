@@ -7,6 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useRouter } from 'next/navigation';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -22,6 +23,7 @@ const registerSchema = z.object({
 });
 
 export const RegisterForm: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -103,13 +105,14 @@ export const RegisterForm: React.FC = () => {
       email: formData.email,
       password: formData.password,
       name: formData.fullName, 
-      callbackURL: "/", 
+      callbackURL: "/dashboard", 
     }, {
       onRequest: (ctx) => {
         // Optional: handle loading state
       },
       onSuccess: (ctx) => {
         toast.success('Account created successfully!');
+        router.push("/dashboard");
       },
       onError: (ctx) => {
         toast.error(ctx.error.message);

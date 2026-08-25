@@ -27,10 +27,10 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
   const subpage = getSubpageLabel();
 
   return (
-    <div className="flex min-h-screen bg-black text-white w-full relative">
+    <div className="flex h-screen bg-black text-white w-full overflow-hidden relative">
       <SideNavbar isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       
-      <div className="flex-1 w-full min-w-0 flex flex-col">
+      <div className="flex-1 w-full min-w-0 flex flex-col h-full overflow-hidden">
         {/* Sleek Breadcrumbs Header Bar */}
         <header className="h-16 border-b border-[#1A1A1A]/80 px-6 flex items-center gap-4 bg-zinc-950/20 backdrop-blur-sm select-none shrink-0">
           {/* Mobile Drawer Trigger (Square Button) */}
@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-grow w-full">
+        <div className="flex-grow w-full overflow-y-auto">
           {children}
         </div>
       </div>

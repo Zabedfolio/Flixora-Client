@@ -70,6 +70,7 @@ export default function SubscriptionPage() {
 
   const handlePlanChange = (planId: string) => {
     setCurrentPlan(planId);
+    toast.success(`Successfully upgraded to the ${activePlanData.name} plan!`);
   };
 
   const handleConfirmCancel = (e: React.FormEvent) => {

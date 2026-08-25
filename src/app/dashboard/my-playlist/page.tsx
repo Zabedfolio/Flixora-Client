@@ -35,14 +35,14 @@ const CATALOG_ITEMS: Title[] = [
   { id: 5, title: "Oppenheimer", type: "movie", genres: ["Drama", "History"], unsplash_url: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=400&auto=format&fit=crop" },
   { id: 6, title: "Attack on Titan", type: "tv", genres: ["Animation", "Anime"], unsplash_url: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=400&auto=format&fit=crop" },
   { id: 7, title: "The Last of Us", type: "tv", genres: ["Drama", "Action"], unsplash_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop" },
-  { id: 8, title: "Barbie", type: "movie", genres: ["Comedy", "Fantasy"], unsplash_url: "https://images.unsplash.com/photo-1594744803329-e58b31de215f?q=80&w=400&auto=format&fit=crop" }
+  { id: 8, title: "Barbie", type: "movie", genres: ["Comedy", "Fantasy"], unsplash_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400&auto=format&fit=crop" }
 ];
 
 const MOODS = [
-  { id: 'feel-good', name: 'Feel-Good', icon: Smile, items: [1, 8] },
+  { id: 'feel-good', name: 'Feel-Good', icon: Smile, items: [8] },
   { id: 'intense', name: 'Intense', icon: Zap, items: [3, 5] },
   { id: 'nostalgic', name: 'Nostalgic', icon: History, items: [2, 6] },
-  { id: 'heartbreak', name: 'Heartbreak', icon: Heart, items: [7, 1] },
+  { id: 'heartbreak', name: 'Heartbreak', icon: Heart, items: [7] },
   { id: 'adrenaline', name: 'Adrenaline', icon: Compass, items: [4, 6] }
 ];
 
@@ -54,18 +54,7 @@ interface CustomPlaylist {
 
 export default function MoodPlaylistsPage() {
   const [selectedMood, setSelectedMood] = useState<string>('feel-good');
-  const [customPlaylists, setCustomPlaylists] = useState<CustomPlaylist[]>([
-    {
-      id: '1',
-      name: 'Weekend Chill',
-      titles: [CATALOG_ITEMS[0], CATALOG_ITEMS[2], CATALOG_ITEMS[7], CATALOG_ITEMS[6]]
-    },
-    {
-      id: '2',
-      name: 'Late Night Anime',
-      titles: [CATALOG_ITEMS[3], CATALOG_ITEMS[5], CATALOG_ITEMS[0], CATALOG_ITEMS[1]]
-    }
-  ]);
+  const [customPlaylists, setCustomPlaylists] = useState<CustomPlaylist[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
