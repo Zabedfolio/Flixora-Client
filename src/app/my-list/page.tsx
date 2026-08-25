@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bookmark, Star, Calendar, Play, Info } from 'lucide-react';
 import MediaCard from '@/components/ui/card';
+import EmptyState from '@/components/common/EmptyState';
 
 const MY_LIST_CATALOG = [
   {
@@ -69,15 +70,11 @@ export default function MyListPage() {
 
         <div className="flex flex-col gap-12">
           {MY_LIST_CATALOG.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
-                <Info size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white mb-1">Your list is empty</h3>
-              <p className="text-xs text-zinc-555 leading-relaxed">
-                Explore movies and shows to add them to your personalized collection.
-              </p>
-            </div>
+            <EmptyState 
+              title="Your list is empty"
+              description="Explore movies and shows to add them to your personalized collection."
+              icon={Bookmark}
+            />
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-12">
               {MY_LIST_CATALOG.map((item) => (

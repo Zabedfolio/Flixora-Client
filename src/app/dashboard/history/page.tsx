@@ -13,12 +13,15 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { getHistory, clearHistory, deleteHistoryItem, HistoryItem } from '@/data/historyStore';
+import EmptyState from '@/components/common/EmptyState';
 
 
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'continue' | 'completed'>('all');
@@ -163,34 +166,19 @@ export default function HistoryPage() {
               ))}
             </div>
           ) : history.length === 0 ? (
-            /* Empty State */
-            <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
-                <Clock size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white mb-1">No watch history yet</h3>
-              <p className="text-xs text-zinc-550 leading-relaxed mb-6">
-                Start watching movies and shows on Flixora to track progress here.
-              </p>
-              <Link 
-                href="/"
-                className="flex items-center gap-2 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider py-2.5 px-6 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10"
-              >
-                <Compass size={15} />
-                Browse Catalogue
-              </Link>
-            </div>
+            <EmptyState 
+              title="No watch history yet"
+              description="Start watching movies and shows on Flixora to track progress here."
+              icon={Clock}
+              actionText="Browse Catalogue"
+              onActionClick={() => router.push('/explore')}
+            />
           ) : displayedItems.length === 0 ? (
-            /* Matches Empty State */
-            <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
-                <Info size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white mb-1">No matches found</h3>
-              <p className="text-xs text-zinc-550 leading-relaxed">
-                There are no history entries matching the active filter.
-              </p>
-            </div>
+            <EmptyState 
+              title="No matches found"
+              description="There are no history entries matching the active filter."
+              icon={Info}
+            />
           ) : (
             /* History Content Grid */
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-10">
