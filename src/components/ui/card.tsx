@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Plus, Star, Play } from 'lucide-react';
+import { Bookmark, Plus, Star, Play, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   isInWatchlist,
   addToWatchlist,
   removeFromWatchlist,
 } from '@/data/watchlistStore';
+import { getPlaylists, createPlaylist, addTitleToPlaylist, removeTitleFromPlaylist, isTitleInPlaylist, Playlist } from '@/data/playlistStore';
 
 interface CardProps {
   title: string;
@@ -46,7 +47,11 @@ export default function MediaCard({
   isNew = false,
 }: CardProps) {
   const [inMyList, setInMyList] = useState(false);
-  const [inPlaylist, setInPlaylist] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [newPlaylistTag, setNewPlaylistTag] = useState('');
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   useEffect(() => {
     setInMyList(isInWatchlist(title));
@@ -58,6 +63,17 @@ export default function MediaCard({
       window.removeEventListener('watchlist-updated', handleUpdate);
     };
   }, [title]);
+
+  useEffect(() => {
+    setPlaylists(getPlaylists());
+    const handleUpdate = () => {
+      setPlaylists(getPlaylists());
+    };
+    window.addEventListener('playlists-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('playlists-updated', handleUpdate);
+    };
+  }, []);
 
   const handleMyListToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -97,27 +113,10 @@ export default function MediaCard({
 
   const handlePlaylistToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setInPlaylist(!inPlaylist);
-    if (!inPlaylist) {
-      toast.success(`Added "${title}" to your playlist`, {
-        icon: '➕',
-        style: {
-          background: '#141414',
-          color: '#fff',
-          border: '1px solid #1A1A1A',
-        },
-      });
-    } else {
-      toast.success(`Removed "${title}" from your playlist`, {
-        icon: '➖',
-        style: {
-          background: '#141414',
-          color: '#fff',
-          border: '1px solid #1A1A1A',
-        },
-      });
-    }
+    setIsModalOpen(true);
   };
+
+  const inAnyPlaylist = playlists.some(pl => isTitleInPlaylist(pl.id, title));
 
   return (
     <div className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer">
@@ -185,15 +184,15 @@ export default function MediaCard({
           <button
             onClick={handlePlaylistToggle}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md backdrop-blur-sm border outline-none cursor-pointer ${
-              inPlaylist
+              inAnyPlaylist
                 ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105'
                 : 'bg-black/60 border-zinc-800 text-zinc-350 hover:text-white hover:border-[#FF4C00]'
             }`}
-            title={inPlaylist ? 'Remove from Playlist' : 'Add to Playlist'}
+            title={inAnyPlaylist ? 'Manage Playlists (Added)' : 'Add to Playlist'}
           >
             <Plus
               size={14}
-              className={inPlaylist ? 'rotate-45 transition-transform' : ''}
+              className={inAnyPlaylist ? 'rotate-45 transition-transform' : ''}
             />
           </button>
         </div>
@@ -212,6 +211,181 @@ export default function MediaCard({
           <span className="text-zinc-500">{duration}</span>
         </div>
       </div>
+
+      {/* DUAL LAYER PLAYLIST SELECTOR MODAL */}
+      {isModalOpen && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsModalOpen(false);
+          }}
+        >
+          <div 
+            className="w-full max-w-sm bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl overflow-hidden flex flex-col p-6 gap-5 relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                Add to Playlists
+              </h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-1 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* List of playlists */}
+            <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+              {playlists.length === 0 ? (
+                <div className="text-center py-8 text-zinc-550 text-xs font-semibold">
+                  No custom playlists found
+                </div>
+              ) : (
+                playlists.map((pl) => {
+                  const checked = isTitleInPlaylist(pl.id, title);
+                  return (
+                    <label 
+                      key={pl.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-950/60 border border-transparent hover:border-zinc-900 transition-all cursor-pointer select-none"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">{pl.name}</span>
+                        {pl.tag && (
+                          <span className="text-[8px] text-[#FF4C00] font-black uppercase tracking-widest">{pl.tag}</span>
+                        )}
+                      </div>
+                      <input 
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (checked) {
+                            removeTitleFromPlaylist(pl.id, title);
+                            toast.success(`Removed from "${pl.name}"`, { icon: '🗑️' });
+                          } else {
+                            addTitleToPlaylist(pl.id, {
+                              title,
+                              unsplash_url,
+                              category,
+                              year,
+                              duration
+                            });
+                            toast.success(`Added to "${pl.name}"`, { icon: '✨' });
+                          }
+                        }}
+                        className="checkbox checkbox-xs border-zinc-700 checked:bg-[#FF4C00] checked:border-[#FF4C00] rounded accent-[#FF4C00]"
+                      />
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 pt-3 border-t border-[#1A1A1A]">
+              <button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-[10px] uppercase tracking-wider py-2.5 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10"
+              >
+                <Plus size={12} strokeWidth={3} />
+                Create New Playlist
+              </button>
+            </div>
+
+            {/* NESTED CREATE PLAYLIST OVERLAY */}
+            {isCreateModalOpen && (
+              <div 
+                className="absolute inset-0 z-50 bg-[#0A0A0A]/95 flex items-center justify-center p-6 transition-all duration-300 animate-in fade-in duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="w-full max-w-xs bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl flex flex-col p-5 gap-4">
+                  <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-wider text-white">
+                      Create New Playlist
+                    </h4>
+                    <button 
+                      onClick={() => {
+                        setIsCreateModalOpen(false);
+                        setNewPlaylistName('');
+                        setNewPlaylistTag('');
+                      }}
+                      className="p-1 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">
+                        Playlist Name
+                      </label>
+                      <input 
+                        type="text"
+                        placeholder="e.g. Chill Vibes"
+                        value={newPlaylistName}
+                        onChange={(e) => setNewPlaylistName(e.target.value)}
+                        className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#FF4C00] transition-all placeholder:text-zinc-650"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">
+                        Tag (Optional)
+                      </label>
+                      <input 
+                        type="text"
+                        placeholder="e.g. Romance"
+                        value={newPlaylistTag}
+                        onChange={(e) => setNewPlaylistTag(e.target.value)}
+                        className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#FF4C00] transition-all placeholder:text-zinc-650"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t border-[#1A1A1A]">
+                    <button 
+                      onClick={() => {
+                        setIsCreateModalOpen(false);
+                        setNewPlaylistName('');
+                        setNewPlaylistTag('');
+                      }}
+                      className="flex-1 bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white font-black text-[9px] uppercase tracking-wider py-2 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (!newPlaylistName.trim()) {
+                          toast.error('Playlist name is required');
+                          return;
+                        }
+                        const newPl = createPlaylist(newPlaylistName.trim(), newPlaylistTag.trim());
+                        addTitleToPlaylist(newPl.id, {
+                          title,
+                          unsplash_url,
+                          category,
+                          year,
+                          duration
+                        });
+                        toast.success(`Created "${newPlaylistName}" & Added Title!`, { icon: '🎉' });
+                        setIsCreateModalOpen(false);
+                        setNewPlaylistName('');
+                        setNewPlaylistTag('');
+                      }}
+                      className="flex-1 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-[9px] uppercase tracking-wider py-2 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Create
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
