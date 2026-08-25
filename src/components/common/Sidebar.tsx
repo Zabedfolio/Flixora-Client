@@ -69,23 +69,11 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const [sessionRole, setSessionRole] = useState<'user' | 'admin'>('user');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('flixora-session-role') as 'user' | 'admin';
-      if (saved) {
-        setSessionRole(saved);
-      }
-    }
-  }, []);
-
   const currentRole = forcedRole || (sessionLoading ? 'loading' : (session ? sessionRole : 'user'));
   const isLoading = sessionLoading || currentRole === 'loading';
 
   const handleRoleToggle = () => {
     const nextRole = currentRole === 'admin' ? 'user' : 'admin';
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('flixora-session-role', nextRole);
-    }
     setSessionRole(nextRole);
     setIsProfileOpen(false);
   };
