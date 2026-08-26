@@ -1,16 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Bot,
-  ChevronLeft,
-  ChevronRight,
-  Send,
-  Sparkles,
-} from 'lucide-react';
-import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
-import { getGenreName } from '@/data/home/newReleases';
+import { useEffect, useMemo, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
+import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
+import { getGenreName } from "@/data/home/newReleases";
 
 interface Slide {
   id: number;
@@ -24,50 +18,50 @@ interface Slide {
 const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
 
-interface AiSuggestion {
-  title: string;
-  reason: string;
-}
+// interface AiSuggestion {
+//   title: string;
+//   reason: string;
+// }
 
-const AI_KEYWORD_MAP: { keywords: string[]; suggestion: AiSuggestion }[] = [
-  {
-    keywords: ['intense', 'action', 'war', 'fight'],
-    suggestion: { title: 'Fury: Born of War', reason: 'high-stakes, unrelenting combat drama' },
-  },
-  {
-    keywords: ['feel-good', 'feel good', 'happy', 'light', 'romance'],
-    suggestion: { title: 'Echoes of Eternity', reason: 'a warm, slow-burn love story' },
-  },
-  {
-    keywords: ['space', 'sci-fi', 'scifi', 'cosmos', 'thoughtful'],
-    suggestion: { title: 'The Silent Cosmos', reason: 'a meditative journey through deep space' },
-  },
-  {
-    keywords: ['thriller', 'dark', 'crime', 'neon', 'cyberpunk'],
-    suggestion: { title: 'Neon Shadows', reason: 'a gritty, neon-soaked crime thriller' },
-  },
-];
+// const AI_KEYWORD_MAP: { keywords: string[]; suggestion: AiSuggestion }[] = [
+//   {
+//     keywords: ['intense', 'action', 'war', 'fight'],
+//     suggestion: { title: 'Fury: Born of War', reason: 'high-stakes, unrelenting combat drama' },
+//   },
+//   {
+//     keywords: ['feel-good', 'feel good', 'happy', 'light', 'romance'],
+//     suggestion: { title: 'Echoes of Eternity', reason: 'a warm, slow-burn love story' },
+//   },
+//   {
+//     keywords: ['space', 'sci-fi', 'scifi', 'cosmos', 'thoughtful'],
+//     suggestion: { title: 'The Silent Cosmos', reason: 'a meditative journey through deep space' },
+//   },
+//   {
+//     keywords: ['thriller', 'dark', 'crime', 'neon', 'cyberpunk'],
+//     suggestion: { title: 'Neon Shadows', reason: 'a gritty, neon-soaked crime thriller' },
+//   },
+// ];
 
-const AI_FALLBACK_SUGGESTIONS: AiSuggestion[] = [
-  { title: 'Tokyo Cyber-Run', reason: "it's trending hard with viewers like you" },
-  { title: 'Chrono Drift', reason: 'a fan-favorite pick across all moods' },
-  { title: 'Project Zero: Genesis', reason: "Flixora's top-rated new release" },
-];
+// const AI_FALLBACK_SUGGESTIONS: AiSuggestion[] = [
+//   { title: 'Tokyo Cyber-Run', reason: "it's trending hard with viewers like you" },
+//   { title: 'Chrono Drift', reason: 'a fan-favorite pick across all moods' },
+//   { title: 'Project Zero: Genesis', reason: "Flixora's top-rated new release" },
+// ];
 
-function getAiSuggestion(query: string): AiSuggestion {
-  const normalized = query.toLowerCase();
-  const match = AI_KEYWORD_MAP.find(({ keywords }) =>
-    keywords.some((keyword) => normalized.includes(keyword))
-  );
+// function getAiSuggestion(query: string): AiSuggestion {
+//   const normalized = query.toLowerCase();
+//   const match = AI_KEYWORD_MAP.find(({ keywords }) =>
+//     keywords.some((keyword) => normalized.includes(keyword))
+//   );
 
-  if (match) {
-    return match.suggestion;
-  }
+//   if (match) {
+//     return match.suggestion;
+//   }
 
-  return AI_FALLBACK_SUGGESTIONS[
-    Math.floor(Math.random() * AI_FALLBACK_SUGGESTIONS.length)
-  ];
-}
+//   return AI_FALLBACK_SUGGESTIONS[
+//     Math.floor(Math.random() * AI_FALLBACK_SUGGESTIONS.length)
+//   ];
+// }
 
 export default function HeroBanner() {
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -75,20 +69,23 @@ export default function HeroBanner() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const [aiQuery, setAiQuery] = useState('');
+  const [aiQuery, setAiQuery] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
-  const [username, setUsername] = useState('Viewer');
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [username, setUsername] = useState("Viewer");
 
   // Load popular widescreen backdrops dynamically from TMDB API
   useEffect(() => {
-    fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=1')
+    fetchFromTMDB<{ results: any[] }>("/movie/popular?language=en-US&page=1")
       .then((data) => {
         if (data.results && data.results.length > 0) {
           // Take top 5 popular backdrops for widescreen banner slides
           const mapped = data.results.slice(0, 5).map((movie) => ({
             id: movie.id,
-            image: getTMDBImageUrl(movie.backdrop_path || movie.poster_path, 'original'),
+            image: getTMDBImageUrl(
+              movie.backdrop_path || movie.poster_path,
+              "original",
+            ),
             title: movie.title,
             subtitle: movie.overview,
             highlight: `Popular in ${getGenreName(movie.genre_ids)}`,
@@ -99,18 +96,18 @@ export default function HeroBanner() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Error fetching banner backdrops:', err);
+        console.error("Error fetching banner backdrops:", err);
         setLoading(false);
       });
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedRole = localStorage.getItem('flixora-session-role');
-      if (savedRole === 'admin') {
-        setUsername('Admin');
+    if (typeof window !== "undefined") {
+      const savedRole = localStorage.getItem("flixora-session-role");
+      if (savedRole === "admin") {
+        setUsername("Admin");
       } else {
-        setUsername('Viewer');
+        setUsername("Viewer");
       }
     }
   }, []);
@@ -121,7 +118,7 @@ export default function HeroBanner() {
     }
 
     const timer = setInterval(() => {
-      setCurrentSlide(previous => (previous + 1) % slides.length);
+      setCurrentSlide((previous) => (previous + 1) % slides.length);
     }, AUTO_PLAY_INTERVAL);
 
     return () => clearInterval(timer);
@@ -142,17 +139,19 @@ export default function HeroBanner() {
 
   const goToNextSlide = () => {
     if (slides.length === 0) return;
-    setCurrentSlide(previous => (previous + 1) % slides.length);
+    setCurrentSlide((previous) => (previous + 1) % slides.length);
     pauseAutoPlay();
   };
 
   const goToPreviousSlide = () => {
     if (slides.length === 0) return;
-    setCurrentSlide(previous => (previous - 1 + slides.length) % slides.length);
+    setCurrentSlide(
+      (previous) => (previous - 1 + slides.length) % slides.length,
+    );
     pauseAutoPlay();
   };
 
-  const runAiSearch = (query: string) => {
+  const runAiSearch = async (query: string) => {
     const trimmed = query.trim();
 
     if (!trimmed) {
@@ -161,12 +160,42 @@ export default function HeroBanner() {
 
     pauseAutoPlay();
     setAiLoading(true);
-    setAiSuggestion(null);
+    setAiResponse(null);
 
-    window.setTimeout(() => {
-      setAiSuggestion(getAiSuggestion(trimmed));
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: trimmed,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI recommendation");
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "AI recommendation failed");
+      }
+
+      setAiResponse(result.data.message);
+    } catch (error) {
+      console.error("AI recommendation error:", error);
+
+      setAiResponse(
+        "Sorry, I could not get movie recommendations right now. Please try again.",
+      );
+    } finally {
       setAiLoading(false);
-    }, 900);
+    }
   };
 
   const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -180,7 +209,9 @@ export default function HeroBanner() {
     return (
       <section className="relative h-screen min-h-[640px] w-full bg-black flex flex-col items-center justify-center">
         <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
-        <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Synchronizing Spotlight...</p>
+        <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">
+          Synchronizing Spotlight...
+        </p>
       </section>
     );
   }
@@ -205,7 +236,7 @@ export default function HeroBanner() {
           }}
           transition={{
             duration: 0.8,
-            ease: 'easeInOut',
+            ease: "easeInOut",
           }}
           className="absolute inset-0"
         >
@@ -277,16 +308,19 @@ export default function HeroBanner() {
 
           {/* AI response */}
           <AnimatePresence mode="wait">
-            {(aiLoading || aiSuggestion) && (
+            {(aiLoading || aiResponse) && (
               <motion.div
-                key={aiLoading ? 'loading' : aiSuggestion?.title}
+                key={aiLoading ? "loading" : "response"}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
                 className="mt-3 flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
               >
-                <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
+                <Sparkles
+                  size={14}
+                  className="mt-0.5 flex-shrink-0 text-[#FF4C00]"
+                />
 
                 {aiLoading ? (
                   <span className="text-xs font-medium text-zinc-400">
@@ -294,18 +328,14 @@ export default function HeroBanner() {
                     <span className="animate-pulse">...</span>
                   </span>
                 ) : (
-                  <p className="text-xs font-medium leading-relaxed text-zinc-300">
-                    Try{' '}
-                    <span className="font-bold text-white">
-                      {aiSuggestion?.title}
-                    </span>{' '}
-                    — {aiSuggestion?.reason}.
+                  <p className="whitespace-pre-line text-xs font-medium leading-relaxed text-zinc-300">
+                    {aiResponse}
                   </p>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>       
+        </motion.div>
       </div>
 
       {/* Previous */}
@@ -338,8 +368,8 @@ export default function HeroBanner() {
             aria-label={`Go to slide ${index + 1}`}
             className={`h-2.5 rounded-full transition-all duration-300 ${
               index === currentSlide
-                ? 'w-10 bg-[#FF4C00]'
-                : 'w-2.5 bg-white/30 hover:bg-white/50'
+                ? "w-10 bg-[#FF4C00]"
+                : "w-2.5 bg-white/30 hover:bg-white/50"
             }`}
           />
         ))}
