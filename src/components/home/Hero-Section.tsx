@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
+import ReactMarkdown from "react-markdown";
 
 interface Slide {
   id: number;
@@ -315,11 +316,11 @@ export default function HeroBanner() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3 flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                className="mt-3  items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
               >
                 <Sparkles
                   size={14}
-                  className="mt-0.5 flex-shrink-0 text-[#FF4C00]"
+                  className="mt-0.5  text-[#FF4C00]"
                 />
 
                 {aiLoading ? (
@@ -328,9 +329,35 @@ export default function HeroBanner() {
                     <span className="animate-pulse">...</span>
                   </span>
                 ) : (
-                  <p className="whitespace-pre-line text-xs font-medium leading-relaxed text-zinc-300">
+                  <ReactMarkdown
+                    components={{
+                      h3: ({ children }) => (
+                        <h3 className="mt-3 text-sm font-bold text-white">
+                          {children}
+                        </h3>
+                      ),
+
+                      p: ({ children }) => (
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-300">
+                          {children}
+                        </p>
+                      ),
+
+                      strong: ({ children }) => (
+                        <strong className="font-bold text-white">
+                          {children}
+                        </strong>
+                      ),
+
+                      ul: ({ children }) => (
+                        <ul className="mt-2 list-disc space-y-1 pl-4">
+                          {children}
+                        </ul>
+                      ),
+                    }}
+                  >
                     {aiResponse}
-                  </p>
+                  </ReactMarkdown>
                 )}
               </motion.div>
             )}
