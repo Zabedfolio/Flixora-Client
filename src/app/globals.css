@@ -2,7 +2,76 @@
 @plugin "daisyui";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
+@keyframes route-loading-overlay {
+  0% {
+    opacity: 0;
+    transform: scale(1.01);
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.route-loading-overlay {
+  animation: route-loading-overlay 850ms ease-in-out forwards;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+
+@keyframes movieSpin {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  25% {
+    transform: rotateY(90deg) scale(1.04);
+  }
+
+  50% {
+    transform: rotateY(180deg) scale(1.07);
+  }
+
+  75% {
+    transform: rotateY(270deg) scale(1.04);
+  }
+
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+.movie-spin {
+  animation: movieSpin 2s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  &::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  &::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}
