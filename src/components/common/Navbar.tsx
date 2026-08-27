@@ -64,7 +64,7 @@ interface DropdownItem {
 const PROFILE_ITEMS: DropdownItem[] = [
   {
     label: 'Profile',
-    href: '/profile',
+    href: '/dashboard/setting',
   },
   {
     label: 'Dashboard',
@@ -276,7 +276,7 @@ export default function Navbar({
                     <p className="text-[10px] text-zinc-500 truncate">{session.user.email}</p>
                   </div>
                   <Link
-                    href="/profile"
+                    href="/dashboard/setting"
                     className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
@@ -447,7 +447,7 @@ export default function Navbar({
                   {/* Profile Menu */}
                   <div className="flex flex-col gap-1">
                     <Link
-                      href="/profile"
+                      href="/dashboard/setting"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                     >

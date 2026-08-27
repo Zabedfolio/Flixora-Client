@@ -35,13 +35,14 @@ export default function HeroBanner() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiChatResult | null>(null);
   const [username, setUsername] = useState("Viewer");
+  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
+  const { data: session } = authClient.useSession();
+  const username = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
 
-  // Load popular widescreen backdrops dynamically from TMDB API
   useEffect(() => {
     fetchFromTMDB<{ results: any[] }>("/movie/popular?language=en-US&page=1")
       .then((data) => {
         if (data.results && data.results.length > 0) {
-          // Take top 5 popular backdrops for widescreen banner slides
           const mapped = data.results.slice(0, 5).map((movie) => ({
             id: movie.id,
             image: getTMDBImageUrl(

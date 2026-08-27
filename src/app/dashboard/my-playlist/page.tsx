@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import EmptyState from '@/components/common/EmptyState';
+import { getPlaylists, createPlaylist, deletePlaylist, Playlist, addTitleToPlaylist, removeTitleFromPlaylist } from '@/data/playlistStore';
 import { 
   Sparkles, 
   Plus, 
@@ -27,45 +29,26 @@ interface Title {
   unsplash_url: string;
 }
 
-const CATALOG_ITEMS: Title[] = [
-  { id: 1, title: "Wednesday", type: "tv", genres: ["Mystery", "Comedy"], unsplash_url: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=400&auto=format&fit=crop" },
-  { id: 2, title: "Avatar: The Way of Water", type: "movie", genres: ["Action", "Adventure"], unsplash_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400&auto=format&fit=crop" },
-  { id: 3, title: "Stranger Things", type: "tv", genres: ["Sci-Fi", "Mystery"], unsplash_url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=400&auto=format&fit=crop" },
-  { id: 4, title: "Demon Slayer: Kimetsu no Yaiba", type: "tv", genres: ["Animation", "Anime"], unsplash_url: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=400&auto=format&fit=crop" },
-  { id: 5, title: "Oppenheimer", type: "movie", genres: ["Drama", "History"], unsplash_url: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?q=80&w=400&auto=format&fit=crop" },
-  { id: 6, title: "Attack on Titan", type: "tv", genres: ["Animation", "Anime"], unsplash_url: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=400&auto=format&fit=crop" },
-  { id: 7, title: "The Last of Us", type: "tv", genres: ["Drama", "Action"], unsplash_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&auto=format&fit=crop" },
-  { id: 8, title: "Barbie", type: "movie", genres: ["Comedy", "Fantasy"], unsplash_url: "https://images.unsplash.com/photo-1594744803329-e58b31de215f?q=80&w=400&auto=format&fit=crop" }
-];
+const CATALOG_ITEMS: Title[] = [];
 
-const MOODS = [
-  { id: 'feel-good', name: 'Feel-Good', icon: Smile, items: [1, 8] },
-  { id: 'intense', name: 'Intense', icon: Zap, items: [3, 5] },
-  { id: 'nostalgic', name: 'Nostalgic', icon: History, items: [2, 6] },
-  { id: 'heartbreak', name: 'Heartbreak', icon: Heart, items: [7, 1] },
-  { id: 'adrenaline', name: 'Adrenaline', icon: Compass, items: [4, 6] }
-];
-
-interface CustomPlaylist {
+interface MoodCategory {
   id: string;
   name: string;
-  titles: Title[];
+  icon: any;
+  items: number[];
 }
+
+const MOODS: MoodCategory[] = [
+  { id: 'feel-good', name: 'Feel-Good', icon: Smile, items: [] },
+  { id: 'intense', name: 'Intense', icon: Zap, items: [] },
+  { id: 'nostalgic', name: 'Nostalgic', icon: History, items: [] },
+  { id: 'heartbreak', name: 'Heartbreak', icon: Heart, items: [] },
+  { id: 'adrenaline', name: 'Adrenaline', icon: Compass, items: [] }
+];
 
 export default function MoodPlaylistsPage() {
   const [selectedMood, setSelectedMood] = useState<string>('feel-good');
-  const [customPlaylists, setCustomPlaylists] = useState<CustomPlaylist[]>([
-    {
-      id: '1',
-      name: 'Weekend Chill',
-      titles: [CATALOG_ITEMS[0], CATALOG_ITEMS[2], CATALOG_ITEMS[7], CATALOG_ITEMS[6]]
-    },
-    {
-      id: '2',
-      name: 'Late Night Anime',
-      titles: [CATALOG_ITEMS[3], CATALOG_ITEMS[5], CATALOG_ITEMS[0], CATALOG_ITEMS[1]]
-    }
-  ]);
+  const [customPlaylists, setCustomPlaylists] = useState<Playlist[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -78,6 +61,17 @@ export default function MoodPlaylistsPage() {
   const [selectedGenre, setSelectedGenre] = useState<string>('Action');
   const [editingPlaylistId, setEditingPlaylistId] = useState<string | null>(null);
 
+  useEffect(() => {
+    setCustomPlaylists(getPlaylists());
+    const handleUpdate = () => {
+      setCustomPlaylists(getPlaylists());
+    };
+    window.addEventListener('playlists-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('playlists-updated', handleUpdate);
+    };
+  }, []);
+
   const activeMoodData = MOODS.find(m => m.id === selectedMood) || MOODS[0];
   const moodTitles = CATALOG_ITEMS.filter(item => activeMoodData.items.includes(item.id));
 
@@ -89,10 +83,14 @@ export default function MoodPlaylistsPage() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (playlist: CustomPlaylist) => {
+  const handleOpenEditModal = (playlist: Playlist) => {
     setEditingPlaylistId(playlist.id);
     setPlaylistName(playlist.name);
-    setSelectedTitleIds(playlist.titles.map(t => t.id));
+    // Find CATALOG_ITEMS that match the title names
+    const matchedIds = CATALOG_ITEMS.filter(cat => 
+      playlist.titles.some(pt => pt.title.toLowerCase() === cat.title.toLowerCase())
+    ).map(cat => cat.id);
+    setSelectedTitleIds(matchedIds);
     setIsModalOpen(true);
   };
 
@@ -104,23 +102,36 @@ export default function MoodPlaylistsPage() {
     const titlesList = CATALOG_ITEMS.filter(item => selectedTitleIds.includes(item.id));
 
     if (editingPlaylistId) {
-      setCustomPlaylists(prev => prev.map(p => 
-        p.id === editingPlaylistId ? { ...p, name: playlistName, titles: titlesList } : p
-      ));
+      const pl = getPlaylists().find(p => p.id === editingPlaylistId);
+      if (pl) {
+        pl.name = playlistName;
+        pl.titles = titlesList.map(t => ({
+          title: t.title,
+          unsplash_url: t.unsplash_url,
+          category: t.genres[0] || 'Movie',
+          year: '2026',
+          duration: '2h'
+        }));
+        window.dispatchEvent(new Event('playlists-updated'));
+      }
     } else {
-      const newPlaylist: CustomPlaylist = {
-        id: Math.random().toString(),
-        name: playlistName,
-        titles: titlesList
-      };
-      setCustomPlaylists(prev => [...prev, newPlaylist]);
+      const pl = createPlaylist(playlistName);
+      titlesList.forEach(t => {
+        addTitleToPlaylist(pl.id, {
+          title: t.title,
+          unsplash_url: t.unsplash_url,
+          category: t.genres[0] || 'Movie',
+          year: '2026',
+          duration: '2h'
+        });
+      });
     }
 
     setIsModalOpen(false);
   };
 
   const handleDeletePlaylist = (id: string) => {
-    setCustomPlaylists(prev => prev.filter(p => p.id !== id));
+    deletePlaylist(id);
     setActiveMenuId(null);
   };
 
@@ -197,22 +208,30 @@ export default function MoodPlaylistsPage() {
               Generated for: <span className="text-[#FF4C00]">{activeMoodData.name}</span>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {moodTitles.map((title) => (
-                <div key={title.id} className="group relative flex flex-col gap-2 transition-transform duration-300 w-full">
-                  <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/30 transition-all duration-300">
-                    <img 
-                      src={title.unsplash_url} 
-                      alt={title.title}
-                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all"
-                    />
+            {moodTitles.length === 0 ? (
+              <EmptyState 
+                title="No Titles Generated"
+                description="No titles matching this mood category. Try creating custom playlists to build your collections."
+                icon={Sparkles}
+              />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {moodTitles.map((title) => (
+                  <div key={title.id} className="group relative flex flex-col gap-2 transition-transform duration-300 w-full">
+                    <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/30 transition-all duration-300">
+                      <img 
+                        src={title.unsplash_url} 
+                        alt={title.title}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all"
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-white truncate w-full group-hover:text-[#FF4C00] transition-colors mt-1">
+                      {title.title}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-white truncate w-full group-hover:text-[#FF4C00] transition-colors mt-1">
-                    {title.title}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -223,22 +242,13 @@ export default function MoodPlaylistsPage() {
           </h2>
 
           {customPlaylists.length === 0 ? (
-            /* Empty State */
-            <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-6 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
-                <Music size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white mb-1">You haven't created any playlists yet</h3>
-              <p className="text-xs text-zinc-550 leading-relaxed mb-5">
-                Build your own collections of titles to stream.
-              </p>
-              <button 
-                onClick={handleOpenCreateModal}
-                className="bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider py-2.5 px-6 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10"
-              >
-                Create Playlist
-              </button>
-            </div>
+            <EmptyState 
+              title="No Playlists Found"
+              description="Build your own customized collections of titles to stream."
+              icon={Music}
+              actionText="Create Playlist"
+              onActionClick={handleOpenCreateModal}
+            />
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               

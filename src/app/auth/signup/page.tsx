@@ -7,21 +7,29 @@ import { Eye, EyeOff } from 'lucide-react';
 
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useRouter } from 'next/navigation';
 
-const registerSchema = z.object({
-  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string(),
-  agreeTerms: z.boolean().refine(val => val === true, {
-    message: "You must agree to the Terms & Conditions"
+const registerSchema = z
+  .object({
+    fullName: z
+      .string()
+      .min(2, { message: 'Name must be at least 2 characters' }),
+    email: z.string().email({ message: 'Invalid email address' }),
+    password: z
+      .string()
+      .min(6, { message: 'Password must be at least 6 characters' }),
+    confirmPassword: z.string(),
+    agreeTerms: z.boolean().refine(val => val === true, {
+      message: 'You must agree to the Terms & Conditions',
+    }),
   })
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
+  .refine(data => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export const RegisterForm: React.FC = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -41,7 +49,7 @@ export const RegisterForm: React.FC = () => {
       ...formData,
       [name]: updatedValue,
     };
-    
+
     setFormData(updatedData);
 
     // Instant validation on input change
@@ -51,7 +59,7 @@ export const RegisterForm: React.FC = () => {
       if (issue) {
         setErrors(prev => ({
           ...prev,
-          [name]: issue.message
+          [name]: issue.message,
         }));
       } else {
         setErrors(prev => {
@@ -63,11 +71,13 @@ export const RegisterForm: React.FC = () => {
 
       // Sync mismatch password validation
       if (name === 'password' || name === 'confirmPassword') {
-        const confirmIssue = result.error.issues.find(issue => issue.path[0] === 'confirmPassword');
+        const confirmIssue = result.error.issues.find(
+          issue => issue.path[0] === 'confirmPassword',
+        );
         if (confirmIssue) {
           setErrors(prev => ({
             ...prev,
-            confirmPassword: confirmIssue.message
+            confirmPassword: confirmIssue.message,
           }));
         } else {
           setErrors(prev => {
@@ -89,7 +99,7 @@ export const RegisterForm: React.FC = () => {
     const result = registerSchema.safeParse(formData);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
+      result.error.issues.forEach(issue => {
         const path = issue.path[0];
         if (typeof path === 'string') {
           fieldErrors[path] = issue.message;
@@ -99,22 +109,26 @@ export const RegisterForm: React.FC = () => {
       return;
     }
 
-    const { data, error } = await authClient.signUp.email({
-      email: formData.email,
-      password: formData.password,
-      name: formData.fullName, 
-      callbackURL: "/", 
-    }, {
-      onRequest: (ctx) => {
-        // Optional: handle loading state
+    const { data, error } = await authClient.signUp.email(
+      {
+        email: formData.email,
+        password: formData.password,
+        name: formData.fullName,
+        callbackURL: '/dashboard',
       },
-      onSuccess: (ctx) => {
-        toast.success('Account created successfully!');
+      {
+        onRequest: ctx => {
+          // Optional: handle loading state
+        },
+        onSuccess: ctx => {
+          toast.success('Account created successfully!');
+          router.push('/dashboard');
+        },
+        onError: ctx => {
+          toast.error(ctx.error.message);
+        },
       },
-      onError: (ctx) => {
-        toast.error(ctx.error.message);
-      },
-    });
+    );
   };
 
   return (
@@ -123,7 +137,10 @@ export const RegisterForm: React.FC = () => {
 
       <div className="w-full max-w-md bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl shadow-2xl p-8 z-10 hover:border-zinc-800/80 transition-colors duration-300">
         <div className="text-center mb-8 flex flex-col items-center justify-center">
-          <Link href="/" className="inline-block mb-3 focus:outline-none rounded outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]">
+          <Link
+            href="/"
+            className="inline-block mb-3 focus:outline-none rounded outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
+          >
             <Image
               width={160}
               height={60}
@@ -153,7 +170,9 @@ export const RegisterForm: React.FC = () => {
               className={`w-full bg-[#141414] border ${errors.fullName ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
             />
             {errors.fullName && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.fullName}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.fullName}
+              </span>
             )}
           </div>
 
@@ -171,7 +190,9 @@ export const RegisterForm: React.FC = () => {
               className={`w-full bg-[#141414] border ${errors.email ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
             />
             {errors.email && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.email}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.email}
+              </span>
             )}
           </div>
 
@@ -181,7 +202,7 @@ export const RegisterForm: React.FC = () => {
             </label>
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 placeholder="••••••••"
                 value={formData.password}
@@ -198,7 +219,9 @@ export const RegisterForm: React.FC = () => {
               </button>
             </div>
             {errors.password && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.password}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.password}
+              </span>
             )}
           </div>
 
@@ -208,7 +231,7 @@ export const RegisterForm: React.FC = () => {
             </label>
             <div className="relative">
               <input
-                type={showConfirmPassword ? "text" : "password"}
+                type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
                 placeholder="••••••••"
                 value={formData.confirmPassword}
@@ -225,7 +248,9 @@ export const RegisterForm: React.FC = () => {
               </button>
             </div>
             {errors.confirmPassword && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.confirmPassword}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.confirmPassword}
+              </span>
             )}
           </div>
 
@@ -241,17 +266,25 @@ export const RegisterForm: React.FC = () => {
               />
               <span className="text-zinc-400 text-xs leading-normal">
                 I agree to the{' '}
-                <a href="#" className="text-[#FF4C00] font-bold hover:underline">
+                <a
+                  href="#"
+                  className="text-[#FF4C00] font-bold hover:underline"
+                >
                   Terms of Service
                 </a>{' '}
                 and{' '}
-                <a href="#" className="text-[#FF4C00] font-bold hover:underline">
+                <a
+                  href="#"
+                  className="text-[#FF4C00] font-bold hover:underline"
+                >
                   Privacy Policy
                 </a>
               </span>
             </label>
             {errors.agreeTerms && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.agreeTerms}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.agreeTerms}
+              </span>
             )}
           </div>
 
