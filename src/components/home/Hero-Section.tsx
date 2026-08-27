@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
 import ReactMarkdown from "react-markdown";
+import AiMovieResultCard from "./AIMovieResultCard";
 
 interface Slide {
   id: number;
@@ -16,53 +17,13 @@ interface Slide {
   aiMatch: number;
 }
 
+interface AiChatResult {
+  message: string | null;
+  movies: AiMovie[];
+}
+
 const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
-
-// interface AiSuggestion {
-//   title: string;
-//   reason: string;
-// }
-
-// const AI_KEYWORD_MAP: { keywords: string[]; suggestion: AiSuggestion }[] = [
-//   {
-//     keywords: ['intense', 'action', 'war', 'fight'],
-//     suggestion: { title: 'Fury: Born of War', reason: 'high-stakes, unrelenting combat drama' },
-//   },
-//   {
-//     keywords: ['feel-good', 'feel good', 'happy', 'light', 'romance'],
-//     suggestion: { title: 'Echoes of Eternity', reason: 'a warm, slow-burn love story' },
-//   },
-//   {
-//     keywords: ['space', 'sci-fi', 'scifi', 'cosmos', 'thoughtful'],
-//     suggestion: { title: 'The Silent Cosmos', reason: 'a meditative journey through deep space' },
-//   },
-//   {
-//     keywords: ['thriller', 'dark', 'crime', 'neon', 'cyberpunk'],
-//     suggestion: { title: 'Neon Shadows', reason: 'a gritty, neon-soaked crime thriller' },
-//   },
-// ];
-
-// const AI_FALLBACK_SUGGESTIONS: AiSuggestion[] = [
-//   { title: 'Tokyo Cyber-Run', reason: "it's trending hard with viewers like you" },
-//   { title: 'Chrono Drift', reason: 'a fan-favorite pick across all moods' },
-//   { title: 'Project Zero: Genesis', reason: "Flixora's top-rated new release" },
-// ];
-
-// function getAiSuggestion(query: string): AiSuggestion {
-//   const normalized = query.toLowerCase();
-//   const match = AI_KEYWORD_MAP.find(({ keywords }) =>
-//     keywords.some((keyword) => normalized.includes(keyword))
-//   );
-
-//   if (match) {
-//     return match.suggestion;
-//   }
-
-//   return AI_FALLBACK_SUGGESTIONS[
-//     Math.floor(Math.random() * AI_FALLBACK_SUGGESTIONS.length)
-//   ];
-// }
 
 export default function HeroBanner() {
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -72,7 +33,7 @@ export default function HeroBanner() {
 
   const [aiQuery, setAiQuery] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [aiResult, setAiResult] = useState<AiChatResult | null>(null);
   const [username, setUsername] = useState("Viewer");
 
   // Load popular widescreen backdrops dynamically from TMDB API
@@ -161,7 +122,7 @@ export default function HeroBanner() {
 
     pauseAutoPlay();
     setAiLoading(true);
-    setAiResponse(null);
+    setAiResult(null);
 
     try {
       const response = await fetch(
@@ -182,18 +143,43 @@ export default function HeroBanner() {
       }
 
       const result = await response.json();
-
+      console.log(result);
       if (!result.success) {
         throw new Error(result.message || "AI recommendation failed");
       }
 
-      setAiResponse(result.data.message);
+      // Backend can respond with a plain message, a movies list (like the
+      // TMDB-shaped search payload), or both — normalize all shapes here.
+      const message: string | null =
+        result.data?.message ?? result.message ?? null;
+
+      const rawMovies =
+        result.data?.movies ?? result.movies ?? result.data?.results ?? [];
+
+      const movies: AiMovie[] = Array.isArray(rawMovies)
+        ? rawMovies.map((movie: any) => ({
+            id: movie.id,
+            title: movie.title ?? movie.original_title ?? "Untitled",
+            original_title: movie.original_title,
+            overview: movie.overview,
+            poster_path: movie.poster_path ?? null,
+            backdrop_path: movie.backdrop_path ?? null,
+            release_date: movie.release_date,
+            vote_average: movie.vote_average,
+            vote_count: movie.vote_count,
+            media_type: movie.media_type,
+          }))
+        : [];
+
+      setAiResult({ message, movies });
     } catch (error) {
       console.error("AI recommendation error:", error);
 
-      setAiResponse(
-        "Sorry, I could not get movie recommendations right now. Please try again.",
-      );
+      setAiResult({
+        message:
+          "Sorry, I could not get movie recommendations right now. Please try again.",
+        movies: [],
+      });
     } finally {
       setAiLoading(false);
     }
@@ -309,56 +295,80 @@ export default function HeroBanner() {
 
           {/* AI response */}
           <AnimatePresence mode="wait">
-            {(aiLoading || aiResponse) && (
+            {(aiLoading || aiResult) && (
               <motion.div
                 key={aiLoading ? "loading" : "response"}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3  items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                className="mt-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
               >
-                <Sparkles
-                  size={14}
-                  className="mt-0.5  text-[#FF4C00]"
-                />
+                <div className="flex items-start gap-2.5">
+                  <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
 
-                {aiLoading ? (
-                  <span className="text-xs font-medium text-zinc-400">
-                    Flix is thinking
-                    <span className="animate-pulse">...</span>
-                  </span>
-                ) : (
-                  <ReactMarkdown
-                    components={{
-                      h3: ({ children }) => (
-                        <h3 className="mt-3 text-sm font-bold text-white">
-                          {children}
-                        </h3>
-                      ),
+                  {aiLoading ? (
+                    <span className="text-xs font-medium text-zinc-400">
+                      Flix is thinking
+                      <span className="animate-pulse">...</span>
+                    </span>
+                  ) : (
+                    aiResult?.message && (
+                      <ReactMarkdown
+                        components={{
+                          h3: ({ children }) => (
+                            <h3 className="mt-3 text-sm font-bold text-white">
+                              {children}
+                            </h3>
+                          ),
 
-                      p: ({ children }) => (
-                        <p className="mt-1 text-xs leading-relaxed text-zinc-300">
-                          {children}
-                        </p>
-                      ),
+                          p: ({ children }) => (
+                            <p className="mt-1 text-xs leading-relaxed text-zinc-300">
+                              {children}
+                            </p>
+                          ),
 
-                      strong: ({ children }) => (
-                        <strong className="font-bold text-white">
-                          {children}
-                        </strong>
-                      ),
+                          strong: ({ children }) => (
+                            <strong className="font-bold text-white">
+                              {children}
+                            </strong>
+                          ),
 
-                      ul: ({ children }) => (
-                        <ul className="mt-2 list-disc space-y-1 pl-4">
-                          {children}
-                        </ul>
-                      ),
-                    }}
-                  >
-                    {aiResponse}
-                  </ReactMarkdown>
+                          ul: ({ children }) => (
+                            <ul className="mt-2 list-disc space-y-1 pl-4">
+                              {children}
+                            </ul>
+                          ),
+                        }}
+                      >
+                        {aiResult.message}
+                      </ReactMarkdown>
+                    )
+                  )}
+                </div>
+
+                {/* Movie results carousel */}
+                {!aiLoading && aiResult && aiResult.movies.length > 0 && (
+                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {aiResult.movies.map((movie, index) => (
+                      <AiMovieResultCard
+                        key={movie.id}
+                        movie={movie}
+                        index={index}
+                      />
+                    ))}
+                  </div>
                 )}
+
+                {!aiLoading &&
+                  aiResult &&
+                  aiResult.movies.length === 0 &&
+                  !aiResult.message && (
+                    <p className="mt-1 text-xs font-medium text-zinc-400">
+                      No matches found for that one — try describing the mood
+                      differently.
+                    </p>
+                  )}
               </motion.div>
             )}
           </AnimatePresence>
