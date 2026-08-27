@@ -33,7 +33,7 @@ export default function TitleRow() {
             image: getTMDBImageUrl(movie.poster_path, 'w500'),
             year: movie.release_date ? new Date(movie.release_date).getFullYear().toString() : '2026',
             duration: formatDuration(movie.id),
-          })));
+          }))); 
         }
         setLoading(false);
       })
