@@ -1,22 +1,20 @@
-import { betterAuth } from "better-auth";
-import { MongoClient } from "mongodb";
-import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { betterAuth } from 'better-auth';
+import { MongoClient } from 'mongodb';
+import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 
-const client = new MongoClient("mongodb+srv://anujpaul27:Z6EZ1l69zYKn4EKC@cluster0.y4twyvs.mongodb.net/?appName=Cluster0");
-const db = client.db('Flexora');
+const client = new MongoClient(process.env.MONGODB_URI!);
+
+const db = client.db('Flixora');
 
 export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
-    async sendResetPassword({ user, url, token }, request) {
-      // এখানে ইমেইল পাঠানোর লজিক (e.g. Nodemailer/Resend)
-      console.log(`Reset password link: ${url}`);
-    },
   },
+
   database: mongodbAdapter(db, {
-    // Optional: if you don't provide a client, database transactions won't be enabled.
-    client
+    client,
   }),
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -24,3 +22,4 @@ export const auth = betterAuth({
     },
   },
 });
+
