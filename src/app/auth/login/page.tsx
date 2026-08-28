@@ -33,6 +33,25 @@ export const LoginForm: React.FC = () => {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTimer, setLockoutTimer] = useState(0);
 
+  // Load persisted lockout state on client mount
+  useEffect(() => {
+    const savedAttempts = localStorage.getItem("failedAttempts");
+    if (savedAttempts) {
+      setFailedAttempts(parseInt(savedAttempts, 10));
+    }
+    const savedUntil = localStorage.getItem("lockoutUntil");
+    if (savedUntil) {
+      const remaining = Math.ceil((parseInt(savedUntil, 10) - Date.now()) / 1000);
+      if (remaining > 0) {
+        setLockoutTimer(remaining);
+      } else {
+        localStorage.removeItem("lockoutUntil");
+        localStorage.removeItem("failedAttempts");
+        setFailedAttempts(0);
+      }
+    }
+  }, []);
+
   // Forgot Password State & Modal Control
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -43,14 +62,35 @@ export const LoginForm: React.FC = () => {
     let timer: NodeJS.Timeout;
     if (lockoutTimer > 0) {
       timer = setInterval(() => {
-        setLockoutTimer((prev) => prev - 1);
+        const savedUntil = localStorage.getItem("lockoutUntil");
+        if (savedUntil) {
+          const remaining = Math.ceil((parseInt(savedUntil, 10) - Date.now()) / 1000);
+          if (remaining <= 0) {
+            setLockoutTimer(0);
+            setFailedAttempts(0);
+            localStorage.removeItem("lockoutUntil");
+            localStorage.removeItem("failedAttempts");
+            toast.success("You can now try signing in again.");
+          } else {
+            setLockoutTimer(remaining);
+          }
+        } else {
+          setLockoutTimer((prev) => {
+            const next = prev - 1;
+            if (next <= 0) {
+              setFailedAttempts(0);
+              localStorage.removeItem("lockoutUntil");
+              localStorage.removeItem("failedAttempts");
+              toast.success("You can now try signing in again.");
+              return 0;
+            }
+            return next;
+          });
+        }
       }, 1000);
-    } else if (lockoutTimer === 0 && failedAttempts >= MAX_ATTEMPTS) {
-      setFailedAttempts(0); // Reset attempts after timer completes
-      toast.success("You can now try signing in again.");
     }
     return () => clearInterval(timer);
-  }, [lockoutTimer, failedAttempts]);
+  }, [lockoutTimer]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -118,8 +158,11 @@ export const LoginForm: React.FC = () => {
       if (error) {
         const newAttempts = failedAttempts + 1;
         setFailedAttempts(newAttempts);
+        localStorage.setItem("failedAttempts", newAttempts.toString());
 
         if (newAttempts >= MAX_ATTEMPTS) {
+          const until = Date.now() + LOCKOUT_TIME * 1000;
+          localStorage.setItem("lockoutUntil", until.toString());
           setLockoutTimer(LOCKOUT_TIME);
           toast.error(
             `Too many failed attempts. Your account login is locked for ${LOCKOUT_TIME} seconds.`
@@ -134,6 +177,8 @@ export const LoginForm: React.FC = () => {
 
       toast.success("Logged in successfully!");
       setFailedAttempts(0);
+      localStorage.removeItem("failedAttempts");
+      localStorage.removeItem("lockoutUntil");
       router.push("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
@@ -166,9 +211,10 @@ export const LoginForm: React.FC = () => {
 
     setForgotLoading(true);
     try {
-      const { error } = await authClient.forgetPassword({
+
+      const { error } = await authClient.requestPasswordReset({
         email: forgotEmail,
-        redirectTo: "/reset-password",
+        redirectTo: "/auth/reset-password",
       });
 
       if (error) {
