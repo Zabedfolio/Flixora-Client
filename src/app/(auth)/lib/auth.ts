@@ -43,9 +43,8 @@ export const auth = betterAuth({
   },
 
   database: mongodbAdapter(db, {
-    client,
+    transaction: false,
   }),
-
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || '',
