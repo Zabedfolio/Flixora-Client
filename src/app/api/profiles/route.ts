@@ -43,9 +43,10 @@ export async function GET(request: Request) {
 
     const { db } = await connectToDatabase();
 
-    // 1. Seed avatars collection if it is empty
+    // 1. Seed avatars collection if it is empty or incomplete
     const avatarsCount = await db.collection('avatars').countDocuments();
-    if (avatarsCount === 0) {
+    if (avatarsCount < PRESET_AVATARS.length) {
+      await db.collection('avatars').deleteMany({}); // Clear partial entries
       await db.collection('avatars').insertMany(
         PRESET_AVATARS.map(av => ({
           _id: av.id,
