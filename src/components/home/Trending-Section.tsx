@@ -122,6 +122,7 @@ export default function TrendingNow() {
 
               <div className="relative z-10 ml-10 sm:ml-14 w-full">
                 <MediaCard
+                  id={item.id}
                   title={item.title}
                   unsplash_url={item.image}
                   rating="9.0"

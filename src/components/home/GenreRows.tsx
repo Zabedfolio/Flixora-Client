@@ -89,6 +89,7 @@ const MovieRow = ({ genre }: MovieRowProps) => {
               className="w-[145px] shrink-0 sm:w-[175px] md:w-[200px] lg:w-[215px]"
             >
               <MediaCard
+                id={movie.id}
                 title={movie.title}
                 unsplash_url={movie.image}
                 rating={movie.rating}

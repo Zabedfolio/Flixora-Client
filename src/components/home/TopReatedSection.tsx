@@ -112,6 +112,7 @@ export default function TopRated() {
               className="group/card flex-none w-[170px] sm:w-[210px] snap-start flex flex-col gap-2.5 animate-in fade-in"
             >
               <MediaCard
+                id={item.id}
                 title={item.title}
                 unsplash_url={item.image}
                 rating={item.rating.toFixed(1)}

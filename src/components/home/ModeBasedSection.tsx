@@ -428,6 +428,7 @@ export default function MoodBasedPicks() {
                     className="w-full"
                   >
                     <MediaCard
+                      id={item.id}
                       title={item.title}
                       unsplash_url={item.image}
                       rating={item.rating.toFixed(1)}

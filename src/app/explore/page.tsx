@@ -482,6 +482,7 @@ interface MovieCardProps {
 function MovieCard({ movie, isSaved, onToggleSave }: MovieCardProps) {
   return (
     <MediaCard
+      id={movie.id}
       title={movie.title}
       unsplash_url={movie.posterUrl}
       rating={movie.rating.toFixed(1)}
