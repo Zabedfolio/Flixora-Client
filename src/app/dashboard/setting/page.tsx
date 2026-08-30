@@ -21,15 +21,42 @@ import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface Profile {
-  id: string;
+  _id: string;
+  userId: string;
   name: string;
-  avatarColor: string;
-  isKids: boolean;
+  avatar: string;
+  avatarId?: string;
 }
 
-const INITIAL_PROFILES: Profile[] = [
-  { id: '1', name: 'Primary Account', avatarColor: '#FF4C00', isKids: false },
-  { id: '2', name: 'Kids Corner', avatarColor: '#3B82F6', isKids: true }
+const PRESET_AVATARS = [
+  { id: 'spiderman', name: 'Spider-Man', url: "https://i.ibb.co/Cs0Z14TD/857476df6e87.jpg" },
+  { id: 'batman', name: 'Batman', url: "https://i.ibb.co/fzQdvy33/c5005c8f408c.jpg" },
+  { id: 'hulk', name: 'Hulk', url: "https://i.ibb.co/KjG62St5/28a071b23c43.jpg" },
+  { id: 'ironman', name: 'Iron Man', url: "https://i.ibb.co/N6pnL1Vd/c0b33285fed7.jpg" },
+  { id: 'captain_america', name: 'Captain America', url: "https://i.ibb.co/9kBq2HrN/99052d2013b0.jpg" },
+  { id: 'robot', name: 'Robot', url: "https://i.ibb.co/99BwLZ1f/df4b1e66aac1.png" },
+  { id: 'tom', name: 'Tom', url: "https://i.ibb.co/ZRCZZjZY/77a32760a782.png" },
+  { id: 'jerry', name: 'Jerry', url: "https://i.ibb.co/chCxgVC0/e7ba688df62e.png" },
+  { id: 'preset_1', name: 'Vector 1', url: "https://i.ibb.co/T94VNG1/feca82718a3f.png" },
+  { id: 'preset_2', name: 'Vector 2', url: "https://i.ibb.co/hRfpJsBz/77c8ff018f5a.png" },
+  { id: 'preset_3', name: 'Vector 3', url: "https://i.ibb.co/XxyLdGR6/3dc0753b83ec.png" },
+  { id: 'preset_4', name: 'Vector 4', url: "https://i.ibb.co/mrkSXMgF/7dedb3686be5.png" },
+  { id: 'preset_5', name: 'Vector 5', url: "https://i.ibb.co/LXQNQV9m/652fb8497ee2.png" },
+  { id: 'preset_6', name: 'Vector 6', url: "https://i.ibb.co/1Y2xx1kP/51b2fb15a0ee.png" },
+  { id: 'preset_7', name: 'Vector 7', url: "https://i.ibb.co/CKKwvPt3/ff71a75a86b2.png" },
+  { id: 'preset_8', name: 'Vector 8', url: "https://i.ibb.co/gbHs65wB/23a94dbf6add.png" },
+  { id: 'preset_9', name: 'Vector 9', url: "https://i.ibb.co/wr8KLWVX/b36812a8e507.png" },
+  { id: 'preset_10', name: 'Vector 10', url: "https://i.ibb.co/Kj6rV2Lf/6d56e0aff7cb.png" },
+  { id: 'preset_11', name: 'Vector 11', url: "https://i.ibb.co/xS2Bbnnf/c2ad01014374.png" },
+  { id: 'preset_12', name: 'Vector 12', url: "https://i.ibb.co/1tg3pmf5/66bf149bee43.png" },
+  { id: 'preset_13', name: 'Vector 13', url: "https://i.ibb.co/6JYZcLwx/78848dc519d3.png" },
+  { id: 'preset_14', name: 'Vector 14', url: "https://i.ibb.co/t6rg5Wg/0a79a010554f.png" },
+  { id: 'preset_15', name: 'Vector 15', url: "https://i.ibb.co/JjbgKv0Y/5a26e062d00a.png" },
+  { id: 'preset_16', name: 'Vector 16', url: "https://i.ibb.co/nNTXmzFc/94d78e061075.png" },
+  { id: 'preset_17', name: 'Vector 17', url: "https://i.ibb.co/6Rjr6hnF/b4b11563b172.png" },
+  { id: 'preset_18', name: 'Vector 18', url: "https://i.ibb.co/B1kNw0P/d35c729b0b32.png" },
+  { id: 'preset_19', name: 'Vector 19', url: "https://i.ibb.co/0VhJB6Jq/81a3061e3614.png" },
+  { id: 'preset_20', name: 'Vector 20', url: "https://i.ibb.co/K3tMSb9/3c4645c88c8b.png" }
 ];
 
 export default function SettingsPage() {
@@ -37,13 +64,14 @@ export default function SettingsPage() {
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'account' | 'notifications' | 'playback' | 'privacy'>('profile');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const API_BASE = '';
+
   // Profile management states
-  const [profiles, setProfiles] = useState<Profile[]>(INITIAL_PROFILES);
-  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
-  const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [editName, setEditName] = useState('');
-  const [editIsKids, setEditIsKids] = useState(false);
-  const [editColor, setEditColor] = useState('#FF4C00');
+  const [editAvatar, setEditAvatar] = useState(PRESET_AVATARS[0].url);
+  const [editAvatarId, setEditAvatarId] = useState(PRESET_AVATARS[0].id);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Account inputs
   const [email, setEmail] = useState('user@flixora.com');
@@ -51,11 +79,56 @@ export default function SettingsPage() {
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  // Dynamically load session data into profiles list and account email field
+  // Dynamically load profiles from the backend database and account email
   useEffect(() => {
-    if (session) {
+    if (session?.user?.id) {
       setEmail(session.user.email);
-      setProfiles(prev => prev.map(p => p.id === '1' ? { ...p, name: session.user.name || 'Primary Account' } : p));
+      
+      const fetchProfiles = async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/profiles?userId=${session.user.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.length === 0) {
+              const createRes = await fetch(`${API_BASE}/api/profiles`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: session.user.id,
+                  name: session.user.name || 'Primary Account',
+                  avatar: PRESET_AVATARS[0].url,
+                  avatarId: PRESET_AVATARS[0].id
+                })
+              });
+              if (createRes.ok) {
+                const newProf = await createRes.json();
+                setProfiles([newProf]);
+                setEditName(newProf.name);
+                setEditAvatar(newProf.avatar);
+                setEditAvatarId(newProf.avatarId || PRESET_AVATARS[0].id);
+              }
+            } else {
+              setProfiles(data);
+              if (data.length > 0) {
+                setEditName(data[0].name);
+                setEditAvatar(data[0].avatar);
+                setEditAvatarId(data[0].avatarId || PRESET_AVATARS[0].id);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching profiles:", error);
+        }
+      };
+      
+      fetchProfiles();
+    }
+  }, [session]);
+
+  // Sync session name as the default display name
+  useEffect(() => {
+    if (session?.user?.name && !editName) {
+      setEditName(session.user.name);
     }
   }, [session]);
 
@@ -84,48 +157,112 @@ export default function SettingsPage() {
   };
 
   // Profile Save
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveSingleProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) return;
 
-    if (editingProfile) {
-      setProfiles(prev => prev.map(p => 
-        p.id === editingProfile.id ? { ...p, name: editName, isKids: editIsKids, avatarColor: editColor } : p
-      ));
-      triggerAutoSaveToast('Profile settings');
-    } else {
-      const newProfile: Profile = {
-        id: Math.random().toString(),
-        name: editName,
-        isKids: editIsKids,
-        avatarColor: editColor
-      };
-      setProfiles(prev => [...prev, newProfile]);
-      triggerAutoSaveToast('New profile created');
+    try {
+      if (profiles.length > 0) {
+        // UPDATE (PUT)
+        const mainProfile = profiles[0];
+        const res = await fetch(`${API_BASE}/api/profiles/${mainProfile._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editName.trim(),
+            avatar: editAvatar,
+            avatarId: editAvatarId
+          })
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setProfiles([updated]);
+          toast.success('Profile settings updated successfully!');
+          triggerAutoSaveToast('Profile settings');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } else {
+          toast.error('Failed to update profile');
+        }
+      } else {
+        // CREATE (POST)
+        if (!session?.user?.id) {
+          toast.error('User session not loaded. Please wait.');
+          return;
+        }
+        const res = await fetch(`${API_BASE}/api/profiles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: session.user.id,
+            name: editName.trim(),
+            avatar: editAvatar,
+            avatarId: editAvatarId
+          })
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setProfiles([created]);
+          toast.success('Profile created successfully!');
+          triggerAutoSaveToast('Profile settings');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } else {
+          toast.error('Failed to save profile');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Error saving profile');
     }
-    setIsEditProfileModalOpen(false);
   };
 
-  const handleDeleteProfile = (id: string) => {
-    setProfiles(prev => prev.filter(p => p.id !== id));
-    setIsEditProfileModalOpen(false);
-    triggerAutoSaveToast('Profile deleted');
-  };
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleOpenAddProfile = () => {
-    setEditingProfile(null);
-    setEditName('');
-    setEditIsKids(false);
-    setEditColor('#FF4C00');
-    setIsEditProfileModalOpen(true);
-  };
+    // Check size limit (2MB)
+    const limitBytes = 2 * 1024 * 1024;
+    if (file.size > limitBytes) {
+      toast.error('Image size must be within 2MB');
+      return;
+    }
 
-  const handleOpenEditProfile = (profile: Profile) => {
-    setEditingProfile(profile);
-    setEditName(profile.name);
-    setEditIsKids(profile.isKids);
-    setEditColor(profile.avatarColor);
-    setIsEditProfileModalOpen(true);
+    setUploadingImage(true);
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const base64String = reader.result as string;
+      try {
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64String })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setEditAvatar(data.url);
+          setEditAvatarId('custom');
+          toast.success('Custom avatar uploaded!');
+        } else {
+          const err = await res.json();
+          toast.error(err.error || 'Failed to upload custom avatar');
+        }
+      } catch (error) {
+        console.error('Error uploading avatar:', error);
+        toast.error('Upload failed');
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      toast.error('Failed to read image file');
+      setUploadingImage(false);
+    };
   };
 
   return (
@@ -184,46 +321,93 @@ export default function SettingsPage() {
             {activeSubTab === 'profile' && (
               <div className="flex flex-col gap-6 animate-in fade-in duration-200">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-white">Profile Management</h3>
-                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">Add, edit, or customize display accounts</p>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-white">Profile Settings</h3>
+                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">Customize your display name and avatar</p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  {profiles.map((profile) => (
-                    <div 
-                      key={profile.id} 
-                      onClick={() => handleOpenEditProfile(profile)}
-                      className="group flex flex-col items-center gap-3 bg-[#0E0E0E] hover:bg-[#141414] border border-[#1A1A1A] rounded-2xl p-5 text-center cursor-pointer transition-all hover:scale-103"
-                    >
-                      <div 
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-white relative shadow-md"
-                        style={{ backgroundColor: profile.avatarColor }}
-                      >
-                        {profile.name[0]}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-2xl flex items-center justify-center text-white transition-opacity">
-                          <Edit2 size={16} />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-0.5 min-w-0 w-full">
-                        <span className="text-xs font-bold text-white truncate block">{profile.name}</span>
-                        {profile.isKids && (
-                          <span className="text-[8px] bg-blue-900/30 border border-blue-500/20 text-blue-400 font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md w-fit mx-auto mt-0.5">
-                            Kids
-                          </span>
+                <form onSubmit={handleSaveSingleProfile} className="flex flex-col gap-6 max-w-xl">
+                  {/* Name Input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Name</label>
+                    <input 
+                      type="text" 
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Your Name"
+                      required
+                      className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3.5 text-xs font-semibold focus:outline-none focus:border-[#FF4C00]"
+                    />
+                  </div>
+
+                  {/* Custom Image Upload & Current Preview */}
+                  <div className="flex flex-col gap-3 border-t border-[#1A1A1A] pt-5">
+                    <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Picture</label>
+                    
+                    <div className="flex items-center gap-5">
+                      {/* Current selected preview */}
+                      <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative shadow-lg">
+                        <img src={editAvatar} alt="preview" className="w-full h-full object-cover" />
+                        {uploadingImage && (
+                          <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
+                            <span className="loading loading-spinner loading-sm text-[#FF4C00]"></span>
+                          </div>
                         )}
                       </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploadingImage}
+                          className="file-input file-input-bordered file-input-sm w-full max-w-xs bg-zinc-950 text-xs border-zinc-850 text-gray-300 focus:outline-hidden"
+                        />
+                        <span className="text-[8px] text-zinc-550 font-black uppercase tracking-wide">PNG, JPG or WEBP (Max 2MB)</span>
+                      </div>
                     </div>
-                  ))}
+                  </div>
 
-                  {/* Add Profile Card */}
-                  <button 
-                    onClick={handleOpenAddProfile}
-                    className="flex flex-col items-center justify-center border border-dashed border-[#FF4C00]/30 hover:border-[#FF4C00] bg-transparent hover:bg-[#FF4C00]/5 text-zinc-400 hover:text-white rounded-2xl p-5 cursor-pointer transition-all min-h-[126px] outline-none group"
-                  >
-                    <Plus size={20} className="text-[#FF4C00] group-hover:scale-110 transition-transform mb-1" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">Add Profile</span>
-                  </button>
-                </div>
+                  {/* Preset Vector Avatars Selector */}
+                  <div className="flex flex-col gap-2.5 border-t border-[#1A1A1A] pt-5">
+                    <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Choose a preset avatar</label>
+                    
+                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 p-3 bg-[#111] border border-[#262626] rounded-xl max-h-[140px] overflow-y-auto scrollbar-thin">
+                      {PRESET_AVATARS.map((avatar) => (
+                        <button
+                          key={avatar.id}
+                          type="button"
+                          onClick={() => {
+                            setEditAvatar(avatar.url);
+                            setEditAvatarId(avatar.id);
+                          }}
+                          className={`relative aspect-square w-full rounded-lg border overflow-hidden hover:scale-105 transition-all cursor-pointer ${
+                            editAvatarId === avatar.id ? 'border-[#FF4C00] ring-2 ring-[#FF4C00]/30' : 'border-zinc-800'
+                          }`}
+                        >
+                          <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
+                          {editAvatarId === avatar.id && (
+                            <div className="absolute inset-0 bg-[#FF4C00]/10 flex items-center justify-center">
+                              <div className="bg-[#FF4C00] text-black rounded-full p-0.5">
+                                <Check size={8} strokeWidth={4} />
+                              </div>
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3 border-t border-[#1A1A1A] pt-5 mt-2">
+                    <button
+                      type="submit"
+                      disabled={uploadingImage}
+                      className="bg-[#FF4C00] hover:bg-[#e04300] text-black py-3.5 px-8 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10 disabled:opacity-55 disabled:cursor-not-allowed"
+                    >
+                      Save Settings
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
 
@@ -482,101 +666,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* EDIT PROFILE MODAL */}
-      {isEditProfileModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
-            
-            <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-3">
-              <h3 className="text-sm font-black uppercase tracking-wider text-white">
-                {editingProfile ? 'Edit Profile' : 'Add Profile'}
-              </h3>
-              <button 
-                onClick={() => setIsEditProfileModalOpen(false)}
-                className="p-1 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-              
-              {/* Profile Name */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Name</label>
-                <input 
-                  type="text" 
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="e.g. Guest Account"
-                  required
-                  className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-[#FF4C00]"
-                />
-              </div>
-
-              {/* Avatar Color */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Avatar Background Color</label>
-                <div className="flex gap-2">
-                  {['#FF4C00', '#3B82F6', '#10B981', '#F59E0B', '#EC4899'].map((col) => (
-                    <button 
-                      key={col}
-                      type="button"
-                      onClick={() => setEditColor(col)}
-                      className={`w-7 h-7 rounded-lg border transition-all cursor-pointer ${
-                        editColor === col ? 'scale-110 border-white' : 'border-transparent'
-                      }`}
-                      style={{ backgroundColor: col }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Kids Mode Toggle */}
-              <div className="flex items-center justify-between border-t border-b border-[#1A1A1A] py-4">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-white uppercase tracking-wide">Kids Profile</span>
-                  <span className="text-[9px] text-zinc-550 font-bold uppercase tracking-wider">Restrict playback to age-safe content</span>
-                </div>
-                <input 
-                  type="checkbox"
-                  checked={editIsKids}
-                  onChange={(e) => setEditIsKids(e.target.checked)}
-                  className="toggle toggle-primary"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 mt-2">
-                {editingProfile && (
-                  <button 
-                    type="button"
-                    onClick={() => handleDeleteProfile(editingProfile.id)}
-                    className="p-3.5 rounded-xl border border-zinc-800 hover:border-red-500 text-zinc-450 hover:text-red-500 transition-all cursor-pointer"
-                    title="Delete profile"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setIsEditProfileModalOpen(false)}
-                  className="flex-1 border border-[#262626] hover:bg-zinc-950 text-zinc-400 hover:text-white py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-[#FF4C00] hover:bg-[#e04300] text-black py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10"
-                >
-                  Save
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Edit modal removed: profile updates are now managed directly inline */}
 
       {/* DELETE ACCOUNT CONFIRMATION MODAL */}
       {isDeleteAccountModalOpen && (
