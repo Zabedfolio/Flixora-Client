@@ -58,6 +58,7 @@ export default function DashboardMyListPage() {
               {items.map((item) => (
                 <MediaCard
                   key={item.id}
+                  id={item.id}
                   title={item.title}
                   unsplash_url={item.unsplash_url}
                   rating="8.5"

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
-// import ReactMarkdown from "react-markdown";
-import AiMovieResultCard from "./AIMovieResultCard";
+import ReactMarkdown from "react-markdown";
+import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
 import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface Slide {
@@ -27,6 +28,7 @@ const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
 
 export default function HeroBanner() {
+  const router = useRouter();
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -36,7 +38,6 @@ export default function HeroBanner() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiChatResult | null>(null);
   const [username, setUsername] = useState("Viewer");
-  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
   const { data: session } = authClient.useSession();
   const userName = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
 
@@ -318,25 +319,25 @@ export default function HeroBanner() {
                     aiResult?.message && (
                       <ReactMarkdown
                         components={{
-                          h3: ({ children }) => (
+                          h3: ({ children }: { children?: React.ReactNode }) => (
                             <h3 className="mt-3 text-sm font-bold text-white">
                               {children}
                             </h3>
                           ),
 
-                          p: ({ children }) => (
+                          p: ({ children }: { children?: React.ReactNode }) => (
                             <p className="mt-1 text-xs leading-relaxed text-zinc-300">
                               {children}
                             </p>
                           ),
 
-                          strong: ({ children }) => (
+                          strong: ({ children }: { children?: React.ReactNode }) => (
                             <strong className="font-bold text-white">
                               {children}
                             </strong>
                           ),
 
-                          ul: ({ children }) => (
+                          ul: ({ children }: { children?: React.ReactNode }) => (
                             <ul className="mt-2 list-disc space-y-1 pl-4">
                               {children}
                             </ul>
@@ -357,6 +358,7 @@ export default function HeroBanner() {
                         key={movie.id}
                         movie={movie}
                         index={index}
+                        onSelect={(m) => router.push(`/movie/${m.id}`)}
                       />
                     ))}
                   </div>
