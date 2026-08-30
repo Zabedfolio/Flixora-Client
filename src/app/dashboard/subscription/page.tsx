@@ -1,18 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Crown,
   CreditCard,
   Download,
   Check,
-  HelpCircle,
-  X,
-  Info,
   AlertTriangle,
+  Loader2,
+  Info,
+  PackageX,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+
+// API Types
+export interface Plan {
+  _id: string;
+  name: string;
+  price: string;
+  resolution: string;
+  screens: string;
+  downloads: string;
+  ads: string;
+  kids: string;
+}
+
+export interface PlanResponse {
+  success: boolean;
+  message: string;
+  data: Plan[];
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+export const getAllPlans = async (): Promise<PlanResponse> => {
+  const response = await fetch(`${API_URL}/api/plans`, {
+    cache: 'no-store',
+  });
+  const result: PlanResponse = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch plans');
+  }
+
+  return result;
+};
+
 interface BillingRecord {
   id: string;
   date: string;
@@ -52,52 +86,33 @@ const BILLING_HISTORY: BillingRecord[] = [
   },
 ];
 
-const PLANS = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    price: '$7.99/mo',
-    resolution: '720p (HD)',
-    screens: '1 screen',
-    downloads: 'No downloads',
-    ads: 'Ad-supported',
-    kids: '1 kids profile',
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    price: '$11.99/mo',
-    resolution: '1080p (FHD)',
-    screens: '2 screens',
-    downloads: 'Standard downloads',
-    ads: 'Ad-free',
-    kids: '3 kids profiles',
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '$14.99/mo',
-    resolution: '4K + HDR',
-    screens: '4 screens',
-    downloads: 'Unlimited downloads',
-    ads: 'Ad-free',
-    kids: 'Unlimited kids profiles',
-  },
-];
-
 export default function SubscriptionPage() {
-  const [currentPlan, setCurrentPlan] = useState<string>('premium');
-  const [billingList, setBillingList] =
-    useState<BillingRecord[]>(BILLING_HISTORY);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [currentPlan, setCurrentPlan] = useState<string>('');
+  const [billingList] = useState<BillingRecord[]>(BILLING_HISTORY);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
-  const activePlanData = PLANS.find(p => p.id === currentPlan) || PLANS[2];
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await getAllPlans();
+        if (res.data && res.data.length > 0) {
+          setPlans(res.data);
+          setCurrentPlan(res.data[0]._id);
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Error fetching plans');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handlePlanChange = (planId: string) => {
-    setCurrentPlan(planId);
-    toast.success(`Successfully upgraded to the ${activePlanData.name} plan!`);
-  };
+    fetchPlans();
+  }, []);
+
+  const activePlanData = plans.find(p => p._id === currentPlan) || plans[0];
 
   const handleConfirmCancel = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +138,7 @@ export default function SubscriptionPage() {
                 Subscription Plan
               </h1>
             </div>
-            <p className="text-xs md:text-sm text-zinc-550 font-medium max-w-2xl leading-relaxed">
+            <p className="text-xs md:text-sm text-zinc-500 font-medium max-w-2xl leading-relaxed">
               View your billing statements, change payment methods, or upgrade
               your streaming resolution.
             </p>
@@ -131,48 +146,50 @@ export default function SubscriptionPage() {
         </div>
 
         {/* CURRENT PLAN OVERVIEW SECTION */}
-        <section className="bg-[#1A1A1A] border border-[#FF4C00]/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_0_30px_rgba(255,76,0,0.06)] relative overflow-hidden">
-          <div className="absolute -right-16 -top-16 w-40 h-40 bg-[#FF4C00]/5 blur-[60px] rounded-full pointer-events-none" />
+        {activePlanData && (
+          <section className="bg-[#1A1A1A] border border-[#FF4C00]/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_0_30px_rgba(255,76,0,0.06)] relative overflow-hidden">
+            <div className="absolute -right-16 -top-16 w-40 h-40 bg-[#FF4C00]/5 blur-[60px] rounded-full pointer-events-none" />
 
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00] shrink-0">
-              <Crown size={22} fill="currentColor" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black text-white uppercase tracking-wider">
-                  {activePlanData.name} Plan
-                </span>
-                <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md">
-                  Active
-                </span>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00] shrink-0">
+                <Crown size={22} fill="currentColor" />
               </div>
-              <p className="text-xs text-zinc-400 font-semibold mt-0.5">
-                Current Cost:{' '}
-                <span className="text-white font-bold">
-                  {activePlanData.price}
-                </span>{' '}
-                • Next renewal date:{' '}
-                <span className="text-white font-bold">2026-09-15</span>
-              </p>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-black text-white uppercase tracking-wider">
+                    {activePlanData.name} Plan
+                  </span>
+                  <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00] text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 font-semibold mt-0.5">
+                  Current Cost:{' '}
+                  <span className="text-white font-bold">
+                    {activePlanData.price}
+                  </span>{' '}
+                  • Next renewal date:{' '}
+                  <span className="text-white font-bold">2026-09-15</span>
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0 z-10">
-            <a
-              href="#plans"
-              className="flex-1 md:flex-initial text-center bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10 outline-none"
-            >
-              Upgrade Plan
-            </a>
-            <button
-              onClick={() => setIsCancelModalOpen(true)}
-              className="flex-grow md:flex-initial border border-zinc-700 hover:border-red-500 text-zinc-400 hover:text-red-500 font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
-            >
-              Cancel Sub
-            </button>
-          </div>
-        </section>
+            <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0 z-10">
+              <a
+                href="#plans"
+                className="flex-1 md:flex-initial text-center bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10 outline-none"
+              >
+                Upgrade Plan
+              </a>
+              <button
+                onClick={() => setIsCancelModalOpen(true)}
+                className="flex-grow md:flex-initial border border-zinc-700 hover:border-red-500 text-zinc-400 hover:text-red-500 font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
+              >
+                Cancel Sub
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* PLANS COMPARISON SECTION */}
         <section id="plans" className="flex flex-col gap-6">
@@ -180,99 +197,120 @@ export default function SubscriptionPage() {
             Available Stream Plans
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {PLANS.map(plan => {
-              const isActive = plan.id === currentPlan;
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="animate-spin text-[#FF4C00]" size={32} />
+            </div>
+          ) : plans.length === 0 ? (
+            /* EMPTY STATE - ডাটা না পাওয়া গেলে এটি প্রদর্শিত হবে */
+            <div className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
+                <PackageX size={24} />
+              </div>
+              <p className="text-sm font-bold text-zinc-300">
+                No subscription plans available
+              </p>
+              <p className="text-xs text-zinc-500 max-w-sm">
+                We couldn't fetch any active plans. Please check your backend
+                connection or database data.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map(plan => {
+                const isActive = plan._id === currentPlan;
 
-              return (
-                <div
-                  key={plan.id}
-                  className={`bg-[#0A0A0A] border rounded-2xl p-6 flex flex-col justify-between gap-6 transition-all duration-300 ${
-                    isActive
-                      ? 'border-[#FF4C00] shadow-[0_0_25px_rgba(255,76,0,0.06)]'
-                      : 'border-[#1A1A1A] hover:border-zinc-800'
-                  }`}
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-black text-white uppercase tracking-wider">
-                          {plan.name}
-                        </span>
-                        <span className="text-xl font-black text-[#FF4C00]">
-                          {plan.price.split('/')[0]}
-                        </span>
+                return (
+                  <div
+                    key={plan._id}
+                    className={`bg-[#0A0A0A] border rounded-2xl p-6 flex flex-col justify-between gap-6 transition-all duration-300 ${
+                      isActive
+                        ? 'border-[#FF4C00] shadow-[0_0_25px_rgba(255,76,0,0.06)]'
+                        : 'border-[#1A1A1A] hover:border-zinc-800'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-black text-white uppercase tracking-wider">
+                            {plan.name}
+                          </span>
+                          <span className="text-xl font-black text-[#FF4C00]">
+                            {plan.price ? plan.price.split('/')[0] : ''}
+                          </span>
+                        </div>
+                        {isActive && (
+                          <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg">
+                            Current Plan
+                          </span>
+                        )}
                       </div>
-                      {isActive && (
-                        <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg">
-                          Current Plan
-                        </span>
-                      )}
+
+                      {/* Plan features lists */}
+                      <ul className="space-y-3.5 text-xs font-semibold text-zinc-400">
+                        <li className="flex items-center gap-2.5">
+                          <Check size={14} className="text-[#FF4C00]" />
+                          <span>
+                            Resolution:{' '}
+                            <strong className="text-white">
+                              {plan.resolution}
+                            </strong>
+                          </span>
+                        </li>
+                        <li className="flex items-center gap-2.5">
+                          <Check size={14} className="text-[#FF4C00]" />
+                          <span>
+                            Screens:{' '}
+                            <strong className="text-white">
+                              {plan.screens}
+                            </strong>
+                          </span>
+                        </li>
+                        <li className="flex items-center gap-2.5">
+                          <Check size={14} className="text-[#FF4C00]" />
+                          <span>{plan.downloads}</span>
+                        </li>
+                        <li className="flex items-center gap-2.5">
+                          <Check size={14} className="text-[#FF4C00]" />
+                          <span>{plan.ads}</span>
+                        </li>
+                        <li className="flex items-center gap-2.5">
+                          <Check size={14} className="text-[#FF4C00]" />
+                          <span>{plan.kids}</span>
+                        </li>
+                      </ul>
                     </div>
 
-                    {/* Plan features lists */}
-                    <ul className="space-y-3.5 text-xs font-semibold text-zinc-400">
-                      <li className="flex items-center gap-2.5">
-                        <Check size={14} className="text-[#FF4C00]" />
-                        <span>
-                          Resolution:{' '}
-                          <strong className="text-white">
-                            {plan.resolution}
-                          </strong>
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2.5">
-                        <Check size={14} className="text-[#FF4C00]" />
-                        <span>
-                          Screens:{' '}
-                          <strong className="text-white">{plan.screens}</strong>
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2.5">
-                        <Check size={14} className="text-[#FF4C00]" />
-                        <span>{plan.downloads}</span>
-                      </li>
-                      <li className="flex items-center gap-2.5">
-                        <Check size={14} className="text-[#FF4C00]" />
-                        <span>{plan.ads}</span>
-                      </li>
-                      <li className="flex items-center gap-2.5">
-                        <Check size={14} className="text-[#FF4C00]" />
-                        <span>{plan.kids}</span>
-                      </li>
-                    </ul>
+                    {isActive ? (
+                      <button
+                        disabled
+                        className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed"
+                      >
+                        Active Plan
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/api/checkout_sessions?planId=${plan._id}`}
+                        className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm block"
+                      >
+                        Switch Plan
+                      </Link>
+                    )}
                   </div>
-
-                  {isActive ? (
-                    <button
-                      disabled
-                      className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed"
-                    >
-                      Active Plan
-                    </button>
-                  ) : (
-                    <Link
-                      href={`/api/checkout_sessions?planId=${plan.id}`}
-                      className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm block"
-                    >
-                      Switch Plan
-                    </Link>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
-        {/* BOTTOM METADATA: BILLING & PAYMENT */}
+        {/* BILLING & PAYMENT */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Billing statements list */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             <h2 className="text-lg font-bold text-zinc-300 tracking-wide uppercase">
               Billing History
             </h2>
 
-            {/* Desktop Table View */}
+            {/* Desktop Table */}
             <div className="hidden sm:block overflow-x-auto bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl">
               <table className="table w-full border-collapse">
                 <thead>
@@ -326,7 +364,7 @@ export default function SubscriptionPage() {
               </table>
             </div>
 
-            {/* Mobile Stacked Card View */}
+            {/* Mobile Stacked View */}
             <div className="flex sm:hidden flex-col gap-3">
               {billingList.map(bill => (
                 <div
@@ -368,7 +406,7 @@ export default function SubscriptionPage() {
             </div>
           </div>
 
-          {/* Payment Method configuration */}
+          {/* Payment Method Details */}
           <div className="flex flex-col gap-4">
             <h2 className="text-lg font-bold text-zinc-300 tracking-wide uppercase">
               Payment Details
@@ -384,7 +422,7 @@ export default function SubscriptionPage() {
                     <span className="text-xs font-bold text-white uppercase tracking-wider">
                       Visa ending in 4242
                     </span>
-                    <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
                       Expires 12/2028
                     </span>
                   </div>
@@ -392,7 +430,7 @@ export default function SubscriptionPage() {
 
                 <div className="bg-[#141414] border border-[#262626]/30 p-4 rounded-xl flex items-start gap-2.5 mt-2">
                   <Info size={14} className="text-zinc-500 shrink-0 mt-0.5" />
-                  <p className="text-[9px] text-zinc-550 leading-relaxed font-semibold">
+                  <p className="text-[9px] text-zinc-500 leading-relaxed font-semibold">
                     Billing details can be updated dynamically at any time. Card
                     validation takes 2-3 business hours.
                   </p>
@@ -410,7 +448,7 @@ export default function SubscriptionPage() {
         </div>
       </main>
 
-      {/* CANCELLATION FLOW CONFIRMATION MODAL */}
+      {/* CANCELLATION MODAL */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
@@ -435,7 +473,7 @@ export default function SubscriptionPage() {
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">
+                <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
                   Why are you leaving? (Optional)
                 </label>
                 <select
