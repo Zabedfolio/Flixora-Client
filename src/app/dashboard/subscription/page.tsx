@@ -10,9 +10,11 @@ import {
   Loader2,
   Info,
   PackageX,
+  Copy,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 // API Types
 export interface Plan {
@@ -32,7 +34,7 @@ export interface PlanResponse {
   data: Plan[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = '';
 
 export const getAllPlans = async (): Promise<PlanResponse> => {
   const response = await fetch(`${API_URL}/api/plans`, {
@@ -90,9 +92,11 @@ export default function SubscriptionPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPlan, setCurrentPlan] = useState<string>('');
-  const [billingList] = useState<BillingRecord[]>(BILLING_HISTORY);
+  const [billingList, setBillingList] = useState<BillingRecord[]>([]);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -100,7 +104,16 @@ export default function SubscriptionPage() {
         const res = await getAllPlans();
         if (res.data && res.data.length > 0) {
           setPlans(res.data);
-          setCurrentPlan(res.data[0]._id);
+          
+          // Map user plan from session if defined, else fallback to Basic
+          const userPlanId = (session?.user as any)?.planId;
+          const matchedPlan = res.data.find(p => p._id === userPlanId);
+          if (matchedPlan) {
+            setCurrentPlan(matchedPlan._id);
+          } else {
+            const basicPlan = res.data.find(p => p.name.toLowerCase() === 'basic') || res.data[0];
+            setCurrentPlan(basicPlan._id);
+          }
         }
       } catch (error: any) {
         toast.error(error.message || 'Error fetching plans');
@@ -109,8 +122,25 @@ export default function SubscriptionPage() {
       }
     };
 
+    const fetchPayments = async () => {
+      try {
+        const response = await fetch('/api/payments');
+        if (response.ok) {
+          const res = await response.json();
+          if (res.success && res.data) {
+            setBillingList(res.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching billing history:', error);
+      }
+    };
+
     fetchPlans();
-  }, []);
+    if (session?.user?.id) {
+      fetchPayments();
+    }
+  }, [session]);
 
   const activePlanData = plans.find(p => p._id === currentPlan) || plans[0];
 
@@ -190,6 +220,65 @@ export default function SubscriptionPage() {
             </div>
           </section>
         )}
+
+        {/* DEMO CARD HELP ALERT */}
+        <div className="bg-[#1A1A1A] border border-[#FF4C00]/20 rounded-2xl p-5 flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 flex items-center justify-center text-[#FF4C00] shrink-0 animate-pulse">
+              <Info size={20} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Demo Payment Credentials</h4>
+              <p className="text-xs text-zinc-400 mt-0.5 font-medium leading-relaxed">Click any credential chip below to copy it instantly for use on the Stripe checkout page.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-550 text-[10px] uppercase font-black tracking-wider">Card:</span>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText("4242424242424242");
+                  toast.success("Card number copied!");
+                }}
+                title="Click to copy Card Number"
+                className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
+              >
+                <span>4242 4242 4242 4242</span>
+                <Copy size={11} className="text-zinc-500 group-hover:text-black transition-colors" />
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-550 text-[10px] uppercase font-black tracking-wider">Expiry:</span>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText("12/30");
+                  toast.success("Expiry copied!");
+                }}
+                title="Click to copy Expiry"
+                className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
+              >
+                <span>12/30</span>
+                <Copy size={11} className="text-zinc-500 group-hover:text-black transition-colors" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-550 text-[10px] uppercase font-black tracking-wider">CVC:</span>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText("123");
+                  toast.success("CVC copied!");
+                }}
+                title="Click to copy CVC"
+                className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
+              >
+                <span>123</span>
+                <Copy size={11} className="text-zinc-500 group-hover:text-black transition-colors" />
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* PLANS COMPARISON SECTION */}
         <section id="plans" className="flex flex-col gap-6">
@@ -290,7 +379,7 @@ export default function SubscriptionPage() {
                       </button>
                     ) : (
                       <Link
-                        href={`/api/checkout_sessions?planId=${plan._id}`}
+                        href={`/api/checkout_sessions?planId=${plan._id}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan}`}
                         className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm block"
                       >
                         Switch Plan
@@ -347,16 +436,15 @@ export default function SubscriptionPage() {
                         </span>
                       </td>
                       <td className="p-4 pr-6 text-right">
-                        <button
-                          onClick={() =>
-                            toast.success(
-                              `Downloading ${bill.invoiceId} PDF...`,
-                            )
-                          }
-                          className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                        <a
+                          href={`/api/payments/invoice?id=${bill.id}`}
+                          download
+                          onClick={() => toast.success(`Downloading ${bill.invoiceId}...`)}
+                          className="inline-flex items-center justify-center p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
+                          title="Download Invoice"
                         >
                           <Download size={13} />
-                        </button>
+                        </a>
                       </td>
                     </tr>
                   ))}
@@ -392,14 +480,15 @@ export default function SubscriptionPage() {
                         {bill.amount}
                       </span>
                     </div>
-                    <button
-                      onClick={() =>
-                        toast.success(`Downloading ${bill.invoiceId} PDF...`)
-                      }
-                      className="p-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                    <a
+                      href={`/api/payments/invoice?id=${bill.id}`}
+                      download
+                      onClick={() => toast.success(`Downloading ${bill.invoiceId}...`)}
+                      className="inline-flex items-center justify-center p-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
+                      title="Download Invoice"
                     >
                       <Download size={14} />
-                    </button>
+                    </a>
                   </div>
                 </div>
               ))}
