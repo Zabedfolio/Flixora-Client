@@ -133,7 +133,7 @@ export default function HeroBanner() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: trimmed,
+            prompt: trimmed,
           }),
         },
       );
