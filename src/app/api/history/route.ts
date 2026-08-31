@@ -28,6 +28,7 @@ export async function GET() {
     // Format fields for frontend compatibility
     const formattedHistory = history.map((h: any) => ({
       id: h._id.toString(),
+      movieId: h.movieId,
       title: h.title,
       type: 'movie',
       genres: h.category ? [h.category] : ['Movie'],
