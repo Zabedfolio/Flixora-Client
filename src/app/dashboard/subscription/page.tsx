@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Crown,
   CreditCard,
@@ -14,135 +14,75 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { authClient } from '@/app/(auth)/lib/auth-client';
-
-// API Types
-export interface Plan {
-  _id: string;
-  name: string;
-  price: string;
-  resolution: string;
-  screens: string;
-  downloads: string;
-  ads: string;
-  kids: string;
-}
-
-export interface PlanResponse {
-  success: boolean;
-  message: string;
-  data: Plan[];
-}
-
-const API_URL = '';
-
-export const getAllPlans = async (): Promise<PlanResponse> => {
-  const response = await fetch(`${API_URL}/api/plans`, {
-    cache: 'no-store',
-  });
-  const result: PlanResponse = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || 'Failed to fetch plans');
-  }
-
-  return result;
-};
-
-interface BillingRecord {
-  id: string;
-  date: string;
-  amount: string;
-  status: 'Paid' | 'Failed';
-  invoiceId: string;
-}
-
-const BILLING_HISTORY: BillingRecord[] = [
-  {
-    id: '1',
-    date: '2026-08-15',
-    amount: '$14.99',
-    status: 'Paid',
-    invoiceId: 'INV-2026-004',
-  },
-  {
-    id: '2',
-    date: '2026-07-15',
-    amount: '$14.99',
-    status: 'Paid',
-    invoiceId: 'INV-2026-003',
-  },
-  {
-    id: '3',
-    date: '2026-06-15',
-    amount: '$14.99',
-    status: 'Paid',
-    invoiceId: 'INV-2026-002',
-  },
-  {
-    id: '4',
-    date: '2026-05-15',
-    amount: '$14.99',
-    status: 'Failed',
-    invoiceId: 'INV-2026-001',
-  },
-];
+import {
+  getAllPlans,
+  getUserPayments,
+  Plan,
+  BillingRecord,
+} from '@/lib/paymentsData';
 
 export default function SubscriptionPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [currentPlan, setCurrentPlan] = useState<string>('');
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [billingList, setBillingList] = useState<BillingRecord[]>([]);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
   const { data: session } = authClient.useSession();
+  const searchParams = useSearchParams();
+
+  const loadData = useCallback(async (userId?: string) => {
+    setLoading(true);
+    try {
+      const resPlans = await getAllPlans();
+      if (resPlans.data && resPlans.data.length > 0) {
+        setPlans(resPlans.data);
+      }
+
+      if (userId) {
+        const historyData = await getUserPayments(userId);
+        setBillingList(historyData);
+
+        const latestPaidPayment = historyData.find(
+          (item: BillingRecord) => item.status === 'Paid',
+        );
+        if (latestPaidPayment) {
+          setCurrentPlan(latestPaidPayment.planId);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error loading subscription data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const res = await getAllPlans();
-        if (res.data && res.data.length > 0) {
-          setPlans(res.data);
-          
-          // Map user plan from session if defined, else fallback to Basic
-          const userPlanId = (session?.user as any)?.planId;
-          const matchedPlan = res.data.find(p => p._id === userPlanId);
-          if (matchedPlan) {
-            setCurrentPlan(matchedPlan._id);
-          } else {
-            const basicPlan = res.data.find(p => p.name.toLowerCase() === 'basic') || res.data[0];
-            setCurrentPlan(basicPlan._id);
-          }
-        }
-      } catch (error: any) {
-        toast.error(error.message || 'Error fetching plans');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchPayments = async () => {
-      try {
-        const response = await fetch('/api/payments');
-        if (response.ok) {
-          const res = await response.json();
-          if (res.success && res.data) {
-            setBillingList(res.data);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching billing history:', error);
-      }
-    };
-
-    fetchPlans();
     if (session?.user?.id) {
-      fetchPayments();
+      loadData(session.user.id);
+    } else {
+      loadData();
     }
-  }, [session]);
+  }, [session, loadData]);
 
-  const activePlanData = plans.find(p => p._id === currentPlan) || plans[0];
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+
+    if (success === 'true') {
+      toast.success('Payment successful! Your subscription is now active.');
+      if (session?.user?.id) {
+        loadData(session.user.id);
+      }
+    } else if (canceled === 'true') {
+      toast.error('Payment process was cancelled.');
+    }
+  }, [searchParams, session, loadData]);
+
+  const activePlanData = plans.find(p => p._id === currentPlan);
 
   const handleConfirmCancel = (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +116,7 @@ export default function SubscriptionPage() {
         </div>
 
         {/* CURRENT PLAN OVERVIEW SECTION */}
-        {activePlanData && (
+        {activePlanData ? (
           <section className="bg-[#1A1A1A] border border-[#FF4C00]/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-[0_0_30px_rgba(255,76,0,0.06)] relative overflow-hidden">
             <div className="absolute -right-16 -top-16 w-40 h-40 bg-[#FF4C00]/5 blur-[60px] rounded-full pointer-events-none" />
 
@@ -219,6 +159,11 @@ export default function SubscriptionPage() {
               </button>
             </div>
           </section>
+        ) : (
+          <div className="bg-[#1A1A1A]/40 border border-zinc-800/80 rounded-2xl p-6 text-center text-zinc-400 text-sm font-semibold">
+            You don't have an active subscription yet. Choose a plan below to
+            get started!
+          </div>
         )}
 
         {/* DEMO CARD HELP ALERT */}
@@ -228,53 +173,70 @@ export default function SubscriptionPage() {
               <Info size={20} />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Demo Payment Credentials</h4>
-              <p className="text-xs text-zinc-400 mt-0.5 font-medium leading-relaxed">Click any credential chip below to copy it instantly for use on the Stripe checkout page.</p>
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                Demo Payment Credentials
+              </h4>
+              <p className="text-xs text-zinc-400 mt-0.5 font-medium leading-relaxed">
+                Click any credential chip below to copy it instantly for use on
+                the Stripe checkout page.
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-zinc-550 text-[10px] uppercase font-black tracking-wider">Card:</span>
-              <button 
+              <span className="text-zinc-500 text-[10px] uppercase font-black tracking-wider">
+                Card:
+              </span>
+              <button
                 onClick={() => {
-                  navigator.clipboard.writeText("4242424242424242");
-                  toast.success("Card number copied!");
+                  navigator.clipboard.writeText('4242424242424242');
+                  toast.success('Card number copied!');
                 }}
-                title="Click to copy Card Number"
                 className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
               >
                 <span>4242 4242 4242 4242</span>
-                <Copy size={11} className="text-zinc-500 group-hover:text-black transition-colors" />
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-550 text-[10px] uppercase font-black tracking-wider">Expiry:</span>
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText("12/30");
-                  toast.success("Expiry copied!");
-                }}
-                title="Click to copy Expiry"
-                className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
-              >
-                <span>12/30</span>
-                <Copy size={11} className="text-zinc-500 group-hover:text-black transition-colors" />
+                <Copy
+                  size={11}
+                  className="text-zinc-500 group-hover:text-black transition-colors"
+                />
               </button>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-zinc-550 text-[10px] uppercase font-black tracking-wider">CVC:</span>
-              <button 
+              <span className="text-zinc-500 text-[10px] uppercase font-black tracking-wider">
+                Expiry:
+              </span>
+              <button
                 onClick={() => {
-                  navigator.clipboard.writeText("123");
-                  toast.success("CVC copied!");
+                  navigator.clipboard.writeText('12/30');
+                  toast.success('Expiry copied!');
                 }}
-                title="Click to copy CVC"
+                className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
+              >
+                <span>12/30</span>
+                <Copy
+                  size={11}
+                  className="text-zinc-500 group-hover:text-black transition-colors"
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-500 text-[10px] uppercase font-black tracking-wider">
+                CVC:
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText('123');
+                  toast.success('CVC copied!');
+                }}
                 className="flex items-center gap-1.5 bg-[#1F1F1F]/60 hover:bg-[#FF4C00] border border-[#2B2B2B] hover:border-transparent px-3 py-1.5 rounded-lg transition-all duration-250 cursor-pointer text-xs font-mono font-bold text-zinc-300 hover:text-black outline-none group active:scale-95"
               >
                 <span>123</span>
-                <Copy size={11} className="text-zinc-500 group-hover:text-black transition-colors" />
+                <Copy
+                  size={11}
+                  className="text-zinc-500 group-hover:text-black transition-colors"
+                />
               </button>
             </div>
           </div>
@@ -291,17 +253,12 @@ export default function SubscriptionPage() {
               <Loader2 className="animate-spin text-[#FF4C00]" size={32} />
             </div>
           ) : plans.length === 0 ? (
-            /* EMPTY STATE - ডাটা না পাওয়া গেলে এটি প্রদর্শিত হবে */
             <div className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-3">
               <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
                 <PackageX size={24} />
               </div>
               <p className="text-sm font-bold text-zinc-300">
                 No subscription plans available
-              </p>
-              <p className="text-xs text-zinc-500 max-w-sm">
-                We couldn't fetch any active plans. Please check your backend
-                connection or database data.
               </p>
             </div>
           ) : (
@@ -335,7 +292,6 @@ export default function SubscriptionPage() {
                         )}
                       </div>
 
-                      {/* Plan features lists */}
                       <ul className="space-y-3.5 text-xs font-semibold text-zinc-400">
                         <li className="flex items-center gap-2.5">
                           <Check size={14} className="text-[#FF4C00]" />
@@ -379,10 +335,10 @@ export default function SubscriptionPage() {
                       </button>
                     ) : (
                       <Link
-                        href={`/api/checkout_sessions?planId=${plan._id}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan}`}
+                        href={`/api/checkout_sessions?planId=${plan._id}&userId=${session?.user?.id || ''}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan || ''}`}
                         className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm block"
                       >
-                        Switch Plan
+                        {currentPlan ? 'Switch Plan' : 'Pay Now'}
                       </Link>
                     )}
                   </div>
@@ -401,62 +357,70 @@ export default function SubscriptionPage() {
 
             {/* Desktop Table */}
             <div className="hidden sm:block overflow-x-auto bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl">
-              <table className="table w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-[#1A1A1A] text-left text-zinc-500 text-[10px] font-black uppercase tracking-widest bg-zinc-950/40">
-                    <th className="p-4 pl-6">Invoice</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Amount</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 pr-6 text-right">Download</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1A1A1A] text-xs font-semibold text-zinc-400">
-                  {billingList.map(bill => (
-                    <tr
-                      key={bill.id}
-                      className="hover:bg-zinc-950/40 transition-colors"
-                    >
-                      <td className="p-4 pl-6 font-mono text-zinc-300">
-                        {bill.invoiceId}
-                      </td>
-                      <td className="p-4">{bill.date}</td>
-                      <td className="p-4 text-white font-bold">
-                        {bill.amount}
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                            bill.status === 'Paid'
-                              ? 'bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00]'
-                              : 'bg-red-500/10 border border-red-500/25 text-red-500'
-                          }`}
-                        >
-                          {bill.status}
-                        </span>
-                      </td>
-                      <td className="p-4 pr-6 text-right">
-                        <a
-                          href={`/api/payments/invoice?id=${bill.id}`}
-                          download
-                          onClick={() => toast.success(`Downloading ${bill.invoiceId}...`)}
-                          className="inline-flex items-center justify-center p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
-                          title="Download Invoice"
-                        >
-                          <Download size={13} />
-                        </a>
-                      </td>
+              {billingList.length === 0 ? (
+                <div className="p-8 text-center text-xs text-zinc-500 font-semibold">
+                  No payment history found.
+                </div>
+              ) : (
+                <table className="table w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#1A1A1A] text-left text-zinc-500 text-[10px] font-black uppercase tracking-widest bg-zinc-950/40">
+                      <th className="p-4 pl-6">Invoice</th>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Amount</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 pr-6 text-right">Download</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#1A1A1A] text-xs font-semibold text-zinc-400">
+                    {billingList.map(bill => (
+                      <tr
+                        key={bill._id || bill.id}
+                        className="hover:bg-zinc-950/40 transition-colors"
+                      >
+                        <td className="p-4 pl-6 font-mono text-zinc-300">
+                          {bill.invoiceId}
+                        </td>
+                        <td className="p-4">{bill.date}</td>
+                        <td className="p-4 text-white font-bold">
+                          {bill.amount}
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                              bill.status === 'Paid'
+                                ? 'bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00]'
+                                : 'bg-red-500/10 border border-red-500/25 text-red-500'
+                            }`}
+                          >
+                            {bill.status}
+                          </span>
+                        </td>
+                        <td className="p-4 pr-6 text-right">
+                          <a
+                            href={`/api/payments/invoice?id=${bill._id || bill.id}`}
+                            download
+                            onClick={() =>
+                              toast.success(`Downloading ${bill.invoiceId}...`)
+                            }
+                            className="inline-flex items-center justify-center p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
+                            title="Download Invoice"
+                          >
+                            <Download size={13} />
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Mobile Stacked View */}
             <div className="flex sm:hidden flex-col gap-3">
               {billingList.map(bill => (
                 <div
-                  key={bill.id}
+                  key={bill._id || bill.id}
                   className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-4 flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-2">
@@ -481,9 +445,11 @@ export default function SubscriptionPage() {
                       </span>
                     </div>
                     <a
-                      href={`/api/payments/invoice?id=${bill.id}`}
+                      href={`/api/payments/invoice?id=${bill._id || bill.id}`}
                       download
-                      onClick={() => toast.success(`Downloading ${bill.invoiceId}...`)}
+                      onClick={() =>
+                        toast.success(`Downloading ${bill.invoiceId}...`)
+                      }
                       className="inline-flex items-center justify-center p-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
                       title="Download Invoice"
                     >
