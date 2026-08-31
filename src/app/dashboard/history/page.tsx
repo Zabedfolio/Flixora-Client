@@ -227,11 +227,13 @@ export default function HistoryPage() {
                     {/* Poster Element with overlays */}
                     <div className="relative w-full aspect-[2/3] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/30 transition-all duration-300">
                       
-                      <img 
-                        src={item.unsplash_url} 
-                        alt={item.title}
-                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all"
-                      />
+                      <Link href={`/movie/${item.movieId || ''}`} className="block w-full h-full cursor-pointer">
+                        <img 
+                          src={item.unsplash_url} 
+                          alt={item.title}
+                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all"
+                        />
+                      </Link>
 
                       {/* Remove Button (visible on hover) */}
                       <button
