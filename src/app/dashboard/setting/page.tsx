@@ -15,7 +15,12 @@ import {
   X,
   Lock,
   Mail,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  Crown,
+  Zap,
+  Flame,
+  Sparkles
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
@@ -59,6 +64,19 @@ const PRESET_AVATARS = [
   { id: 'preset_20', name: 'Vector 20', url: "https://i.ibb.co/K3tMSb9/3c4645c88c8b.png" }
 ];
 
+const ROLE_OPTIONS = [
+  { id: 'user', name: 'Default (Movie Fan)', icon: Sparkles, color: 'text-zinc-500' },
+  { id: 'superman', name: 'Superman', icon: Crown, color: 'text-[#FF4C00]' },
+  { id: 'spiderman', name: 'Spider-Man', icon: Zap, color: 'text-red-500' },
+  { id: 'batman', name: 'Batman', icon: Shield, color: 'text-zinc-400' },
+  { id: 'ironman', name: 'Iron Man', icon: Sparkles, color: 'text-yellow-500' },
+  { id: 'thor', name: 'Thor', icon: Zap, color: 'text-cyan-400' },
+  { id: 'hulk', name: 'Hulk', icon: Flame, color: 'text-emerald-500' },
+  { id: 'captainamerica', name: 'Captain America', icon: Shield, color: 'text-blue-500' },
+  { id: 'tom', name: 'Tom', icon: User, color: 'text-sky-400' },
+  { id: 'jerry', name: 'Jerry', icon: User, color: 'text-orange-400' },
+];
+
 export default function SettingsPage() {
   const { data: session } = authClient.useSession();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'account' | 'notifications' | 'playback' | 'privacy'>('profile');
@@ -72,6 +90,29 @@ export default function SettingsPage() {
   const [editAvatar, setEditAvatar] = useState(PRESET_AVATARS[0].url);
   const [editAvatarId, setEditAvatarId] = useState(PRESET_AVATARS[0].id);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('user');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (session?.user) {
+      setSelectedRole((session.user as any).role || 'user');
+    }
+  }, [session]);
+
+  const updateRole = async () => {
+    if (session?.user && (session.user as any).role !== 'admin' && selectedRole !== (session.user as any).role) {
+      const roleRes = await fetch(`${API_BASE}/api/user/role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: selectedRole })
+      });
+      if (!roleRes.ok) {
+        toast.error('Failed to update character role');
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Account inputs
   const [email, setEmail] = useState('user@flixora.com');
@@ -162,6 +203,9 @@ export default function SettingsPage() {
     if (!editName.trim()) return;
 
     try {
+      const roleSuccess = await updateRole();
+      if (!roleSuccess) return;
+
       if (profiles.length > 0) {
         // UPDATE (PUT)
         const mainProfile = profiles[0];
@@ -396,6 +440,73 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Hero Character Role Selection Dropdown */}
+                  {session?.user && (session.user as any).role !== 'admin' && (() => {
+                    const currentSelectedOption = ROLE_OPTIONS.find(o => o.id === selectedRole) || ROLE_OPTIONS[0];
+                    const CurrentSelectedIcon = currentSelectedOption.icon;
+                    return (
+                      <div className="flex flex-col gap-2 border-t border-[#1A1A1A] pt-5 relative">
+                        <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest flex items-center gap-1.5">
+                          <Shield size={12} className="text-[#FF4C00]" />
+                          Select Hero Character Role
+                        </label>
+                        
+                        {/* Custom Dropdown Trigger Button */}
+                        <div className="relative w-full">
+                          <button
+                            type="button"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className="w-full bg-[#141414] border border-[#262626] hover:border-zinc-800 text-white rounded-xl px-4 py-3.5 text-xs font-semibold focus:outline-none flex items-center justify-between transition-all cursor-pointer select-none"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <CurrentSelectedIcon size={14} className={currentSelectedOption.color} />
+                              <span className="uppercase tracking-wider">{currentSelectedOption.name}</span>
+                            </div>
+                            <ChevronDown size={14} className={`text-zinc-550 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {/* Custom Dropdown Options Menu */}
+                          {isDropdownOpen && (
+                            <>
+                              {/* Invisible backdrop to close dropdown on clicking outside */}
+                              <div 
+                                className="fixed inset-0 z-30" 
+                                onClick={() => setIsDropdownOpen(false)}
+                              />
+                              <div className="absolute bottom-[110%] left-0 right-0 z-50 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 max-h-[220px] overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                {ROLE_OPTIONS.map((option) => {
+                                  const OptionIcon = option.icon;
+                                  const isSelected = option.id === selectedRole;
+                                  return (
+                                    <button
+                                      key={option.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedRole(option.id);
+                                        setIsDropdownOpen(false);
+                                      }}
+                                      className={`flex items-center justify-between w-full px-3.5 py-3 rounded-lg text-xs font-semibold uppercase tracking-wider text-left transition-all cursor-pointer ${
+                                        isSelected 
+                                          ? 'bg-[#FF4C00] text-black font-black' 
+                                          : 'text-zinc-400 hover:text-white hover:bg-zinc-950'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2.5">
+                                        <OptionIcon size={13} className={isSelected ? 'text-black' : option.color} />
+                                        <span>{option.name}</span>
+                                      </div>
+                                      {isSelected && <Check size={13} strokeWidth={3} className="text-black" />}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3 border-t border-[#1A1A1A] pt-5 mt-2">

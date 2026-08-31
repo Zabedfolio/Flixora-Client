@@ -20,7 +20,10 @@ import {
   Clock,
   Crown,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Shield,
+  Zap,
+  Flame
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -61,13 +64,50 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home_admin', label: 'Home Page', icon: Home, href: '/', roles: ['admin'] },
 ];
 
+const getRoleDetails = (role: string) => {
+  switch (role) {
+    case 'admin':
+      return { label: 'Super Admin', icon: Crown, color: 'text-amber-500' };
+    case 'superman':
+      return { label: 'Superman', icon: Crown, color: 'text-[#FF4C00]' };
+    case 'spiderman':
+      return { label: 'Spider-Man', icon: Zap, color: 'text-red-500' };
+    case 'batman':
+      return { label: 'Batman', icon: Shield, color: 'text-zinc-400' };
+    case 'ironman':
+      return { label: 'Iron Man', icon: Sparkles, color: 'text-yellow-500' };
+    case 'thor':
+      return { label: 'Thor', icon: Zap, color: 'text-cyan-400' };
+    case 'hulk':
+      return { label: 'Hulk', icon: Flame, color: 'text-emerald-500' };
+    case 'captainamerica':
+      return { label: 'Captain America', icon: Shield, color: 'text-blue-500' };
+    case 'tom':
+      return { label: 'Tom', icon: UserIcon, color: 'text-sky-400' };
+    case 'jerry':
+      return { label: 'Jerry', icon: UserIcon, color: 'text-orange-400' };
+    default:
+      return { label: 'Movie Fan', icon: Sparkles, color: 'text-zinc-500' };
+  }
+};
+
 export default function Sidebar({ isOpen = false, onClose, forcedRole }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const { data: session, isPending: sessionLoading } = authClient.useSession();
-  const [sessionRole, setSessionRole] = useState<'user' | 'admin'>('user');
+  const [sessionRole, setSessionRole] = useState<string>('user');
+
+  // Load and update the sessionRole dynamically from the database user profile
+  useEffect(() => {
+    if (session?.user) {
+      const dbRole = (session.user as any).role;
+      if (dbRole) {
+        setSessionRole(dbRole);
+      }
+    }
+  }, [session]);
 
   const currentRole = forcedRole || (sessionLoading ? 'loading' : (session ? sessionRole : 'user'));
   const isLoading = sessionLoading || currentRole === 'loading';
@@ -78,9 +118,12 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     setIsProfileOpen(false);
   };
 
-  // Filter items matching current role
+  // Resolve permission level: any role that is not admin acts as standard user permissions
+  const permissionRole = currentRole === 'admin' ? 'admin' : 'user';
+
+  // Filter items matching current role's permission level
   const filteredItems = NAV_ITEMS.filter(item => 
-    !isLoading && item.roles.includes(currentRole as 'user' | 'admin')
+    !isLoading && item.roles.includes(permissionRole)
   );
 
   // Active state matching based on active route
@@ -254,55 +297,52 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
                 )}
               </div>
               
-              {!isCollapsed && (
-                <div className="flex flex-col min-w-0 pr-4">
-                  <span className="text-xs font-black text-white truncate">
-                    {session?.user.name || (currentRole === 'admin' ? 'Admin Portal' : 'User Portal')}
-                  </span>
-                  <span className="text-[10px] text-zinc-550 truncate font-semibold uppercase tracking-wider">
-                    {currentRole === 'admin' ? 'Super Admin' : 'Premium Member'}
-                  </span>
-                </div>
-              )}
+              {!isCollapsed && (() => {
+                const roleDetails = getRoleDetails(currentRole);
+                return (
+                  <div className="flex flex-col min-w-0 pr-4">
+                    <span className="text-xs font-black text-white truncate">
+                      {session?.user.name || (currentRole === 'admin' ? 'Admin Portal' : 'User Portal')}
+                    </span>
+                    <div className="flex items-center gap-1 mt-0.5 text-[9px] font-bold uppercase tracking-wider min-w-0">
+                      {React.createElement(roleDetails.icon, { className: `w-3 h-3 shrink-0 ${roleDetails.color}` })}
+                      <span className="text-zinc-400 truncate">
+                        {roleDetails.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </button>
           </div>
 
           {isProfileOpen && (
             <div className="absolute bottom-16 left-4 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-2 w-52 z-50 flex flex-col gap-1">
+              {(session?.user as any)?.role === 'admin' && (
+                <button 
+                  onClick={handleRoleToggle}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
+                >
+                  <Sparkles size={14} className="text-[#FF4C00]" />
+                  {currentRole === 'admin' ? 'Switch to User View' : 'Switch to Admin View'}
+                </button>
+              )}
               {currentRole === 'admin' ? (
-                <>
-                  <button 
-                    onClick={handleRoleToggle}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
-                  >
-                    <Sparkles size={14} className="text-[#FF4C00]" />
-                    Switch to User View
-                  </button>
-                  <Link 
-                    href="/admin/settings"
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all"
-                  >
-                    <Settings size={14} className="text-[#FF4C00]" />
-                    Settings
-                  </Link>
-                </>
+                <Link 
+                  href="/admin/settings"
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all"
+                >
+                  <Settings size={14} className="text-[#FF4C00]" />
+                  Settings
+                </Link>
               ) : (
-                <>
-                  <button 
-                    onClick={() => toast.success('Switch profile flow initiated!')}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
-                  >
-                    <UserIcon size={14} className="text-[#FF4C00]" />
-                    Switch Profile
-                  </button>
-                  <button 
-                    onClick={handleRoleToggle}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
-                  >
-                    <Sparkles size={14} className="text-[#FF4C00]" />
-                    Switch to Admin View
-                  </button>
-                </>
+                <button 
+                  onClick={() => toast.success('Switch profile flow initiated!')}
+                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
+                >
+                  <UserIcon size={14} className="text-[#FF4C00]" />
+                  Switch Profile
+                </button>
               )}
               
               <div className="h-px bg-[#1A1A1A] my-1" />
