@@ -30,6 +30,7 @@ export async function GET() {
       date: p.createdAt ? new Date(p.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       amount: p.amount,
       status: p.status,
+      planId: p.planId,
       invoiceId: p.invoiceId
     }));
 
