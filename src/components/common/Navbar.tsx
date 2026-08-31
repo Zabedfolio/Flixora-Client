@@ -118,9 +118,9 @@ export default function Navbar({
   // Resolve current active tab from route pathname if activeTab prop is empty
   const currentActiveTab = activeTab || (
     pathname === '/' ? 'home' :
-    pathname === '/trending' ? 'trending' :
-    pathname === '/explore' ? 'explore' :
-    pathname === '/my-list' ? 'mylist' : ''
+      pathname === '/trending' ? 'trending' :
+        pathname === '/explore' ? 'explore' :
+          pathname === '/my-list' ? 'mylist' : ''
   );
 
   // Close profile dropdown when clicking outside
@@ -158,191 +158,190 @@ export default function Navbar({
 
   return (
     <>
-    <header className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/65 backdrop-blur-md border-b border-[#1A1A1A]/80 px-4 sm:px-6 lg:px-8 select-none transition-colors duration-300">
-      {/* =========================================
+      <header className="fixed top-0 left-0 right-0 z-50 h-[72px] bg-black/65 backdrop-blur-md border-b border-[#1A1A1A]/80 px-4 sm:px-6 lg:px-8 select-none transition-colors duration-300">
+        {/* =========================================
           MAIN NAVBAR
       ========================================== */}
-      <nav className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4 w-full">
-        {/* =========================================
+        <nav className="max-w-7xl mx-auto h-full flex items-center justify-between gap-4 w-full">
+          {/* =========================================
             LEFT SECTION
         ========================================== */}
-        <div className="flex items-center gap-4 lg:gap-8 min-w-0">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 lg:gap-3 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] rounded"
-          >
-            <Image
-              width={150}
-              height={150}
-              src={logoSrc}
-              alt="Flixora"
-              className="h-9 sm:h-10 w-auto object-contain"
-            />
-          </Link>
+          <div className="flex items-center gap-4 lg:gap-8 min-w-0">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 lg:gap-3 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] rounded"
+            >
+              <Image
+                width={150}
+                height={150}
+                src={logoSrc}
+                alt="Flixora"
+                className="h-9 sm:h-10 w-auto object-contain"
+              />
+            </Link>
 
-          {/* =========================================
+            {/* =========================================
               DESKTOP NAVIGATION
               >= 1024px
           ========================================== */}
-          <div className="hidden lg:flex items-center gap-5 xl:gap-6">
-            {NAV_ITEMS.map(item => {
-              const Icon = item.icon;
-              const isActive = currentActiveTab === item.id;
-              const isMyList = item.id === 'mylist';
+            <div className="hidden lg:flex items-center gap-5 xl:gap-6">
+              {NAV_ITEMS.map(item => {
+                const Icon = item.icon;
+                const isActive = currentActiveTab === item.id;
+                const isMyList = item.id === 'mylist';
 
-              const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-                if (isMyList) {
-                  e.preventDefault();
-                  setIsMyListModalOpen(true);
-                } else {
-                  handleTabClick(item.id);
-                }
-              };
+                const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                  if (isMyList) {
+                    e.preventDefault();
+                    setIsMyListModalOpen(true);
+                  } else {
+                    handleTabClick(item.id);
+                  }
+                };
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.path}
-                  onClick={handleClick}
-                  className={`flex items-center gap-2 text-sm font-semibold tracking-wide transition-all duration-200 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] rounded ${
-                    isActive
-                      ? 'text-[#FF4C00]'
-                      : 'text-[#E5E5E5] hover:text-[#FF4C00]'
-                  }`}
-                >
-                  <Icon className="text-base shrink-0" />
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.path}
+                    onClick={handleClick}
+                    className={`flex items-center gap-2 text-sm font-semibold tracking-wide transition-all duration-200 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] rounded ${isActive
+                        ? 'text-[#FF4C00]'
+                        : 'text-[#E5E5E5] hover:text-[#FF4C00]'
+                      }`}
+                  >
+                    <Icon className="text-base shrink-0" />
 
-                  <span>{item.label}</span>
+                    <span>{item.label}</span>
 
-                  {item.id === 'mylist' && (
-                    <span className="bg-[#FF4C00] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-md">
-                      {watchlistCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* =========================================
-            RIGHT SECTION
-        ========================================== */}
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          {/* Search */}
-          <div className="hidden sm:block">
-            <SearchBar />
+                    {item.id === 'mylist' && (
+                      <span className="bg-[#FF4C00] text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-md">
+                        {watchlistCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
           {/* =========================================
+            RIGHT SECTION
+        ========================================== */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {/* Search */}
+            <div className="hidden sm:block">
+              <SearchBar />
+            </div>
+
+            {/* =========================================
               PROFILE DROPDOWN
               >= 768px
           ========================================== */}
-          {isPending ? (
-            <div className="w-8 h-8 rounded-full bg-zinc-900 animate-pulse hidden md:block" />
-          ) : session ? (
-            <div className="relative hidden md:block" ref={profileRef}>
-              <button
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center gap-1.5 focus:outline-none group"
-                aria-label="Profile"
-                aria-expanded={isProfileDropdownOpen}
-              >
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-[#FF4C00] transition-transform group-hover:scale-105 bg-zinc-950 flex items-center justify-center font-bold text-white text-xs">
-                  {session.user.image ? (
-                    <Image
-                      width={32}
-                      height={32}
-                      src={session.user.image}
-                      alt="Avatar"
-                      className="w-full h-full object-cover cursor-pointer"
-                    />
-                  ) : (
-                    session.user.name?.charAt(0).toUpperCase() || 'U'
-                  )}
-                </div>
-
-                {/* Chevron */}
-                <FaChevronDown className="text-[10px] text-[#E5E5E5] group-hover:text-white transition-colors hidden sm:inline" />
-              </button>
-
-              {/* Profile Dropdown */}
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 top-full mt-3 w-48 bg-black border border-[#1A1A1A] rounded-xl shadow-2xl p-2 z-50">
-                  <div className="px-4 py-2 border-b border-[#1A1A1A] mb-1">
-                    <p className="text-xs font-bold text-white truncate">{session.user.name}</p>
-                    <p className="text-[10px] text-zinc-500 truncate">{session.user.email}</p>
+            {isPending ? (
+              <div className="w-8 h-8 rounded-full bg-zinc-900 animate-pulse hidden md:block" />
+            ) : session ? (
+              <div className="relative hidden md:block" ref={profileRef}>
+                <button
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="flex items-center gap-1.5 focus:outline-none group"
+                  aria-label="Profile"
+                  aria-expanded={isProfileDropdownOpen}
+                >
+                  {/* Avatar */}
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-[#FF4C00] transition-transform group-hover:scale-105 bg-zinc-950 flex items-center justify-center font-bold text-white text-xs">
+                    {session?.user?.image ? (
+                      <Image
+                        width={32}
+                        height={32}
+                        src={session?.user?.image}
+                        alt="Avatar"
+                        className="w-full h-full object-cover cursor-pointer"
+                      />
+                    ) : (
+                      session.user.name?.charAt(0).toUpperCase() || 'U'
+                    )}
                   </div>
-                  <Link
-                    href="/dashboard/setting"
-                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <div className="h-px bg-[#1A1A1A] my-1" />
-                  <button
-                    onClick={async () => {
-                      setIsProfileDropdownOpen(false);
-                      await authClient.signOut({
-                        callbackURL: '/login',
-                      });
-                      toast.success('Logged out successfully!');
-                    }}
-                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="hidden md:inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold bg-[#FF4C00] hover:bg-[#e04300] text-white shadow-md shadow-[#FF4C00]/10 hover:scale-105 active:scale-95 transition-all duration-200"
-            >
-              Login
-            </Link>
-          )}
 
-          {/* =========================================
+                  {/* Chevron */}
+                  <FaChevronDown className="text-[10px] text-[#E5E5E5] group-hover:text-white transition-colors hidden sm:inline" />
+                </button>
+
+                {/* Profile Dropdown */}
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-3 w-48 bg-black border border-[#1A1A1A] rounded-xl shadow-2xl p-2 z-50">
+                    <div className="px-4 py-2 border-b border-[#1A1A1A] mb-1">
+                      <p className="text-xs font-bold text-white truncate">{session.user.name}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{session.user.email}</p>
+                    </div>
+                    <Link
+                      href="/dashboard/setting"
+                      className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link
+                      href="/dashboard"
+                      className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <div className="h-px bg-[#1A1A1A] my-1" />
+                    <button
+                      onClick={async () => {
+                        setIsProfileDropdownOpen(false);
+                        await authClient.signOut({
+                          callbackURL: '/login',
+                        });
+                        toast.success('Logged out successfully!');
+                      }}
+                      className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="hidden md:inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold bg-[#FF4C00] hover:bg-[#e04300] text-white shadow-md shadow-[#FF4C00]/10 hover:scale-105 active:scale-95 transition-all duration-200"
+              >
+                Login
+              </Link>
+            )}
+
+            {/* =========================================
               MOBILE SEARCH
               < 640px
           ========================================== */}
-          <div className="sm:hidden">
-            <SearchBar />
-          </div>
+            <div className="sm:hidden">
+              <SearchBar />
+            </div>
 
-          {/* =========================================
+            {/* =========================================
               HAMBURGER
               < 1024px
           ========================================== */}
-          <div className="lg:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-[#E5E5E5] hover:text-[#FF4C00] transition-colors outline-none rounded-full flex items-center justify-center"
-              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={isMobileMenuOpen}
-            >
-              {isMobileMenuOpen ? (
-                <FaTimes className="text-[#FF4C00] text-xl" />
-              ) : (
-                <FaBars className="text-xl" />
-              )}
-            </button>
+            <div className="lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 text-[#E5E5E5] hover:text-[#FF4C00] transition-colors outline-none rounded-full flex items-center justify-center"
+                aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={isMobileMenuOpen}
+              >
+                {isMobileMenuOpen ? (
+                  <FaTimes className="text-[#FF4C00] text-xl" />
+                ) : (
+                  <FaBars className="text-xl" />
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      </nav>
-    </header>
+        </nav>
+      </header>
 
       {/* =========================================
           TABLET SLIDE DOWN MENU
@@ -372,11 +371,10 @@ export default function Navbar({
                     key={item.id}
                     href={item.path}
                     onClick={handleClick}
-                    className={`flex items-center justify-between text-base font-semibold tracking-wide py-3 px-4 rounded-lg transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] ${
-                      isActive
+                    className={`flex items-center justify-between text-base font-semibold tracking-wide py-3 px-4 rounded-lg transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] ${isActive
                         ? 'bg-[#1A1A1A] text-[#FF4C00]'
                         : 'text-[#E5E5E5] hover:text-[#FF4C00] hover:bg-[#1A1A1A]/50'
-                    }`}
+                      }`}
                   >
                     <span className="flex items-center gap-3">
                       <Icon className="text-lg" />
@@ -522,11 +520,10 @@ export default function Navbar({
                     key={item.id}
                     href={item.path}
                     onClick={handleClick}
-                    className={`flex items-center justify-between text-lg font-bold py-3 px-4 rounded-xl transition-all min-h-[48px] w-full outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] ${
-                      isActive
+                    className={`flex items-center justify-between text-lg font-bold py-3 px-4 rounded-xl transition-all min-h-[48px] w-full outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00] ${isActive
                         ? 'bg-[#FF4C00]/10 text-[#FF4C00]'
                         : 'text-[#E5E5E5] hover:bg-[#1A1A1A]'
-                    }`}
+                      }`}
                   >
                     <span className="flex items-center gap-4">
                       <Icon className="text-xl" />
@@ -547,7 +544,7 @@ export default function Navbar({
         </div>
       )}
 
-    <MyListModal isOpen={isMyListModalOpen} onClose={() => setIsMyListModalOpen(false)} />
+      <MyListModal isOpen={isMyListModalOpen} onClose={() => setIsMyListModalOpen(false)} />
     </>
   );
 }

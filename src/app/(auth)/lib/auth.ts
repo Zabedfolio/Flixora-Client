@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import nodemailer from 'nodemailer';
 
@@ -42,10 +42,50 @@ export const auth = betterAuth({
     },
   },
 
-  database: mongodbAdapter(db, {
-    client,
-  }),
+  user: {
+    additionalFields: {
+      planId: {
+        type: 'string',
+        required: false,
+        defaultValue: ''
+      },
+      plan: {
+        type: 'string',
+        required: false,
+        defaultValue: 'Basic'
+      }
+    }
+  },
 
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            // Find the "Basic" plan in the plans collection
+            const basicPlan = await db.collection('plans').findOne({ name: 'Basic' });
+            if (basicPlan) {
+              await db.collection('user').updateOne(
+                { _id: new ObjectId((user as any).id) },
+                { 
+                  $set: { 
+                    planId: basicPlan._id.toString(),
+                    plan: 'Basic'
+                  } 
+                }
+              );
+            }
+          } catch (err) {
+            console.error('Error assigning default plan in database hook:', err);
+          }
+        }
+      }
+    }
+  },
+
+  database: mongodbAdapter(db, {
+    transaction: false,
+  }),
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || '',

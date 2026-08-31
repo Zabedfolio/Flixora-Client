@@ -334,6 +334,7 @@ export default function TitleRow() {
                   "
                 >
                   <MediaCard
+                    id={movie.id}
                     title={movie.title}
                     unsplash_url={movie.image}
                     rating={movie.rating}

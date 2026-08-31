@@ -291,6 +291,7 @@ export default function TrendingPage() {
                         </div>
 
                         <MediaCard
+                          id={item.id}
                           title={item.title}
                           unsplash_url={item.unsplash_url}
                           rating={item.vote_average.toFixed(1)}

@@ -151,6 +151,7 @@ export default function NewReleases() {
               className="min-w-[185px] snap-start sm:min-w-[210px] md:min-w-[225px] lg:min-w-[230px]"
             >
               <MediaCard
+                id={movie.id}
                 title={movie.title}
                 unsplash_url={movie.image}
                 rating={movie.rating}

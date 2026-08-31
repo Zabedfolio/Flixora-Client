@@ -32,7 +32,7 @@ export default function AiMovieResultCard({
   const rating =
     typeof movie.vote_average === "number" ? movie.vote_average.toFixed(1) : null;
 
-  const posterUrl = getTMDBImageUrl(movie.poster_path, "w342");
+  const posterUrl = getTMDBImageUrl(movie.poster_path, "w400");
 
   return (
     <motion.button
