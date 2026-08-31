@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Home, RefreshCw, Search } from 'lucide-react';
 
@@ -28,11 +29,30 @@ export default function Error({
 
             {/* Main Content */}
             <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
+                {/* Logo Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="mb-8 flex justify-center"
+                >
+                    <Link href="/">
+                        <Image
+                            src="/logo.png"
+                            alt="Logo"
+                            width={160}
+                            height={50}
+                            priority
+                            className="h-auto w-auto max-w-[150px] object-contain sm:max-w-[180px]"
+                        />
+                    </Link>
+                </motion.div>
+
                 {/* Error Badge */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
                     className="mb-8 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 backdrop-blur-md"
                 >
                     <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -92,7 +112,7 @@ export default function Error({
                     {/* Retry Button */}
                     <button
                         onClick={() => reset()}
-                        className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#FF4C00] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#FF4C00]/20 transition-all duration-300 hover:scale-105 hover:bg-[#E04300] sm:w-auto cursor-pointer"
+                        className="group inline-flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-[#FF4C00] px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#FF4C00]/20 transition-all duration-300 hover:scale-105 hover:bg-[#E04300] sm:w-auto"
                     >
                         <RefreshCw size={17} className="transition-transform duration-500 group-hover:rotate-180" />
                         <span>TRY AGAIN</span>
