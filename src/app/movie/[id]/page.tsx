@@ -1,7 +1,10 @@
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Star, User } from "lucide-react";
 import MovieActions from "@/components/movie/MovieActions";
+import { auth } from "@/app/(auth)/lib/auth";
+import { headers } from "next/headers";
+import { connectToDatabase } from "@/lib/mongodb";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -9,6 +12,17 @@ interface PageProps {
 
 export default async function MovieDetailsPage({ params }: PageProps) {
   const { id } = await params;
+
+  // -----------------------------------
+  // 1. Authenticate User Server-Side
+  // -----------------------------------
+  const authSession = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!authSession?.user?.id) {
+    redirect('/auth/login');
+  }
   
   let movieData: any;
   let creditsData: any;
@@ -47,6 +61,29 @@ export default async function MovieDetailsPage({ params }: PageProps) {
     genres: movieData.genres ? movieData.genres.map((g: any) => g.name) : [],
     overview: movieData.overview || "No overview available.",
   };
+
+  // -----------------------------------
+  // 2. Record Watch History in MongoDB
+  // -----------------------------------
+  try {
+    const { db } = await connectToDatabase();
+    await db.collection("history").updateOne(
+      { userId: authSession.user.id, movieId: id },
+      { 
+        $set: { 
+          title: movie.title,
+          poster: movie.poster,
+          year: movie.releaseDate,
+          duration: movie.runtime,
+          category: movie.genres[0] || 'Movie',
+          watchedDate: new Date()
+        } 
+      },
+      { upsert: true }
+    );
+  } catch (err) {
+    console.error("Error recording watch history:", err);
+  }
 
   const cast = creditsData?.cast?.slice(0, 6).map((c: any) => ({
     name: c.name,
