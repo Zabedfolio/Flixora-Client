@@ -83,6 +83,7 @@ export default function MyListPage() {
               {MY_LIST_CATALOG.map((item) => (
                 <MediaCard
                   key={item.id}
+                  id={item.id}
                   title={item.title}
                   unsplash_url={item.unsplash_url}
                   rating={item.vote_average.toFixed(1)}

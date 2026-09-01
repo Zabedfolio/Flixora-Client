@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '../../lib/stripe';
+import { auth } from '../../lib/auth';
+import { headers } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const planId = searchParams.get('planId') || 'premium';
+    const fromPlanId = searchParams.get('fromPlanId') || '';
 
     const PLANS_MAP: Record<
       string,
@@ -32,10 +35,39 @@ export async function GET(request: NextRequest) {
 
     const plan = PLANS_MAP[planId] || PLANS_MAP.premium;
     const origin = request.nextUrl.origin;
+    
+    // Retrieve session from cookie headers on the server side
+    const authSession = await auth.api.getSession({
+      headers: await headers()
+    });
+    
+    const email = authSession?.user?.email || searchParams.get('email') || undefined;
+    const name = authSession?.user?.name || searchParams.get('name') || undefined;
+
+    let customerId: string | undefined = undefined;
+    if (email) {
+      const customers = await stripe.customers.list({
+        email: email,
+        limit: 1
+      });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        if (name && customers.data[0].name !== name) {
+          await stripe.customers.update(customerId, { name });
+        }
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email,
+          name: name || undefined
+        });
+        customerId = newCustomer.id;
+      }
+    }
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
+      ...(customerId ? { customer: customerId } : { customer_email: email }),
       payment_method_types: ['card'],
       line_items: [
         {
@@ -53,7 +85,7 @@ export async function GET(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&from=${encodeURIComponent(fromPlanId)}&to=${encodeURIComponent(planId)}`,
       cancel_url: `${origin}/cancel?error=Payment%20cancelled%20by%20user`,
     });
 

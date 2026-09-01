@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Plus, Star, Play } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bookmark, Plus, Star, Play, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   isInWatchlist,
@@ -10,6 +11,7 @@ import {
 } from '@/data/watchlistStore';
 
 interface CardProps {
+  id?: string | number;
   title: string;
   unsplash_url: string;
   rating?: string;
@@ -37,6 +39,7 @@ const getColorFromTitle = (title: string): string => {
 };
 
 export default function MediaCard({
+  id,
   title,
   unsplash_url,
   rating = '9.0',
@@ -45,6 +48,7 @@ export default function MediaCard({
   duration = '2H 24M',
   isNew = false,
 }: CardProps) {
+  const router = useRouter();
   const [inMyList, setInMyList] = useState(false);
   const [inPlaylist, setInPlaylist] = useState(false);
 
@@ -119,8 +123,17 @@ export default function MediaCard({
     }
   };
 
+  const handleCardClick = () => {
+    if (id) {
+      router.push(`/movie/${id}`);
+    }
+  };
+
   return (
-    <div className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer">
+    <div 
+      onClick={handleCardClick}
+      className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer"
+    >
       {/* Blurred Poster-Colored Glow behind the Card */}
       <div
         className="absolute inset-x-[-50px] inset-y-[-50px] rounded-[50px] opacity-0 group-hover:opacity-100 blur-[50px] pointer-events-none transition-all duration-500 z-0"

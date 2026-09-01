@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
 import ReactMarkdown from "react-markdown";
-import AiMovieResultCard from "./AIMovieResultCard";
+import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface Slide {
   id: number;
@@ -26,6 +28,7 @@ const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
 
 export default function HeroBanner() {
+  const router = useRouter();
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -35,6 +38,8 @@ export default function HeroBanner() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiChatResult | null>(null);
   const [username, setUsername] = useState("Viewer");
+  const { data: session } = authClient.useSession();
+  const userName = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
 
   // Load popular widescreen backdrops dynamically from TMDB API
   useEffect(() => {
@@ -137,7 +142,7 @@ export default function HeroBanner() {
           }),
         },
       );
-
+   
       if (!response.ok) {
         throw new Error("Failed to get AI recommendation");
       }
@@ -158,17 +163,17 @@ export default function HeroBanner() {
 
       const movies: AiMovie[] = Array.isArray(rawMovies)
         ? rawMovies.map((movie: any) => ({
-            id: movie.id,
-            title: movie.title ?? movie.original_title ?? "Untitled",
-            original_title: movie.original_title,
-            overview: movie.overview,
-            poster_path: movie.poster_path ?? null,
-            backdrop_path: movie.backdrop_path ?? null,
-            release_date: movie.release_date,
-            vote_average: movie.vote_average,
-            vote_count: movie.vote_count,
-            media_type: movie.media_type,
-          }))
+          id: movie.id,
+          title: movie.title ?? movie.original_title ?? "Untitled",
+          original_title: movie.original_title,
+          overview: movie.overview,
+          poster_path: movie.poster_path ?? null,
+          backdrop_path: movie.backdrop_path ?? null,
+          release_date: movie.release_date,
+          vote_average: movie.vote_average,
+          vote_count: movie.vote_count,
+          media_type: movie.media_type,
+        }))
         : [];
 
       setAiResult({ message, movies });
@@ -260,7 +265,7 @@ export default function HeroBanner() {
         >
           <div className="mb-6 text-center sm:text-left animate-in fade-in duration-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
-              Welcome, <span className="text-[#FF4C00]">{username}</span>!
+              Welcome, <span className="text-[#FF4C00]">{userName}</span>!
             </h2>
             <p className="text-xs md:text-sm text-zinc-300 font-bold uppercase tracking-widest mt-2">
               Our bot will help you find movies based on your mood
@@ -316,25 +321,25 @@ export default function HeroBanner() {
                     aiResult?.message && (
                       <ReactMarkdown
                         components={{
-                          h3: ({ children }) => (
+                          h3: ({ children }: { children?: React.ReactNode }) => (
                             <h3 className="mt-3 text-sm font-bold text-white">
                               {children}
                             </h3>
                           ),
 
-                          p: ({ children }) => (
+                          p: ({ children }: { children?: React.ReactNode }) => (
                             <p className="mt-1 text-xs leading-relaxed text-zinc-300">
                               {children}
                             </p>
                           ),
 
-                          strong: ({ children }) => (
+                          strong: ({ children }: { children?: React.ReactNode }) => (
                             <strong className="font-bold text-white">
                               {children}
                             </strong>
                           ),
 
-                          ul: ({ children }) => (
+                          ul: ({ children }: { children?: React.ReactNode }) => (
                             <ul className="mt-2 list-disc space-y-1 pl-4">
                               {children}
                             </ul>
@@ -355,6 +360,7 @@ export default function HeroBanner() {
                         key={movie.id}
                         movie={movie}
                         index={index}
+                        onSelect={(m) => router.push(`/movie/${m.id}`)}
                       />
                     ))}
                   </div>
@@ -403,11 +409,10 @@ export default function HeroBanner() {
             type="button"
             onClick={() => goToSlide(index)}
             aria-label={`Go to slide ${index + 1}`}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              index === currentSlide
-                ? "w-10 bg-[#FF4C00]"
-                : "w-2.5 bg-white/30 hover:bg-white/50"
-            }`}
+            className={`h-2.5 rounded-full transition-all duration-300 ${index === currentSlide
+              ? "w-10 bg-[#FF4C00]"
+              : "w-2.5 bg-white/30 hover:bg-white/50"
+              }`}
           />
         ))}
       </div>
