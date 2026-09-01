@@ -43,13 +43,25 @@ export default function SubscriptionPage() {
       }
 
       if (userId) {
+        try {
+          const profileRes = await fetch('/api/user/profile');
+          if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            if (profileData.user?.planId) {
+              setCurrentPlan(profileData.user.planId);
+            }
+          }
+        } catch (err) {
+          console.error('Error fetching live user profile in subscription:', err);
+        }
+
         const historyData = await getUserPayments(userId);
         setBillingList(historyData);
 
         const latestPaidPayment = historyData.find(
           (item: BillingRecord) => item.status === 'Paid',
         );
-        if (latestPaidPayment) {
+        if (latestPaidPayment && !currentPlan) {
           setCurrentPlan(latestPaidPayment.planId);
         }
       }

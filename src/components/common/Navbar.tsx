@@ -97,8 +97,35 @@ export default function Navbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMyListModalOpen, setIsMyListModalOpen] = useState(false);
   const [watchlistCount, setWatchlistCount] = useState(0);
+  const [liveProfile, setLiveProfile] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    image?: string;
+    avatarId?: string;
+    role: string;
+    plan: string;
+    planId?: string;
+  } | null>(null);
 
   const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    const fetchLiveProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setLiveProfile(data.user);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch live profile in navbar:', err);
+      }
+    };
+    fetchLiveProfile();
+  }, [session]);
 
   useEffect(() => {
     const updateCount = () => {
@@ -250,16 +277,16 @@ export default function Navbar({
                 >
                   {/* Avatar */}
                   <div className="w-8 h-8 rounded-full overflow-hidden border border-[#FF4C00] transition-transform group-hover:scale-105 bg-zinc-950 flex items-center justify-center font-bold text-white text-xs">
-                    {session?.user?.image ? (
+                    {(liveProfile?.image || session?.user?.image) ? (
                       <Image
                         width={32}
                         height={32}
-                        src={session?.user?.image}
+                        src={liveProfile?.image || session?.user?.image || ''}
                         alt="Avatar"
                         className="w-full h-full object-cover cursor-pointer"
                       />
                     ) : (
-                      session.user.name?.charAt(0).toUpperCase() || 'U'
+                      (liveProfile?.name || session.user.name)?.charAt(0).toUpperCase() || 'U'
                     )}
                   </div>
 
@@ -271,8 +298,8 @@ export default function Navbar({
                 {isProfileDropdownOpen && (
                   <div className="absolute right-0 top-full mt-3 w-48 bg-black border border-[#1A1A1A] rounded-xl shadow-2xl p-2 z-50">
                     <div className="px-4 py-2 border-b border-[#1A1A1A] mb-1">
-                      <p className="text-xs font-bold text-white truncate">{session.user.name}</p>
-                      <p className="text-[10px] text-zinc-500 truncate">{session.user.email}</p>
+                      <p className="text-xs font-bold text-white truncate">{liveProfile?.name || session.user.name}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{liveProfile?.email || session.user.email}</p>
                     </div>
                     <Link
                       href="/dashboard/setting"
@@ -419,25 +446,25 @@ export default function Navbar({
                   {/* Profile Info */}
                   <div className="flex items-center gap-3 px-4 py-2 border-b border-[#1A1A1A] pb-4">
                     <div className="w-10 h-10 rounded-full overflow-hidden border border-[#FF4C00] shrink-0 bg-zinc-950 flex items-center justify-center font-bold text-white">
-                      {session.user.image ? (
+                      {(liveProfile?.image || session.user.image) ? (
                         <Image
                           width={40}
                           height={40}
-                          src={session.user.image}
+                          src={liveProfile?.image || session.user.image || ''}
                           alt="Avatar"
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        session.user.name?.charAt(0).toUpperCase() || 'U'
+                        (liveProfile?.name || session.user.name)?.charAt(0).toUpperCase() || 'U'
                       )}
                     </div>
 
                     <div className="flex flex-col min-w-0">
                       <span className="text-white text-sm font-bold truncate">
-                        {session.user.name}
+                        {liveProfile?.name || session.user.name}
                       </span>
                       <span className="text-zinc-550 text-[9px] font-bold uppercase tracking-wider truncate">
-                        {session.user.email}
+                        {liveProfile?.email || session.user.email}
                       </span>
                     </div>
                   </div>
