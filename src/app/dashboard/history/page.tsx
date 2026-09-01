@@ -13,6 +13,13 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import Link from 'next/link';
+<<<<<<< .merge_file_AvzYyu
+=======
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { HistoryItem } from '@/data/historyStore';
+import EmptyState from '@/components/common/EmptyState';
+>>>>>>> .merge_file_0jCtbV
 
 interface HistoryItem {
   id: string;
@@ -89,6 +96,7 @@ export default function HistoryPage() {
   const [sortOption, setSortOption] = useState<string>('recent');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
+<<<<<<< .merge_file_AvzYyu
   useEffect(() => {
     // Simulate initial loading skeleton state
     const timer = setTimeout(() => {
@@ -105,6 +113,63 @@ export default function HistoryPage() {
   const handleClearHistory = () => {
     setHistory([]);
     setIsConfirmOpen(false);
+=======
+  const fetchHistory = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/history');
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          setHistory(body.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const handleRemoveItem = async (id: string) => {
+    try {
+      const res = await fetch(`/api/history?id=${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        toast.success('Removed from history!');
+        setHistory(prev => prev.filter(item => item.id !== id));
+      } else {
+        toast.error('Failed to remove item');
+      }
+    } catch (err) {
+      console.error('Error removing history item:', err);
+      toast.error('Failed to remove item');
+    }
+  };
+
+  const handleClearHistory = async () => {
+    try {
+      const res = await fetch('/api/history', {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        toast.success('History cleared!');
+        setHistory([]);
+      } else {
+        toast.error('Failed to clear history');
+      }
+    } catch (err) {
+      console.error('Error clearing history:', err);
+      toast.error('Failed to clear history');
+    } finally {
+      setIsConfirmOpen(false);
+    }
+>>>>>>> .merge_file_0jCtbV
   };
 
   // Get items matching active filter tabs
@@ -264,11 +329,13 @@ export default function HistoryPage() {
                     {/* Poster Element with overlays */}
                     <div className="relative w-full aspect-[2/3] rounded-2xl overflow-hidden bg-zinc-950 border border-zinc-900 group-hover:border-[#FF4C00]/30 transition-all duration-300">
                       
-                      <img 
-                        src={item.unsplash_url} 
-                        alt={item.title}
-                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all"
-                      />
+                      <Link href={`/movie/${item.movieId || ''}`} className="block w-full h-full cursor-pointer">
+                        <img 
+                          src={item.unsplash_url} 
+                          alt={item.title}
+                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all"
+                        />
+                      </Link>
 
                       {/* Remove Button (visible on hover) */}
                       <button
@@ -304,21 +371,24 @@ export default function HistoryPage() {
                       )}
 
                       {/* Hover Watch Trailer overlay */}
-                      <div className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-4 z-10 border border-[#FF4C00]/20 select-none">
+                      <Link 
+                        href={`/movie/${item.movieId || ''}`}
+                        className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex flex-col justify-end p-4 z-10 border border-[#FF4C00]/20 select-none cursor-pointer"
+                      >
                         <div className="flex flex-col gap-2">
                           <span className="text-xs font-black text-white leading-tight block truncate pr-6">
                             {item.title}
                           </span>
-                          <button className="mt-2 w-full bg-[#FF4C00] text-black font-black text-[10px] uppercase tracking-wider py-2 rounded-lg text-center flex items-center justify-center gap-1.5 hover:scale-102 transition-all outline-none">
-                            <Play size={10} fill="currentColor" /> Resume
-                          </button>
+                          <div className="mt-2 w-full bg-[#FF4C00] text-black font-black text-[10px] uppercase tracking-wider py-2 rounded-lg text-center flex items-center justify-center gap-1.5 hover:scale-102 transition-all outline-none">
+                            <Play size={10} fill="currentColor" /> Play Now
+                          </div>
                         </div>
-                      </div>
+                      </Link>
 
                     </div>
 
                     {/* Metadata under poster */}
-                    <div className="flex flex-col gap-0.5 mt-1 min-w-0">
+                    <Link href={`/movie/${item.movieId || ''}`} className="flex flex-col gap-0.5 mt-1 min-w-0 cursor-pointer">
                       <span className="text-xs font-bold text-white truncate w-full group-hover:text-[#FF4C00] transition-colors" title={item.title}>
                         {item.title}
                       </span>
@@ -326,7 +396,7 @@ export default function HistoryPage() {
                       <span className="text-[9px] text-zinc-550 font-bold uppercase tracking-wider">
                         {isCompleted ? `Watched ${item.watchedDate}` : `In Progress • ${item.timeLeftMin}m left`}
                       </span>
-                    </div>
+                    </Link>
 
                   </div>
                 );

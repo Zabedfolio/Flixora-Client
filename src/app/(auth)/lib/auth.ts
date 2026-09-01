@@ -53,6 +53,11 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         defaultValue: 'Basic'
+      },
+      role: {
+        type: 'string',
+        required: false,
+        defaultValue: 'user'
       }
     }
   },
@@ -70,7 +75,8 @@ export const auth = betterAuth({
                 { 
                   $set: { 
                     planId: basicPlan._id.toString(),
-                    plan: 'Basic'
+                    plan: 'Basic',
+                    role: 'user'
                   } 
                 }
               );

@@ -139,7 +139,7 @@ export default function UserDashboardPage() {
               </h1>
             </div>
             <p className="text-xs md:text-sm text-zinc-400 font-medium max-w-2xl leading-relaxed">
-              Welcome back. Here's your viewing activity and analytics at a glance.
+              Welcome back. Here your viewing activity and analytics at a glance.
             </p>
           </div>
 
@@ -149,8 +149,12 @@ export default function UserDashboardPage() {
               U
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-black text-white">User Portal</span>
-              <span className="text-[9px] text-zinc-550 font-bold uppercase tracking-wider">Premium Member</span>
+              <span className="text-xs font-black text-white truncate max-w-[120px]">
+                {session?.user.name || 'User Portal'}
+              </span>
+              <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider font-mono">
+                {(session?.user as any)?.plan ? `${(session?.user as any).plan} Member` : 'Basic Member'}
+              </span>
             </div>
           </div>
         </div>

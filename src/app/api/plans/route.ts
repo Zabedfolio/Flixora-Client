@@ -50,7 +50,24 @@ export async function GET() {
       const basicPlanId = basicPlan._id.toString();
 
       // 2. Perform Migration for existing users (who signed up before plans integration)
-      // Update any user in the collection where planId or plan name is missing or empty string
+      // Query A: Seed default 'user' role for accounts missing the role field (does NOT touch plan details)
+      await db.collection('user').updateMany(
+        { 
+          $or: [
+            { role: { $exists: false } },
+            { role: "" },
+            { role: null }
+          ]
+        },
+        { 
+          $set: { 
+            role: 'user',
+            updatedAt: new Date()
+          } 
+        }
+      );
+
+      // Query B: Seed default 'Basic' plan details for accounts missing the plan fields (does NOT touch role details)
       await db.collection('user').updateMany(
         { 
           $or: [

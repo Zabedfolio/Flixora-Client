@@ -143,9 +143,9 @@ export default function HeroBanner() {
         },
       );
    
-      if (!response.ok) {
-        throw new Error("Failed to get AI recommendation");
-      }
+      // if (!response.ok) {
+      //   throw new Error("Failed to get AI recommendation");
+      // }
 
       const result = await response.json();
       console.log(result);
