@@ -1,5 +1,6 @@
 export interface Plan {
   _id: string;
+  slug?: string;
   name: string;
   price: string;
   resolution: string;
