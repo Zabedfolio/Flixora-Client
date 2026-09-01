@@ -271,8 +271,8 @@ export default function UserDashboardPage() {
               <span className="text-xs font-black text-white truncate max-w-[120px]">
                 {session?.user.name || 'User Portal'}
               </span>
-              <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider">
-                Premium Member
+              <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider font-mono">
+                {(session?.user as any)?.plan ? `${(session?.user as any).plan} Member` : 'Basic Member'}
               </span>
             </div>
           </div>

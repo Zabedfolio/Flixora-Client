@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 const DEFAULT_PLANS = [
   {
+    slug: "basic",
     name: "Basic",
     price: "$7.99/mo",
     resolution: "720p (HD)",
@@ -12,6 +13,7 @@ const DEFAULT_PLANS = [
     kids: "1 kids profile"
   },
   {
+    slug: "standard",
     name: "Standard",
     price: "$11.99/mo",
     resolution: "1080p (FHD)",
@@ -21,6 +23,7 @@ const DEFAULT_PLANS = [
     kids: "3 kids profiles"
   },
   {
+    slug: "premium",
     name: "Premium",
     price: "$14.99/mo",
     resolution: "4K + HDR",
@@ -41,6 +44,14 @@ export async function GET() {
       await db.collection('plans').insertMany(DEFAULT_PLANS);
     }
 
+    // 1b. Backfill slug for any existing plan docs that are missing it
+    for (const defaultPlan of DEFAULT_PLANS) {
+      await db.collection('plans').updateMany(
+        { name: defaultPlan.name, slug: { $exists: false } },
+        { $set: { slug: defaultPlan.slug } }
+      );
+    }
+
     // Retrieve plans from the database
     const plans = await db.collection('plans').find({}).toArray();
 
@@ -50,7 +61,24 @@ export async function GET() {
       const basicPlanId = basicPlan._id.toString();
 
       // 2. Perform Migration for existing users (who signed up before plans integration)
-      // Update any user in the collection where planId or plan name is missing or empty string
+      // Query A: Seed default 'user' role for accounts missing the role field (does NOT touch plan details)
+      await db.collection('user').updateMany(
+        { 
+          $or: [
+            { role: { $exists: false } },
+            { role: "" },
+            { role: null }
+          ]
+        },
+        { 
+          $set: { 
+            role: 'user',
+            updatedAt: new Date()
+          } 
+        }
+      );
+
+      // Query B: Seed default 'Basic' plan details for accounts missing the plan fields (does NOT touch role details)
       await db.collection('user').updateMany(
         { 
           $or: [
