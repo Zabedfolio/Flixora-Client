@@ -7,11 +7,11 @@ import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
 import ReactMarkdown from "react-markdown";
-<<<<<<< HEAD
-import AiMovieResultCard from "./AIMovieResultCard";
-=======
+
+
+
 import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
->>>>>>> development
+
 import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface Slide {
