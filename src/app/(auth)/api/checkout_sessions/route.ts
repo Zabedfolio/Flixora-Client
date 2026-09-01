@@ -33,22 +33,39 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    const plan = PLANS_MAP[planId] || PLANS_MAP.premium;
+    // Resolve planId to a known PLANS_MAP key
+    // Priority: exact slug match → name substring match → fallback "premium"
+    const PLAN_KEYS = ['basic', 'standard', 'premium'] as const;
+    const planIdNorm = planId.toLowerCase();
+
+    let resolvedKey: 'basic' | 'standard' | 'premium' = 'premium'; // safe default
+    if (PLAN_KEYS.includes(planIdNorm as any)) {
+      // Direct slug hit: "basic", "standard", or "premium"
+      resolvedKey = planIdNorm as 'basic' | 'standard' | 'premium';
+    } else {
+      // Substring fallback: handles "Flixora Basic Plan" → "basic"
+      const found = PLAN_KEYS.find(key => planIdNorm.includes(key));
+      if (found) resolvedKey = found;
+    }
+
+    const plan = PLANS_MAP[resolvedKey];
     const origin = request.nextUrl.origin;
-    
+
     // Retrieve session from cookie headers on the server side
     const authSession = await auth.api.getSession({
-      headers: await headers()
+      headers: await headers(),
     });
-    
-    const email = authSession?.user?.email || searchParams.get('email') || undefined;
-    const name = authSession?.user?.name || searchParams.get('name') || undefined;
+
+    const email =
+      authSession?.user?.email || searchParams.get('email') || undefined;
+    const name =
+      authSession?.user?.name || searchParams.get('name') || undefined;
 
     let customerId: string | undefined = undefined;
     if (email) {
       const customers = await stripe.customers.list({
         email: email,
-        limit: 1
+        limit: 1,
       });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
@@ -58,7 +75,7 @@ export async function GET(request: NextRequest) {
       } else {
         const newCustomer = await stripe.customers.create({
           email,
-          name: name || undefined
+          name: name || undefined,
         });
         customerId = newCustomer.id;
       }
@@ -85,7 +102,7 @@ export async function GET(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&from=${encodeURIComponent(fromPlanId)}&to=${encodeURIComponent(planId)}`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&from=${encodeURIComponent(fromPlanId)}&to=${encodeURIComponent(resolvedKey)}`,
       cancel_url: `${origin}/cancel?error=Payment%20cancelled%20by%20user`,
     });
 
