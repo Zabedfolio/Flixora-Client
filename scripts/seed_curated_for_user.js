@@ -202,17 +202,18 @@ async function run() {
     const now = new Date();
     for (const bp of CURATED_PLAYLIST_BLUEPRINTS) {
       const existing = await db.collection('playlist').findOne({
-        userId: userId,
-        tag: bp.tag
+        tag: bp.tag,
+        isPreCreated: true
       });
 
       if (!existing) {
         const doc = {
-          userId: userId,
           name: bp.name,
           tag: bp.tag,
           description: bp.description,
           isPublic: true,
+          isPreCreated: true,
+          userIds: [userId],
           movies: bp.movies.map(m => ({ ...m, addedAt: now })),
           createdAt: now,
           updatedAt: now
@@ -220,7 +221,11 @@ async function run() {
         const res = await db.collection('playlist').insertOne(doc);
         console.log(`Inserted curated playlist "${bp.name}" with id ${res.insertedId}`);
       } else {
-        console.log(`Playlist for tag "${bp.tag}" already exists.`);
+        await db.collection('playlist').updateOne(
+          { _id: existing._id },
+          { $addToSet: { userIds: userId }, $unset: { userId: "" } }
+        );
+        console.log(`Updated curated playlist "${bp.name}" with user.`);
       }
     }
 

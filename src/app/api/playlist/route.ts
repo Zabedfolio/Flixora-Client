@@ -79,13 +79,7 @@ export async function GET(req: Request) {
       });
 
       if (!userDoc?.playlistsInitialized) {
-        const count = await db
-          .collection('playlist')
-          .countDocuments({ userId: authSession.user.id });
-
-        if (count === 0) {
-          await seedUserCuratedPlaylists(db, authSession.user.id);
-        }
+        await seedUserCuratedPlaylists(db, authSession.user.id);
 
         await db.collection('user').updateOne(
           { _id: new ObjectId(authSession.user.id) },
@@ -98,8 +92,13 @@ export async function GET(req: Request) {
 
     const playlists = await db
       .collection('playlist')
-      .find({ userId: authSession.user.id })
-      .sort({ createdAt: 1 })
+      .find({
+        $or: [
+          { userId: authSession.user.id },
+          { userIds: authSession.user.id },
+        ],
+      })
+      .sort({ isPreCreated: -1, createdAt: 1 })
       .toArray();
 
     return NextResponse.json({
@@ -213,7 +212,10 @@ export async function PUT(req: Request) {
     const { db } = await connectToDatabase();
     const filter = {
       _id: new ObjectId(playlistId),
-      userId: authSession.user.id,
+      $or: [
+        { userId: authSession.user.id },
+        { userIds: authSession.user.id },
+      ],
     };
 
     const existingPlaylist = await db.collection('playlist').findOne(filter);
@@ -347,6 +349,39 @@ export async function DELETE(req: Request) {
     }
 
     const { db } = await connectToDatabase();
+    const playlist = await db.collection('playlist').findOne({
+      _id: new ObjectId(id),
+      $or: [
+        { userId: authSession.user.id },
+        { userIds: authSession.user.id },
+      ],
+    });
+
+    if (!playlist) {
+      return NextResponse.json(
+        { success: false, message: 'Playlist not found or unauthorized' },
+        { status: 404 }
+      );
+    }
+
+    // If pre-created / shared playlist: DO NOT DELETE DOCUMENT FROM DATABASE!
+    // Only remove this specific user's ID from userIds array
+    if (playlist.isPreCreated || Array.isArray(playlist.userIds)) {
+      await db.collection('playlist').updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $pull: { userIds: authSession.user.id } as any,
+          ...(playlist.userId === authSession.user.id ? { $unset: { userId: "" } } : {}),
+        } as any
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Playlist removed for this user',
+      });
+    }
+
+    // Otherwise personal custom playlist: delete the document
     const result = await db.collection('playlist').deleteOne({
       _id: new ObjectId(id),
       userId: authSession.user.id,

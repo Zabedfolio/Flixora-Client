@@ -9,7 +9,9 @@ import {
   Edit3, 
   Trash2, 
   Play, 
-  Check 
+  Check,
+  Eye,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -39,12 +41,14 @@ interface PlaylistCardProps {
   playlist: PlaylistItem;
   onDelete?: (id: string) => void;
   onEdit?: (playlist: PlaylistItem) => void;
+  onViewDetails?: (playlist: PlaylistItem) => void;
 }
 
 export default function PlaylistCard({
   playlist,
   onDelete,
   onEdit,
+  onViewDetails,
 }: PlaylistCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -74,11 +78,18 @@ export default function PlaylistCard({
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (onViewDetails) {
+      e.preventDefault();
+      onViewDetails(playlist);
+    }
+  };
+
   return (
     <div className="bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-4 flex flex-col gap-3.5 relative group hover:border-[#FF4C00]/40 transition-all duration-300 shadow-sm hover:shadow-[0_0_25px_rgba(255,76,0,0.08)]">
       {/* Visual Poster Collage */}
-      <Link 
-        href={`/playlist/${playlist._id}`}
+      <div 
+        onClick={handleCardClick}
         className="aspect-[2/3] md:aspect-video rounded-xl overflow-hidden bg-zinc-950 grid grid-cols-2 gap-0.5 relative group/img cursor-pointer"
       >
         {collages.map((m, i) => (
@@ -98,11 +109,12 @@ export default function PlaylistCard({
           </div>
         )}
 
-        {/* Hover Overlay with Play Button */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+        {/* Hover Overlay with Quick Preview Prompt */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 backdrop-blur-[2px]">
           <div className="w-10 h-10 rounded-full bg-[#FF4C00] text-black flex items-center justify-center shadow-lg transform scale-90 group-hover/img:scale-100 transition-transform">
-            <Play size={18} fill="currentColor" className="ml-0.5" />
+            <Eye size={18} strokeWidth={2.5} />
           </div>
+          <span className="text-[9px] font-black uppercase tracking-wider text-white">Quick Details</span>
         </div>
 
         {/* Tag Overlay Badge */}
@@ -111,17 +123,17 @@ export default function PlaylistCard({
             {playlist.tag}
           </div>
         )}
-      </Link>
+      </div>
 
       {/* Playlist Meta Header */}
       <div className="flex items-start justify-between gap-2 min-w-0">
         <div className="flex flex-col min-w-0 gap-1">
-          <Link 
-            href={`/playlist/${playlist._id}`}
-            className="text-xs font-black text-white truncate uppercase tracking-wider hover:text-[#FF4C00] transition-colors"
+          <button 
+            onClick={handleCardClick}
+            className="text-xs font-black text-white truncate uppercase tracking-wider hover:text-[#FF4C00] transition-colors text-left cursor-pointer outline-none"
           >
             {playlist.name}
-          </Link>
+          </button>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
               {movies.length} {movies.length === 1 ? 'Movie' : 'Movies'}
@@ -131,6 +143,17 @@ export default function PlaylistCard({
 
         {/* Quick Action Buttons */}
         <div className="flex items-center gap-1 shrink-0">
+          {/* Quick Preview Details Button */}
+          {onViewDetails && (
+            <button
+              onClick={() => onViewDetails(playlist)}
+              title="View Playlist Details"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-[#FF4C00] hover:bg-zinc-900 transition-colors cursor-pointer"
+            >
+              <Eye size={14} />
+            </button>
+          )}
+
           {/* Quick Share Trigger */}
           <button
             onClick={handleCopyShareLink}
@@ -160,7 +183,29 @@ export default function PlaylistCard({
                   className="fixed inset-0 z-30" 
                   onClick={() => setIsMenuOpen(false)} 
                 />
-                <div className="absolute right-0 mt-1.5 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-1.5 w-36 z-40 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 mt-1.5 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-1.5 w-40 z-40 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150">
+                  {onViewDetails && (
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onViewDetails(playlist);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900 w-full text-left transition-colors cursor-pointer"
+                    >
+                      <Eye size={12} className="text-[#FF4C00]" />
+                      View Details
+                    </button>
+                  )}
+
+                  <Link
+                    href={`/playlist/${playlist._id}`}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900 w-full text-left transition-colors cursor-pointer"
+                  >
+                    <ExternalLink size={12} />
+                    Full Page
+                  </Link>
+
                   <button
                     onClick={(e) => {
                       handleCopyShareLink(e);
@@ -171,6 +216,7 @@ export default function PlaylistCard({
                     <Share2 size={12} className="text-[#FF4C00]" />
                     Share Link
                   </button>
+
                   {onEdit && (
                     <button
                       onClick={() => {
@@ -183,6 +229,7 @@ export default function PlaylistCard({
                       Edit
                     </button>
                   )}
+
                   {onDelete && (
                     <button
                       onClick={() => {

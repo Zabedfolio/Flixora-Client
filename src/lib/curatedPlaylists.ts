@@ -199,26 +199,44 @@ export const CURATED_PLAYLIST_BLUEPRINTS: CuratedPlaylistBlueprint[] = [
 ];
 
 /**
- * Automatically seeds the pre-created curated playlists for a user
- * connected directly to their userId.
+ * Automatically connects the pre-created curated playlists to a user
+ * by adding their userId to the `userIds` array.
  */
 export async function seedUserCuratedPlaylists(db: Db, userId: string) {
+  const cleanUserId = String(userId);
   const now = new Date();
-  const docsToInsert = CURATED_PLAYLIST_BLUEPRINTS.map((bp) => ({
-    userId: String(userId),
-    name: bp.name,
-    tag: bp.tag,
-    description: bp.description,
-    isPublic: true,
-    movies: bp.movies.map((m) => ({
-      ...m,
-      addedAt: now,
-    })),
-    createdAt: now,
-    updatedAt: now,
-  }));
 
-  if (docsToInsert.length > 0) {
-    await db.collection('playlist').insertMany(docsToInsert);
+  // 1. Add userId to existing pre-created playlists
+  const existingPreCreated = await db
+    .collection('playlist')
+    .find({ isPreCreated: true })
+    .toArray();
+
+  if (existingPreCreated.length > 0) {
+    await db.collection('playlist').updateMany(
+      { isPreCreated: true },
+      { $addToSet: { userIds: cleanUserId } as any }
+    );
+  }
+
+  // 2. If any blueprint is missing from the database, insert it
+  for (const bp of CURATED_PLAYLIST_BLUEPRINTS) {
+    const found = await db.collection('playlist').findOne({ tag: bp.tag, isPreCreated: true });
+    if (!found) {
+      await db.collection('playlist').insertOne({
+        name: bp.name,
+        tag: bp.tag,
+        description: bp.description,
+        isPublic: true,
+        isPreCreated: true,
+        userIds: [cleanUserId],
+        movies: bp.movies.map((m) => ({
+          ...m,
+          addedAt: now,
+        })),
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   }
 }
