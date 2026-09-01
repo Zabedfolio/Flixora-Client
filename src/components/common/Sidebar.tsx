@@ -97,16 +97,37 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const [liveProfile, setLiveProfile] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    image?: string;
+    avatarId?: string;
+    role: string;
+    plan: string;
+    planId?: string;
+  } | null>(null);
   const [sessionRole, setSessionRole] = useState<string>('user');
 
-  // Load and update the sessionRole dynamically from the database user profile
+  // Load and update from the live database user profile
   useEffect(() => {
-    if (session?.user) {
-      const dbRole = (session.user as any).role;
-      if (dbRole) {
-        setSessionRole(dbRole);
+    const fetchLiveProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setLiveProfile(data.user);
+            if (data.user.role) {
+              setSessionRole(data.user.role);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch live user profile in sidebar:', err);
       }
-    }
+    };
+    fetchLiveProfile();
   }, [session]);
 
   const currentRole = forcedRole || (sessionLoading ? 'loading' : (session ? sessionRole : 'user'));
@@ -286,14 +307,14 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
               className="flex items-center gap-3 text-left focus:outline-none group rounded-full md:rounded-lg cursor-pointer"
             >
               <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 overflow-hidden flex items-center justify-center font-bold text-white shadow-inner group-hover:border-[#FF4C00]/60 transition-colors shrink-0 bg-zinc-950">
-                {session?.user.image ? (
+                {(liveProfile?.image || session?.user.image) ? (
                   <img
-                    src={session.user.image}
+                    src={liveProfile?.image || session?.user.image || ''}
                     alt="Avatar"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  session?.user.name?.charAt(0).toUpperCase() || (currentRole === 'admin' ? 'A' : 'U')
+                  (liveProfile?.name || session?.user.name)?.charAt(0).toUpperCase() || (currentRole === 'admin' ? 'A' : 'U')
                 )}
               </div>
               
@@ -302,7 +323,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
                 return (
                   <div className="flex flex-col min-w-0 pr-4">
                     <span className="text-xs font-black text-white truncate">
-                      {session?.user.name || (currentRole === 'admin' ? 'Admin Portal' : 'User Portal')}
+                      {liveProfile?.name || session?.user.name || (currentRole === 'admin' ? 'Admin Portal' : 'User Portal')}
                     </span>
                     <div className="flex items-center gap-1 mt-0.5 text-[9px] font-bold uppercase tracking-wider min-w-0">
                       {React.createElement(roleDetails.icon, { className: `w-3 h-3 shrink-0 ${roleDetails.color}` })}
@@ -318,7 +339,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
 
           {isProfileOpen && (
             <div className="absolute bottom-16 left-4 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-2 w-52 z-50 flex flex-col gap-1">
-              {(session?.user as any)?.role === 'admin' && (
+              {(liveProfile?.role || (session?.user as any)?.role) === 'admin' && (
                 <button 
                   onClick={handleRoleToggle}
                   className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all w-full text-left cursor-pointer"
