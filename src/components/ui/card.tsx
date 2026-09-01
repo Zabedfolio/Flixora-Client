@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bookmark, Plus, Star, Play, X } from 'lucide-react';
+import { Bookmark, Plus, Star, Play, X, Trash2, BookmarkCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   isInWatchlist,
@@ -95,7 +95,7 @@ export default function MediaCard({
     if (exists) {
       removeFromWatchlist(title);
       toast.success(`Removed "${title}" from My List`, {
-        icon: '🗑️',
+        icon: <Trash2 size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#141414',
           color: '#fff',
@@ -112,7 +112,7 @@ export default function MediaCard({
         unsplash_url,
       });
       toast.success(`Added "${title}" to My List`, {
-        icon: '🔖',
+        icon: <BookmarkCheck size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#141414',
           color: '#fff',

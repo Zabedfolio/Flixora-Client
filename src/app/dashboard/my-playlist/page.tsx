@@ -16,6 +16,7 @@ import {
 import { toast } from 'react-hot-toast';
 import PlaylistCard, { PlaylistItem } from '@/components/playlist/PlaylistCard';
 import CreatePlaylistModal from '@/components/playlist/CreatePlaylistModal';
+import PlaylistDetailsModal from '@/components/playlist/PlaylistDetailsModal';
 
 interface MoodCategory {
   id: string;
@@ -40,6 +41,7 @@ export default function MyPlaylistsPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<PlaylistItem | null>(null);
+  const [detailsPlaylist, setDetailsPlaylist] = useState<PlaylistItem | null>(null);
 
   const fetchPlaylists = useCallback(async () => {
     try {
@@ -49,6 +51,10 @@ export default function MyPlaylistsPage() {
         const data = await res.json();
         if (data.success && Array.isArray(data.playlists)) {
           setPlaylists(data.playlists);
+          setDetailsPlaylist((prev) => {
+            if (!prev) return null;
+            return data.playlists.find((p: PlaylistItem) => p._id === prev._id) || prev;
+          });
         }
       }
     } catch (err) {
@@ -111,7 +117,7 @@ export default function MyPlaylistsPage() {
         const resData = await res.json();
         if (resData.success) {
           toast.success('Playlist created successfully!', {
-            icon: '✨',
+            icon: <Sparkles size={16} className="text-[#FF4C00]" />,
             style: {
               background: '#0E0E0E',
               color: '#fff',
@@ -274,6 +280,7 @@ export default function MyPlaylistsPage() {
                   playlist={playlist}
                   onDelete={handleDeletePlaylist}
                   onEdit={handleOpenEditModal}
+                  onViewDetails={(pl) => setDetailsPlaylist(pl)}
                 />
               ))}
 
@@ -294,6 +301,14 @@ export default function MyPlaylistsPage() {
           description: editingPlaylist.description,
         } : null}
         isEditing={Boolean(editingPlaylist)}
+      />
+
+      {/* PLAYLIST DETAILS MODAL COMPONENT */}
+      <PlaylistDetailsModal
+        isOpen={Boolean(detailsPlaylist)}
+        onClose={() => setDetailsPlaylist(null)}
+        playlist={detailsPlaylist}
+        onPlaylistUpdated={fetchPlaylists}
       />
     </div>
   );

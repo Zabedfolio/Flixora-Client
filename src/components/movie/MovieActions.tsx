@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Bookmark, Plus, Play } from 'lucide-react';
+import { Bookmark, Plus, Play, Trash2, BookmarkCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   isInWatchlist,
@@ -67,7 +67,7 @@ export default function MovieActions({ movie }: MovieActionsProps) {
     if (exists) {
       removeFromWatchlist(movie.title);
       toast.success(`Removed "${movie.title}" from My List`, {
-        icon: '🗑️',
+        icon: <Trash2 size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#141414',
           color: '#fff',
@@ -84,7 +84,7 @@ export default function MovieActions({ movie }: MovieActionsProps) {
         unsplash_url: movie.unsplash_url,
       });
       toast.success(`Added "${movie.title}" to My List`, {
-        icon: '🔖',
+        icon: <BookmarkCheck size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#141414',
           color: '#fff',
