@@ -276,7 +276,8 @@ export default function SubscriptionPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map(plan => {
-                const isActive = plan._id === currentPlan;
+                const planKey = plan.slug ?? plan.name.toLowerCase();
+                const isActive = plan._id === currentPlan || planKey === currentPlan;
 
                 return (
                   <div
@@ -347,7 +348,7 @@ export default function SubscriptionPage() {
                       </button>
                     ) : (
                       <Link
-                        href={`/api/checkout_sessions?planId=${plan._id}&userId=${session?.user?.id || ''}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan || ''}`}
+                        href={`/api/checkout_sessions?planId=${planKey}&userId=${session?.user?.id || ''}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan || ''}`}
                         className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm block"
                       >
                         {currentPlan ? 'Switch Plan' : 'Pay Now'}

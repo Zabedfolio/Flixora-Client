@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 const DEFAULT_PLANS = [
   {
+    slug: "basic",
     name: "Basic",
     price: "$7.99/mo",
     resolution: "720p (HD)",
@@ -12,6 +13,7 @@ const DEFAULT_PLANS = [
     kids: "1 kids profile"
   },
   {
+    slug: "standard",
     name: "Standard",
     price: "$11.99/mo",
     resolution: "1080p (FHD)",
@@ -21,6 +23,7 @@ const DEFAULT_PLANS = [
     kids: "3 kids profiles"
   },
   {
+    slug: "premium",
     name: "Premium",
     price: "$14.99/mo",
     resolution: "4K + HDR",
@@ -39,6 +42,14 @@ export async function GET() {
     const count = await db.collection('plans').countDocuments();
     if (count === 0) {
       await db.collection('plans').insertMany(DEFAULT_PLANS);
+    }
+
+    // 1b. Backfill slug for any existing plan docs that are missing it
+    for (const defaultPlan of DEFAULT_PLANS) {
+      await db.collection('plans').updateMany(
+        { name: defaultPlan.name, slug: { $exists: false } },
+        { $set: { slug: defaultPlan.slug } }
+      );
     }
 
     // Retrieve plans from the database
