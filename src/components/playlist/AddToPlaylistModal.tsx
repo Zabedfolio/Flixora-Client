@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, Dices, Loader2, Check, Sparkles } from 'lucide-react';
+import { X, Plus, Dices, Loader2, Check, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { PlaylistItem } from './PlaylistCard';
 import { getRandomPlaylistSuggestion } from '@/lib/playlistGenerator';
@@ -103,7 +103,9 @@ export default function AddToPlaylistModal({
         });
         const data = await res.json();
         if (data.success) {
-          toast.success(`Removed from "${playlist.name}"`, { icon: '🗑️' });
+          toast.success(`Removed from "${playlist.name}"`, {
+            icon: <Trash2 size={16} className="text-[#FF4C00]" />,
+          });
           fetchPlaylists();
         } else {
           toast.error(data.message || 'Failed to remove movie');
@@ -127,7 +129,9 @@ export default function AddToPlaylistModal({
         });
         const data = await res.json();
         if (data.success) {
-          toast.success(`Added to "${playlist.name}"`, { icon: '✨' });
+          toast.success(`Added to "${playlist.name}"`, {
+            icon: <Sparkles size={16} className="text-[#FF4C00]" />,
+          });
           fetchPlaylists();
         } else {
           toast.error(data.message || 'Failed to add movie');
@@ -173,7 +177,9 @@ export default function AddToPlaylistModal({
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Created & added to "${newPlaylistName}" ✨`);
+        toast.success(`Created & added to "${newPlaylistName}"`, {
+          icon: <Sparkles size={16} className="text-[#FF4C00]" />,
+        });
         setNewPlaylistName('');
         setNewPlaylistTag('');
         setIsCreateOpen(false);

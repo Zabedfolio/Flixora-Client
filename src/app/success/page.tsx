@@ -204,8 +204,8 @@ export default async function Success({ searchParams }: SuccessProps) {
               {fromPlanName}
             </span>
           </div>
-          <div className="text-[#FF4C00] font-black animate-pulse flex items-center shrink-0">
-            ➔
+          <div className="text-[#FF4C00] flex items-center shrink-0">
+            <ArrowRight size={14} />
           </div>
           <div className="flex flex-col flex-1">
             <span className="text-[8px] text-[#FF4C00] font-bold uppercase tracking-wider">

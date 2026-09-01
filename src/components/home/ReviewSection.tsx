@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Star } from "lucide-react";
 import ReviewCard from "./ReviewCard";
 
 const reviews = [
@@ -133,14 +134,14 @@ export default function ReviewSection() {
           className="mt-10 flex flex-col items-center justify-center gap-2 text-center"
         >
           <div className="flex items-center gap-2">
-            <div className="flex">
+            <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, index) => (
-                <span
+                <Star
                   key={index}
+                  size={15}
+                  fill="currentColor"
                   className="text-[#FF4C00]"
-                >
-                  ★
-                </span>
+                />
               ))}
             </div>
 

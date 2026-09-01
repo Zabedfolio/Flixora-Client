@@ -12,7 +12,11 @@ import {
   Trash2, 
   ArrowLeft,
   Sparkles,
-  User
+  User,
+  BookmarkPlus,
+  BookmarkCheck,
+  Loader2,
+  Link2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { PlaylistItem, PlaylistMovie } from './PlaylistCard';
@@ -20,16 +24,24 @@ import { PlaylistItem, PlaylistMovie } from './PlaylistCard';
 interface ShareablePlaylistViewProps {
   playlist: PlaylistItem;
   isOwner?: boolean;
+  isSaved?: boolean;
   onRemoveMovie?: (movieId: string) => Promise<void> | void;
+  onToggleSaveDashboard?: (saved: boolean) => void;
 }
 
 export default function ShareablePlaylistView({
   playlist,
   isOwner = false,
+  isSaved = false,
   onRemoveMovie,
+  onToggleSaveDashboard,
 }: ShareablePlaylistViewProps) {
   const [copied, setCopied] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [savedInDashboard, setSavedInDashboard] = useState<boolean>(
+    Boolean(playlist.isSaved ?? isSaved)
+  );
+  const [savingDashboard, setSavingDashboard] = useState(false);
 
   const movies = playlist.movies || [];
   const firstMovie = movies[0];
@@ -38,12 +50,53 @@ export default function ShareablePlaylistView({
     ? `${window.location.origin}/playlist/${playlist._id}`
     : `/playlist/${playlist._id}`;
 
+  const handleToggleSaveDashboard = async () => {
+    try {
+      setSavingDashboard(true);
+      const action = savedInDashboard ? 'removeFromDashboard' : 'saveToDashboard';
+      const res = await fetch('/api/playlist', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          playlistId: playlist._id,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSavedInDashboard(!savedInDashboard);
+        toast.success(
+          savedInDashboard
+            ? `Removed "${playlist.name}" from your dashboard`
+            : `Added "${playlist.name}" to your dashboard`,
+          {
+            icon: savedInDashboard ? (
+              <Trash2 size={16} className="text-[#FF4C00]" />
+            ) : (
+              <BookmarkCheck size={16} className="text-[#FF4C00]" />
+            ),
+          }
+        );
+        if (onToggleSaveDashboard) {
+          onToggleSaveDashboard(!savedInDashboard);
+        }
+      } else {
+        toast.error(data.message || 'Failed to update playlist in dashboard');
+      }
+    } catch (err) {
+      toast.error('Network error updating dashboard');
+    } finally {
+      setSavingDashboard(false);
+    }
+  };
+
   const handleCopyLink = () => {
     if (typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Shareable playlist link copied to clipboard!', {
-        icon: '🔗',
+        icon: <Link2 size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#0E0E0E',
           color: '#fff',
@@ -163,6 +216,40 @@ export default function ShareablePlaylistView({
                 >
                   Playlist Empty
                 </button>
+              )}
+
+              {/* Save To Dashboard Toggle Button */}
+              {!isOwner && (
+                <button
+                  onClick={handleToggleSaveDashboard}
+                  disabled={savingDashboard}
+                  className={`w-full flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer select-none ${
+                    savedInDashboard
+                      ? 'bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300'
+                      : 'bg-[#FF4C00] hover:bg-[#e04300] text-black shadow-lg shadow-[#FF4C00]/20 hover:scale-[1.02]'
+                  }`}
+                >
+                  {savingDashboard ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : savedInDashboard ? (
+                    <>
+                      <BookmarkCheck size={16} className="text-[#FF4C00]" />
+                      <span>In Your Dashboard</span>
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus size={16} />
+                      <span>Add to My Dashboard</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Owner Badge */}
+              {isOwner && (
+                <div className="w-full flex items-center justify-center gap-2 bg-zinc-950 border border-zinc-850 text-zinc-400 font-bold text-xs uppercase tracking-wider py-2.5 rounded-xl">
+                  <span>Your Custom Playlist</span>
+                </div>
               )}
 
               {/* Shareable Link Button */}

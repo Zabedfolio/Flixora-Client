@@ -11,7 +11,8 @@ import {
   Play, 
   Check,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Link2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -33,6 +34,8 @@ export interface PlaylistItem {
   movies?: PlaylistMovie[];
   userId?: string;
   userName?: string;
+  isOwner?: boolean;
+  isSaved?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -67,7 +70,7 @@ export default function PlaylistCard({
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Shareable playlist link copied to clipboard!', {
-        icon: '🔗',
+        icon: <Link2 size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#0E0E0E',
           color: '#fff',

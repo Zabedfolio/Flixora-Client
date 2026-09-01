@@ -117,7 +117,7 @@ export default function MyPlaylistsPage() {
         const resData = await res.json();
         if (resData.success) {
           toast.success('Playlist created successfully!', {
-            icon: '✨',
+            icon: <Sparkles size={16} className="text-[#FF4C00]" />,
             style: {
               background: '#0E0E0E',
               color: '#fff',

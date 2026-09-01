@@ -41,7 +41,7 @@ export default function MyListModal({ isOpen, onClose }: MyListModalProps) {
     setWatchlist(getWatchlist());
 
     toast.success(`Removed "${title}" from your list`, {
-      icon: '🗑️',
+      icon: <Trash2 size={16} className="text-[#FF4C00]" />,
       style: {
         background: '#141414',
         color: '#fff',

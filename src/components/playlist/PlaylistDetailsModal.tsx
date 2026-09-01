@@ -13,7 +13,8 @@ import {
   Film, 
   Check, 
   Calendar,
-  Sparkles
+  Sparkles,
+  Link2
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { PlaylistItem, PlaylistMovie } from './PlaylistCard';
@@ -70,7 +71,7 @@ export default function PlaylistDetailsModal({
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success('Shareable link copied to clipboard!', {
-        icon: '🔗',
+        icon: <Link2 size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#0E0E0E',
           color: '#fff',

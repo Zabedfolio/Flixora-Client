@@ -50,12 +50,26 @@ export async function GET(req: Request) {
         }
       }
 
+      // Check session to determine if current user owns or has saved this playlist
+      const authSession = await auth.api.getSession({
+        headers: await headers(),
+      });
+      const currentUserId = authSession?.user?.id;
+      const isOwner = Boolean(currentUserId && playlist.userId === currentUserId);
+      const isSaved = Boolean(
+        currentUserId &&
+          (playlist.userId === currentUserId ||
+            (Array.isArray(playlist.userIds) && playlist.userIds.includes(currentUserId)))
+      );
+
       return NextResponse.json({
         success: true,
         playlist: {
           ...playlist,
           _id: playlist._id.toString(),
           userName: creatorName,
+          isOwner,
+          isSaved,
         },
       });
     }
@@ -210,6 +224,28 @@ export async function PUT(req: Request) {
     }
 
     const { db } = await connectToDatabase();
+    if (action === 'saveToDashboard') {
+      await db.collection('playlist').updateOne(
+        { _id: new ObjectId(playlistId) },
+        { $addToSet: { userIds: authSession.user.id } as any }
+      );
+      return NextResponse.json({
+        success: true,
+        message: 'Playlist added to your dashboard',
+      });
+    }
+
+    if (action === 'removeFromDashboard') {
+      await db.collection('playlist').updateOne(
+        { _id: new ObjectId(playlistId) },
+        { $pull: { userIds: authSession.user.id } as any }
+      );
+      return NextResponse.json({
+        success: true,
+        message: 'Playlist removed from your dashboard',
+      });
+    }
+
     const filter = {
       _id: new ObjectId(playlistId),
       $or: [
