@@ -135,7 +135,8 @@ async function handleCheckout(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Failed to create Stripe session.' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, url: session.url });
+    // Always return JSON payload containing { url } - NEVER a 303 HTTP redirect
+    return NextResponse.json({ url: session.url, success: true });
   } catch (err: any) {
     console.error('Error creating checkout session:', err);
     const errorMessage = err instanceof Error ? err.message : 'An error occurred during checkout';

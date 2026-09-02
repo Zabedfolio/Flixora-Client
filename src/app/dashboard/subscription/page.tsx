@@ -38,16 +38,25 @@ export default function SubscriptionPage() {
   const handleInitiateCheckout = async (planKey: string) => {
     setCheckoutLoadingKey(planKey);
     try {
-      const res = await fetch(
-        `/api/checkout_sessions?planId=${planKey}&userId=${session?.user?.id || ''}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan || ''}&format=json`,
-        {
-          headers: { Accept: 'application/json' },
-        }
-      );
+      const res = await fetch('/api/checkout_sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          planId: planKey,
+          userId: session?.user?.id || '',
+          email: session?.user?.email || '',
+          name: session?.user?.name || '',
+          fromPlanId: currentPlan || '',
+        }),
+      });
       const data = await res.json();
       if (data?.url) {
         window.location.href = data.url;
       } else {
+        console.error('Checkout session error', data);
         toast.error(data?.message || 'Failed to initialize payment.');
         setCheckoutLoadingKey(null);
       }
