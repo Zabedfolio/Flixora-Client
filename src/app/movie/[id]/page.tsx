@@ -5,6 +5,7 @@ import MovieActions from "@/components/movie/MovieActions";
 import { auth } from "@/app/(auth)/lib/auth";
 import { headers } from "next/headers";
 import { connectToDatabase } from "@/lib/mongodb";
+import TrailerPlayback from "@/components/ui/TrailerPlayback";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -144,7 +145,7 @@ export default async function MovieDetailsPage({ params }: PageProps) {
 
             {movie.tagline && (
               <p className="mt-4 text-lg italic text-gray-300">
-                "{movie.tagline}"
+                `{movie.tagline}`
               </p>
             )}
 
@@ -359,21 +360,7 @@ export default async function MovieDetailsPage({ params }: PageProps) {
             </h2>
           </div>
 
-          <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl">
-            {trailerEmbedUrl ? (
-              <iframe
-                className="h-full w-full rounded-2xl border-0"
-                src={trailerEmbedUrl}
-                title={`${movie.title} Official Trailer`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-zinc-500 font-semibold uppercase tracking-wider bg-zinc-950">
-                No official trailer available
-              </div>
-            )}
-          </div>
+          <TrailerPlayback movie={movie} userId={authSession?.user?.id} trailerEmbedUrl={trailerEmbedUrl} MovieTitle={movie.title}></TrailerPlayback>
 
         </div>
       </section>
