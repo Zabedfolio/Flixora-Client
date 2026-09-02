@@ -4,10 +4,36 @@ import { auth } from '../../lib/auth';
 import { headers } from 'next/headers';
 
 export async function GET(request: NextRequest) {
+  return handleCheckout(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleCheckout(request);
+}
+
+async function handleCheckout(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const planId = searchParams.get('planId') || 'premium';
-    const fromPlanId = searchParams.get('fromPlanId') || '';
+    
+    let planId = searchParams.get('planId') || 'premium';
+    let fromPlanId = searchParams.get('fromPlanId') || '';
+    let emailParam = searchParams.get('email') || undefined;
+    let nameParam = searchParams.get('name') || undefined;
+    let isJson = searchParams.get('format') === 'json' || request.headers.get('accept')?.includes('application/json');
+
+    // Parse JSON body if POST
+    if (request.method === 'POST') {
+      try {
+        const body = await request.json();
+        if (body.planId) planId = body.planId;
+        if (body.fromPlanId) fromPlanId = body.fromPlanId;
+        if (body.email) emailParam = body.email;
+        if (body.name) nameParam = body.name;
+        isJson = true;
+      } catch (e) {
+        // Ignore empty body
+      }
+    }
 
     const PLANS_MAP: Record<
       string,
@@ -33,17 +59,13 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    // Resolve planId to a known PLANS_MAP key
-    // Priority: exact slug match → name substring match → fallback "premium"
     const PLAN_KEYS = ['basic', 'standard', 'premium'] as const;
     const planIdNorm = planId.toLowerCase();
 
-    let resolvedKey: 'basic' | 'standard' | 'premium' = 'premium'; // safe default
+    let resolvedKey: 'basic' | 'standard' | 'premium' = 'premium';
     if (PLAN_KEYS.includes(planIdNorm as any)) {
-      // Direct slug hit: "basic", "standard", or "premium"
       resolvedKey = planIdNorm as 'basic' | 'standard' | 'premium';
     } else {
-      // Substring fallback: handles "Flixora Basic Plan" → "basic"
       const found = PLAN_KEYS.find(key => planIdNorm.includes(key));
       if (found) resolvedKey = found;
     }
@@ -51,15 +73,12 @@ export async function GET(request: NextRequest) {
     const plan = PLANS_MAP[resolvedKey];
     const origin = request.nextUrl.origin;
 
-    // Retrieve session from cookie headers on the server side
     const authSession = await auth.api.getSession({
       headers: await headers(),
     });
 
-    const email =
-      authSession?.user?.email || searchParams.get('email') || undefined;
-    const name =
-      authSession?.user?.name || searchParams.get('name') || undefined;
+    const email = authSession?.user?.email || emailParam;
+    const name = authSession?.user?.name || nameParam;
 
     let customerId: string | undefined = undefined;
     if (email) {
@@ -81,7 +100,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       ...(customerId ? { customer: customerId } : { customer_email: email }),
@@ -107,19 +125,25 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session.url) {
-      return NextResponse.redirect(
-        `${origin}/cancel?error=Failed%20to%20create%20checkout%20session`,
-      );
+      if (isJson) {
+        return NextResponse.json({ success: false, message: 'Failed to create Stripe session.' }, { status: 500 });
+      }
+      return NextResponse.redirect(`${origin}/cancel?error=Failed%20to%20create%20checkout%20session`);
+    }
+
+    if (isJson) {
+      return NextResponse.json({ success: true, url: session.url });
     }
 
     return NextResponse.redirect(session.url, 303);
   } catch (err: any) {
     console.error('Error creating checkout session:', err);
     const origin = request.nextUrl.origin;
-    const errorMessage =
-      err instanceof Error ? err.message : 'An error occurred during checkout';
-    return NextResponse.redirect(
-      `${origin}/cancel?error=${encodeURIComponent(errorMessage)}`,
-    );
+    const errorMessage = err instanceof Error ? err.message : 'An error occurred during checkout';
+
+    if (request.headers.get('accept')?.includes('application/json')) {
+      return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
+    }
+    return NextResponse.redirect(`${origin}/cancel?error=${encodeURIComponent(errorMessage)}`);
   }
 }

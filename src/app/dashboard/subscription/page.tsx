@@ -28,11 +28,35 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [billingList, setBillingList] = useState<BillingRecord[]>([]);
+  const [checkoutLoadingKey, setCheckoutLoadingKey] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
   const { data: session } = authClient.useSession();
   const searchParams = useSearchParams();
+
+  const handleInitiateCheckout = async (planKey: string) => {
+    setCheckoutLoadingKey(planKey);
+    try {
+      const res = await fetch(
+        `/api/checkout_sessions?planId=${planKey}&userId=${session?.user?.id || ''}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan || ''}&format=json`,
+        {
+          headers: { Accept: 'application/json' },
+        }
+      );
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data?.message || 'Failed to initialize payment.');
+        setCheckoutLoadingKey(null);
+      }
+    } catch (err: any) {
+      console.error('Checkout error:', err);
+      toast.error('Failed to connect to checkout service.');
+      setCheckoutLoadingKey(null);
+    }
+  };
 
   const loadData = useCallback(async (userId?: string) => {
     setLoading(true);
@@ -347,12 +371,21 @@ export default function SubscriptionPage() {
                         Active Plan
                       </button>
                     ) : (
-                      <Link
-                        href={`/api/checkout_sessions?planId=${planKey}&userId=${session?.user?.id || ''}&email=${encodeURIComponent(session?.user?.email || '')}&name=${encodeURIComponent(session?.user?.name || '')}&fromPlanId=${currentPlan || ''}`}
-                        className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm block"
+                      <button
+                        type="button"
+                        onClick={() => handleInitiateCheckout(planKey)}
+                        disabled={!!checkoutLoadingKey}
+                        className="w-full text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all outline-none bg-[#1A1A1A] hover:bg-[#FF4C00] text-zinc-300 hover:text-black cursor-pointer hover:scale-[1.02] shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
                       >
-                        {currentPlan ? 'Switch Plan' : 'Pay Now'}
-                      </Link>
+                        {checkoutLoadingKey === planKey ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            <span>Redirecting to Stripe...</span>
+                          </>
+                        ) : (
+                          <span>{currentPlan ? 'Switch Plan' : 'Pay Now'}</span>
+                        )}
+                      </button>
                     )}
                   </div>
                 );
