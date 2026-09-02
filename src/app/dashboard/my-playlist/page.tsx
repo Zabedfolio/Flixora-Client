@@ -17,6 +17,7 @@ import { toast } from 'react-hot-toast';
 import PlaylistCard, { PlaylistItem } from '@/components/playlist/PlaylistCard';
 import CreatePlaylistModal from '@/components/playlist/CreatePlaylistModal';
 import PlaylistDetailsModal from '@/components/playlist/PlaylistDetailsModal';
+import { getCachedPlaylists, fetchPlaylistsFast, subscribeToPlaylistCache } from '@/lib/playlistCache';
 
 interface MoodCategory {
   id: string;
@@ -35,28 +36,40 @@ const MOODS: MoodCategory[] = [
 
 export default function MyPlaylistsPage() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const initialCache = getCachedPlaylists();
+  const [playlists, setPlaylists] = useState<PlaylistItem[]>(initialCache || []);
+  const [loading, setLoading] = useState<boolean>(initialCache === null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<PlaylistItem | null>(null);
   const [detailsPlaylist, setDetailsPlaylist] = useState<PlaylistItem | null>(null);
 
-  const fetchPlaylists = useCallback(async () => {
-    try {
+  // Subscribe to cache updates
+  useEffect(() => {
+    const unsub = subscribeToPlaylistCache((latest) => {
+      setPlaylists(latest);
+      setLoading(false);
+      setDetailsPlaylist((prev) => {
+        if (!prev) return null;
+        return latest.find((p) => p._id === prev._id) || prev;
+      });
+    });
+    return unsub;
+  }, []);
+
+  const fetchPlaylists = useCallback(async (force = false) => {
+    const cached = getCachedPlaylists();
+    if (!cached || force) {
       setLoading(true);
-      const res = await fetch('/api/playlist');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.playlists)) {
-          setPlaylists(data.playlists);
-          setDetailsPlaylist((prev) => {
-            if (!prev) return null;
-            return data.playlists.find((p: PlaylistItem) => p._id === prev._id) || prev;
-          });
-        }
-      }
+    }
+    try {
+      const data = await fetchPlaylistsFast(force);
+      setPlaylists(data);
+      setDetailsPlaylist((prev) => {
+        if (!prev) return null;
+        return data.find((p) => p._id === prev._id) || prev;
+      });
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
     } finally {

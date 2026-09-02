@@ -3,6 +3,7 @@
 import React from 'react';
 import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film } from 'lucide-react';
 import MovieActions from '@/components/movie/MovieActions';
+import MovieReviewsSection from '@/components/movie/MovieReviewsSection';
 
 export interface MovieDetailsProps {
   id: string | number;
@@ -377,6 +378,9 @@ export default function MovieDetailsView({
           )}
         </div>
       </section>
+
+      {/* 5. AUDIENCE REVIEWS & RATINGS SECTION */}
+      <MovieReviewsSection movieId={id} movieTitle={movie.title} />
     </div>
   );
 }
