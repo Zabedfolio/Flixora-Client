@@ -371,11 +371,23 @@ export default function SettingsPage() {
     }
   };
 
-  // 4. Delete Account (2-Step Authorization)
-  const handleDeleteAccountConfirm = async (e?: React.FormEvent) => {
+  // 4a. Step 1: Handle Password Submission -> Move to Alert Warning
+  const handlePasswordModalSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!deletePasswordInput.trim()) {
+      toast.error('Please enter your account password.');
+      return;
+    }
+    setIsDeletePasswordModalOpen(false);
+    setIsDeleteAlertModalOpen(true);
+  };
+
+  // 4b. Step 2: Confirm Permanent Account Deletion
+  const handleDeleteAccountConfirm = async () => {
     if (!deletePasswordInput) {
       toast.error('Please enter your password to authorize account deletion.');
+      setIsDeleteAlertModalOpen(false);
+      setIsDeletePasswordModalOpen(true);
       return;
     }
 
@@ -389,10 +401,12 @@ export default function SettingsPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        toast.error(data.message || 'Incorrect password. Account deletion failed.');
+        toast.error(data.message || 'Incorrect password. Account deletion unauthorized.');
+        setIsDeleteAlertModalOpen(false);
+        setIsDeletePasswordModalOpen(true);
       } else {
-        toast.success('Account permanently deleted.');
-        setIsDeletePasswordModalOpen(false);
+        toast.success('Your account and associated data have been permanently deleted.');
+        setIsDeleteAlertModalOpen(false);
         await authClient.signOut();
         window.location.href = '/';
       }
@@ -795,7 +809,10 @@ export default function SettingsPage() {
                   <span className="text-xs font-bold text-red-500 uppercase tracking-wide">Danger Zone</span>
                   <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed mt-1 uppercase tracking-wide">Permanently purge your Flixora account data</p>
                   <button
-                    onClick={() => setIsDeleteAlertModalOpen(true)}
+                    onClick={() => {
+                      setDeletePasswordInput('');
+                      setIsDeletePasswordModalOpen(true);
+                    }}
                     className="mt-4 border border-red-500/40 hover:bg-red-950/20 text-red-500 font-bold text-xs uppercase tracking-wider py-3 px-5 rounded-xl transition-all cursor-pointer outline-none"
                   >
                     Delete Account
@@ -1279,60 +1296,7 @@ export default function SettingsPage() {
       )}
 
       {/* =========================================================
-          2-STEP DELETE ACCOUNT STEP 1: WARNING ALERT MODAL
-      ========================================================= */}
-      {isDeleteAlertModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-[#0E0E0E] border border-red-900/50 rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-red-950/40 border border-red-800/60 flex items-center justify-center text-red-500 shrink-0">
-                <AlertTriangle size={24} />
-              </div>
-              <div>
-                <h3 className="text-base font-black uppercase tracking-wider text-red-500">
-                  Delete Account Warning
-                </h3>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                  Permanent & Irreversible Action
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-red-950/15 border border-red-900/30 rounded-xl p-4 text-xs text-zinc-300 leading-relaxed flex flex-col gap-2">
-              <p className="font-bold text-white">
-                Are you sure you want to permanently delete your Flixora account?
-              </p>
-              <ul className="list-disc pl-4 text-zinc-400 space-y-1 text-[11px]">
-                <li>All profile avatars, custom nicknames, and roles will be purged.</li>
-                <li>Saved playlists, watch history, and My List items will be deleted.</li>
-                <li>Movie reviews and active plan subscriptions will be removed.</li>
-              </ul>
-            </div>
-
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                onClick={() => setIsDeleteAlertModalOpen(false)}
-                className="flex-1 border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setIsDeleteAlertModalOpen(false);
-                  setDeletePasswordInput('');
-                  setIsDeletePasswordModalOpen(true);
-                }}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-red-600/20"
-              >
-                I Understand, Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          2-STEP DELETE ACCOUNT STEP 2: PASSWORD AUTHORIZATION MODAL
+          2-STEP DELETE ACCOUNT STEP 1: PASSWORD AUTHORIZATION MODAL
       ========================================================= */}
       {isDeletePasswordModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
@@ -1356,12 +1320,12 @@ export default function SettingsPage() {
                   Authorize Account Deletion
                 </h3>
                 <p className="text-[10px] text-zinc-400 font-semibold">
-                  Please enter your account password to confirm permanent deletion
+                  Please enter your account password to authorize deletion
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleDeleteAccountConfirm} className="flex flex-col gap-4">
+            <form onSubmit={handlePasswordModalSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
                   Account Password
@@ -1398,23 +1362,78 @@ export default function SettingsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isDeletingAccount || !deletePasswordInput}
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                  disabled={!deletePasswordInput}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-red-600/20 disabled:opacity-50"
                 >
-                  {isDeletingAccount ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Deleting Account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 size={14} />
-                      <span>Permanently Delete</span>
-                    </>
-                  )}
+                  Confirm Password
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          2-STEP DELETE ACCOUNT STEP 2: PERMANENT DELETION WARNING ALERT MODAL
+      ========================================================= */}
+      {isDeleteAlertModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-red-900/50 rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-950/40 border border-red-800/60 flex items-center justify-center text-red-500 shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="text-base font-black uppercase tracking-wider text-red-500">
+                  Delete Account Warning
+                </h3>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                  Permanent & Irreversible Action
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-950/15 border border-red-900/30 rounded-xl p-4 text-xs text-zinc-300 leading-relaxed flex flex-col gap-2">
+              <p className="font-bold text-white">
+                Are you sure you want to permanently delete your Flixora account?
+              </p>
+              <ul className="list-disc pl-4 text-zinc-400 space-y-1 text-[11px]">
+                <li>Account info, authentication credentials, and active session will be purged.</li>
+                <li>User profiles, custom nicknames, and avatar settings will be deleted.</li>
+                <li>Saved My List items, watch history, and payment history will be deleted.</li>
+                <li>Custom playlists will be deleted (except pre-created system playlists).</li>
+                <li>Movie reviews will remain preserved.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                onClick={() => {
+                  setIsDeleteAlertModalOpen(false);
+                  setDeletePasswordInput('');
+                }}
+                className="flex-1 border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccountConfirm}
+                disabled={isDeletingAccount}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isDeletingAccount ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Deleting Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Confirm</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

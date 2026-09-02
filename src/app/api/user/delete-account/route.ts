@@ -50,10 +50,9 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // Purge user data across all database collections
+    // Purge user data across database collections
     const { db } = await connectToDatabase();
 
-    // Convert string userId to ObjectId for collections using ObjectId
     let userObjId: ObjectId | null = null;
     try {
       userObjId = new ObjectId(userId);
@@ -69,21 +68,26 @@ export async function DELETE(req: Request) {
       ? { $or: [{ _id: userId }, { _id: userObjId }] }
       : { _id: userId };
 
+    // Delete account records (preserving reviews and pre-created playlists as requested)
     await Promise.all([
       db.collection('user').deleteMany(_idFilter),
       db.collection('account').deleteMany(userIdFilter),
       db.collection('session').deleteMany(userIdFilter),
       db.collection('profiles').deleteMany(userIdFilter),
       db.collection('Lists').deleteMany({ userId: userId }),
-      db.collection('playlist').deleteMany({ userId: userId }),
+      db.collection('playlist').deleteMany({
+        userId: userId,
+        isPreCreated: { $ne: true },
+        isDefault: { $ne: true },
+        isSystem: { $ne: true },
+      }),
       db.collection('history').deleteMany({ userId: userId }),
-      db.collection('review').deleteMany({ userId: userId }),
       db.collection('payments').deleteMany({ userId: userId }),
     ]);
 
     return NextResponse.json({
       success: true,
-      message: 'Your account and all associated data have been permanently deleted.',
+      message: 'Your account and associated data have been permanently deleted.',
     });
   } catch (error: any) {
     console.error('DELETE /api/user/delete-account error:', error);
