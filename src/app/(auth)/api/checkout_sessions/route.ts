@@ -3,8 +3,11 @@ import { stripe } from '../../lib/stripe';
 import { auth } from '../../lib/auth';
 import { headers } from 'next/headers';
 
-export async function GET(request: NextRequest) {
-  return handleCheckout(request);
+export async function GET() {
+  return NextResponse.json(
+    { success: false, message: 'Method Not Allowed. Use POST method.' },
+    { status: 405 }
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -13,26 +16,22 @@ export async function POST(request: NextRequest) {
 
 async function handleCheckout(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    
-    let planId = searchParams.get('planId') || 'premium';
-    let fromPlanId = searchParams.get('fromPlanId') || '';
-    let emailParam = searchParams.get('email') || undefined;
-    let nameParam = searchParams.get('name') || undefined;
-    let userIdParam = searchParams.get('userId') || undefined;
+    let planId = 'premium';
+    let fromPlanId = '';
+    let emailParam: string | undefined = undefined;
+    let nameParam: string | undefined = undefined;
+    let userIdParam: string | undefined = undefined;
 
-    // Parse JSON body if POST
-    if (request.method === 'POST') {
-      try {
-        const body = await request.json();
-        if (body.planId) planId = body.planId;
-        if (body.fromPlanId) fromPlanId = body.fromPlanId;
-        if (body.email) emailParam = body.email;
-        if (body.name) nameParam = body.name;
-        if (body.userId) userIdParam = body.userId;
-      } catch (e) {
-        // Ignore empty body
-      }
+    // Parse JSON body from POST request
+    try {
+      const body = await request.json();
+      if (body.planId) planId = body.planId;
+      if (body.fromPlanId) fromPlanId = body.fromPlanId;
+      if (body.email) emailParam = body.email;
+      if (body.name) nameParam = body.name;
+      if (body.userId) userIdParam = body.userId;
+    } catch (e) {
+      // Fallback for empty body
     }
 
     const PLANS_MAP: Record<
@@ -135,7 +134,7 @@ async function handleCheckout(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Failed to create Stripe session.' }, { status: 500 });
     }
 
-    // Always return JSON payload containing { url } - NEVER a 303 HTTP redirect
+    // Always return JSON payload containing { url } - NEVER an HTTP 303 redirect
     return NextResponse.json({ url: session.url, success: true });
   } catch (err: any) {
     console.error('Error creating checkout session:', err);
