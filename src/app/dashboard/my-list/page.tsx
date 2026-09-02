@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Star, Calendar, Play, Info } from 'lucide-react';
 import MediaCard from '@/components/ui/card';
-import { getWatchlist, WatchlistItem } from '@/data/watchlistStore';
+import { getWatchlist, fetchWatchlist, WatchlistItem } from '@/data/watchlistStore';
 
 import EmptyState from '@/components/common/EmptyState';
 
@@ -12,6 +12,7 @@ export default function DashboardMyListPage() {
 
   useEffect(() => {
     setItems(getWatchlist());
+    fetchWatchlist();
 
     const handleUpdate = () => {
       setItems(getWatchlist());
