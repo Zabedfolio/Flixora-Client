@@ -67,7 +67,7 @@ export default function SubscriptionPage() {
     }
   };
 
-  const loadData = useCallback(async (userId?: string) => {
+  const loadData = useCallback(async (targetUserId?: string) => {
     setLoading(true);
     try {
       const resPlans = await getAllPlans();
@@ -75,42 +75,50 @@ export default function SubscriptionPage() {
         setPlans(resPlans.data);
       }
 
-      if (userId) {
-        try {
-          const profileRes = await fetch('/api/user/profile');
-          if (profileRes.ok) {
-            const profileData = await profileRes.json();
-            if (profileData.user?.planId) {
-              setCurrentPlan(profileData.user.planId);
-            }
+      let resolvedPlanIdentifier = '';
+      try {
+        const profileRes = await fetch('/api/user/profile', { cache: 'no-store' });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          if (profileData.user?.planId) {
+            resolvedPlanIdentifier = profileData.user.planId;
+          } else if (profileData.user?.plan) {
+            resolvedPlanIdentifier = profileData.user.plan;
           }
-        } catch (err) {
-          console.error('Error fetching live user profile in subscription:', err);
         }
+      } catch (err) {
+        console.error('Error fetching live user profile in subscription:', err);
+      }
 
-        const historyData = await getUserPayments(userId);
+      try {
+        const uid = targetUserId || session?.user?.id || 'me';
+        const historyData = await getUserPayments(uid);
         setBillingList(historyData);
 
-        const latestPaidPayment = historyData.find(
-          (item: BillingRecord) => item.status === 'Paid',
-        );
-        if (latestPaidPayment && !currentPlan) {
-          setCurrentPlan(latestPaidPayment.planId);
+        if (!resolvedPlanIdentifier) {
+          const latestPaidPayment = historyData.find(
+            (item: BillingRecord) => item.status === 'Paid',
+          );
+          if (latestPaidPayment?.planId) {
+            resolvedPlanIdentifier = latestPaidPayment.planId;
+          }
         }
+      } catch (err) {
+        console.error('Error fetching payment history:', err);
+      }
+
+      if (resolvedPlanIdentifier) {
+        setCurrentPlan(resolvedPlanIdentifier);
       }
     } catch (error: any) {
       toast.error(error.message || 'Error loading subscription data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
-    if (session?.user?.id) {
-      loadData(session.user.id);
-    } else {
-      loadData();
-    }
+    loadData(session?.user?.id);
   }, [session, loadData]);
 
   useEffect(() => {
@@ -119,15 +127,18 @@ export default function SubscriptionPage() {
 
     if (success === 'true') {
       toast.success('Payment successful! Your subscription is now active.');
-      if (session?.user?.id) {
-        loadData(session.user.id);
-      }
+      loadData(session?.user?.id);
     } else if (canceled === 'true') {
       toast.error('Payment process was cancelled.');
     }
   }, [searchParams, session, loadData]);
 
-  const activePlanData = plans.find(p => p._id === currentPlan);
+  const activePlanData = plans.find(
+    p =>
+      (currentPlan && p._id?.toString() === currentPlan) ||
+      (currentPlan && p.slug?.toLowerCase() === currentPlan.toLowerCase()) ||
+      (currentPlan && p.name?.toLowerCase() === currentPlan.toLowerCase())
+  );
 
   const handleConfirmCancel = (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,7 +321,14 @@ export default function SubscriptionPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map(plan => {
                 const planKey = plan.slug ?? plan.name.toLowerCase();
-                const isActive = plan._id === currentPlan || planKey === currentPlan;
+                const isActive = Boolean(
+                  currentPlan && (
+                    plan._id?.toString() === currentPlan ||
+                    plan.slug?.toLowerCase() === currentPlan.toLowerCase() ||
+                    plan.name?.toLowerCase() === currentPlan.toLowerCase() ||
+                    planKey.toLowerCase() === currentPlan.toLowerCase()
+                  )
+                );
 
                 return (
                   <div
