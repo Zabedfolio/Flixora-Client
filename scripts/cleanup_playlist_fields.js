@@ -1,7 +1,13 @@
-const { MongoClient } = require('mongodb');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
 
 async function run() {
-  const uri = "mongodb+srv://flixora:tVJeYiRTZcHxb0XN@cluster0.mldxc9s.mongodb.net/?appName=Cluster0";
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error("Error: MONGODB_URI is not defined in environment variables.");
+    process.exit(1);
+  }
   const client = new MongoClient(uri);
 
   try {

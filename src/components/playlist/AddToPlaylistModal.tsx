@@ -6,6 +6,12 @@ import { X, Plus, Dices, Loader2, Check, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { PlaylistItem } from './PlaylistCard';
 import { getRandomPlaylistSuggestion } from '@/lib/playlistGenerator';
+import { 
+  getCachedPlaylists, 
+  setCachedPlaylists, 
+  fetchPlaylistsFast, 
+  subscribeToPlaylistCache 
+} from '@/lib/playlistCache';
 
 interface AddToPlaylistModalProps {
   isOpen: boolean;
@@ -26,8 +32,9 @@ export default function AddToPlaylistModal({
   movie,
 }: AddToPlaylistModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const initialCache = getCachedPlaylists();
+  const [playlists, setPlaylists] = useState<PlaylistItem[]>(initialCache || []);
+  const [loading, setLoading] = useState(initialCache === null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Submodal for creating new playlist
@@ -38,6 +45,15 @@ export default function AddToPlaylistModal({
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Subscribe to live cache updates
+  useEffect(() => {
+    const unsub = subscribeToPlaylistCache((latest) => {
+      setPlaylists(latest);
+      setLoading(false);
+    });
+    return unsub;
   }, []);
 
   // Restrict body scroll when modal is open
@@ -51,16 +67,14 @@ export default function AddToPlaylistModal({
     }
   }, [isOpen]);
 
-  const fetchPlaylists = useCallback(async () => {
-    try {
+  const loadPlaylists = useCallback(async (force = false) => {
+    const current = getCachedPlaylists();
+    if (!current || force) {
       setLoading(true);
-      const res = await fetch('/api/playlist');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.playlists)) {
-          setPlaylists(data.playlists);
-        }
-      }
+    }
+    try {
+      const data = await fetchPlaylistsFast(force);
+      setPlaylists(data);
     } catch (err) {
       console.error('Failed to fetch playlists:', err);
     } finally {
@@ -70,9 +84,10 @@ export default function AddToPlaylistModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchPlaylists();
+      // If we already have cache, show it instantly and revalidate in background
+      loadPlaylists(false);
     }
-  }, [isOpen, fetchPlaylists]);
+  }, [isOpen, loadPlaylists]);
 
   if (!isOpen || !mounted) return null;
 
@@ -88,6 +103,29 @@ export default function AddToPlaylistModal({
   const handleToggleMovie = async (playlist: PlaylistItem) => {
     const exists = isMovieInPlaylist(playlist);
     setTogglingId(playlist._id);
+
+    const cleanMovieId = String(movie.id);
+    const cleanTitle = movie.title.toLowerCase();
+    const movieEntry = {
+      movieId: cleanMovieId,
+      title: movie.title,
+      unsplash_url: movie.unsplash_url || '',
+      year: movie.year || '',
+      duration: movie.duration || '',
+      category: movie.category || 'Movie',
+      addedAt: new Date().toISOString(),
+    };
+
+    // OPTIMISTIC LOCAL UPDATE for 0ms visual feedback
+    const optimisticList = playlists.map((pl) => {
+      if (pl._id !== playlist._id) return pl;
+      const list = pl.movies || [];
+      const updatedList = exists
+        ? list.filter((m) => String(m.movieId) !== cleanMovieId && m.title.toLowerCase() !== cleanTitle)
+        : [movieEntry, ...list];
+      return { ...pl, movies: updatedList };
+    });
+    setPlaylists(optimisticList);
 
     try {
       if (exists) {
@@ -106,9 +144,11 @@ export default function AddToPlaylistModal({
           toast.success(`Removed from "${playlist.name}"`, {
             icon: <Trash2 size={16} className="text-[#FF4C00]" />,
           });
-          fetchPlaylists();
+          const fresh = await fetchPlaylistsFast(true);
+          setPlaylists(fresh);
         } else {
           toast.error(data.message || 'Failed to remove movie');
+          loadPlaylists(true);
         }
       } else {
         const res = await fetch('/api/playlist', {
@@ -132,13 +172,16 @@ export default function AddToPlaylistModal({
           toast.success(`Added to "${playlist.name}"`, {
             icon: <Sparkles size={16} className="text-[#FF4C00]" />,
           });
-          fetchPlaylists();
+          const fresh = await fetchPlaylistsFast(true);
+          setPlaylists(fresh);
         } else {
           toast.error(data.message || 'Failed to add movie');
+          loadPlaylists(true);
         }
       }
     } catch (err) {
       toast.error('Network error');
+      loadPlaylists(true);
     } finally {
       setTogglingId(null);
     }
@@ -183,7 +226,8 @@ export default function AddToPlaylistModal({
         setNewPlaylistName('');
         setNewPlaylistTag('');
         setIsCreateOpen(false);
-        fetchPlaylists();
+        const fresh = await fetchPlaylistsFast(true);
+        setPlaylists(fresh);
       } else {
         toast.error(data.message || 'Failed to create playlist');
       }
