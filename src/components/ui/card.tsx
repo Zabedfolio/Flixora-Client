@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Plus, Star, Play, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bookmark, Plus, Star, Play, X, Trash2, BookmarkCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   isInWatchlist,
   addToWatchlist,
   removeFromWatchlist,
 } from '@/data/watchlistStore';
-import { getPlaylists, createPlaylist, addTitleToPlaylist, removeTitleFromPlaylist, isTitleInPlaylist, Playlist } from '@/data/playlistStore';
+import AddToPlaylistModal from '@/components/playlist/AddToPlaylistModal';
 
 interface CardProps {
+  id?: string | number;
   title: string;
   unsplash_url: string;
   rating?: string;
@@ -38,6 +40,7 @@ const getColorFromTitle = (title: string): string => {
 };
 
 export default function MediaCard({
+  id,
   title,
   unsplash_url,
   rating = '9.0',
@@ -46,12 +49,10 @@ export default function MediaCard({
   duration = '2H 24M',
   isNew = false,
 }: CardProps) {
+  const router = useRouter();
   const [inMyList, setInMyList] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newPlaylistName, setNewPlaylistName] = useState('');
-  const [newPlaylistTag, setNewPlaylistTag] = useState('');
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [playlists, setPlaylists] = useState<any[]>([]);
 
   useEffect(() => {
     setInMyList(isInWatchlist(title));
@@ -65,13 +66,23 @@ export default function MediaCard({
   }, [title]);
 
   useEffect(() => {
-    setPlaylists(getPlaylists());
-    const handleUpdate = () => {
-      setPlaylists(getPlaylists());
+    const fetchPlaylists = async () => {
+      try {
+        const res = await fetch('/api/playlist');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.playlists)) {
+            setPlaylists(data.playlists);
+          }
+        }
+      } catch (err) {
+        // silent
+      }
     };
-    window.addEventListener('playlists-updated', handleUpdate);
+    fetchPlaylists();
+    window.addEventListener('playlists-updated', fetchPlaylists);
     return () => {
-      window.removeEventListener('playlists-updated', handleUpdate);
+      window.removeEventListener('playlists-updated', fetchPlaylists);
     };
   }, []);
 
@@ -84,7 +95,7 @@ export default function MediaCard({
     if (exists) {
       removeFromWatchlist(title);
       toast.success(`Removed "${title}" from My List`, {
-        icon: '🗑️',
+        icon: <Trash2 size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#141414',
           color: '#fff',
@@ -101,7 +112,7 @@ export default function MediaCard({
         unsplash_url,
       });
       toast.success(`Added "${title}" to My List`, {
-        icon: '🔖',
+        icon: <BookmarkCheck size={16} className="text-[#FF4C00]" />,
         style: {
           background: '#141414',
           color: '#fff',
@@ -116,10 +127,26 @@ export default function MediaCard({
     setIsModalOpen(true);
   };
 
-  const inAnyPlaylist = playlists.some(pl => isTitleInPlaylist(pl.id, title));
+  const handleCardClick = () => {
+    const targetId = id || title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    if (targetId) {
+      router.push(`/movie/${targetId}`);
+    }
+  };
+
+  const inAnyPlaylist = playlists.some((pl) =>
+    (pl.movies || []).some(
+      (m: any) =>
+        String(m.movieId) === String(id || title) ||
+        m.title.toLowerCase() === title.toLowerCase()
+    )
+  );
 
   return (
-    <div className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer">
+    <div 
+      onClick={handleCardClick}
+      className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer"
+    >
       {/* Blurred Poster-Colored Glow behind the Card */}
       <div
         className="absolute inset-x-[-50px] inset-y-[-50px] rounded-[50px] opacity-0 group-hover:opacity-100 blur-[50px] pointer-events-none transition-all duration-500 z-0"
@@ -212,180 +239,19 @@ export default function MediaCard({
         </div>
       </div>
 
-      {/* DUAL LAYER PLAYLIST SELECTOR MODAL */}
-      {isModalOpen && (
-        <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsModalOpen(false);
-          }}
-        >
-          <div 
-            className="w-full max-w-sm bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl overflow-hidden flex flex-col p-6 gap-5 relative animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-white">
-                Add to Playlists
-              </h3>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* List of playlists */}
-            <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
-              {playlists.length === 0 ? (
-                <div className="text-center py-8 text-zinc-550 text-xs font-semibold">
-                  No custom playlists found
-                </div>
-              ) : (
-                playlists.map((pl) => {
-                  const checked = isTitleInPlaylist(pl.id, title);
-                  return (
-                    <label 
-                      key={pl.id}
-                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-950/60 border border-transparent hover:border-zinc-900 transition-all cursor-pointer select-none"
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">{pl.name}</span>
-                        {pl.tag && (
-                          <span className="text-[8px] text-[#FF4C00] font-black uppercase tracking-widest">{pl.tag}</span>
-                        )}
-                      </div>
-                      <input 
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          if (checked) {
-                            removeTitleFromPlaylist(pl.id, title);
-                            toast.success(`Removed from "${pl.name}"`, { icon: '🗑️' });
-                          } else {
-                            addTitleToPlaylist(pl.id, {
-                              title,
-                              unsplash_url,
-                              category,
-                              year,
-                              duration
-                            });
-                            toast.success(`Added to "${pl.name}"`, { icon: '✨' });
-                          }
-                        }}
-                        className="checkbox checkbox-xs border-zinc-700 checked:bg-[#FF4C00] checked:border-[#FF4C00] rounded accent-[#FF4C00]"
-                      />
-                    </label>
-                  );
-                })
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2 pt-3 border-t border-[#1A1A1A]">
-              <button 
-                onClick={() => setIsCreateModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-[10px] uppercase tracking-wider py-2.5 rounded-xl transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10"
-              >
-                <Plus size={12} strokeWidth={3} />
-                Create New Playlist
-              </button>
-            </div>
-
-            {/* NESTED CREATE PLAYLIST OVERLAY */}
-            {isCreateModalOpen && (
-              <div 
-                className="absolute inset-0 z-50 bg-[#0A0A0A]/95 flex items-center justify-center p-6 transition-all duration-300 animate-in fade-in duration-150"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="w-full max-w-xs bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl flex flex-col p-5 gap-4">
-                  <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-wider text-white">
-                      Create New Playlist
-                    </h4>
-                    <button 
-                      onClick={() => {
-                        setIsCreateModalOpen(false);
-                        setNewPlaylistName('');
-                        setNewPlaylistTag('');
-                      }}
-                      className="p-1 rounded-full text-zinc-400 hover:text-white transition-colors cursor-pointer outline-none"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">
-                        Playlist Name
-                      </label>
-                      <input 
-                        type="text"
-                        placeholder="e.g. Chill Vibes"
-                        value={newPlaylistName}
-                        onChange={(e) => setNewPlaylistName(e.target.value)}
-                        className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#FF4C00] transition-all placeholder:text-zinc-650"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[8px] font-bold text-zinc-450 uppercase tracking-widest">
-                        Tag (Optional)
-                      </label>
-                      <input 
-                        type="text"
-                        placeholder="e.g. Romance"
-                        value={newPlaylistTag}
-                        onChange={(e) => setNewPlaylistTag(e.target.value)}
-                        className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#FF4C00] transition-all placeholder:text-zinc-650"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2 border-t border-[#1A1A1A]">
-                    <button 
-                      onClick={() => {
-                        setIsCreateModalOpen(false);
-                        setNewPlaylistName('');
-                        setNewPlaylistTag('');
-                      }}
-                      className="flex-1 bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white font-black text-[9px] uppercase tracking-wider py-2 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (!newPlaylistName.trim()) {
-                          toast.error('Playlist name is required');
-                          return;
-                        }
-                        const newPl = createPlaylist(newPlaylistName.trim(), newPlaylistTag.trim());
-                        addTitleToPlaylist(newPl.id, {
-                          title,
-                          unsplash_url,
-                          category,
-                          year,
-                          duration
-                        });
-                        toast.success(`Created "${newPlaylistName}" & Added Title!`, { icon: '🎉' });
-                        setIsCreateModalOpen(false);
-                        setNewPlaylistName('');
-                        setNewPlaylistTag('');
-                      }}
-                      className="flex-1 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-[9px] uppercase tracking-wider py-2 rounded-lg transition-colors cursor-pointer"
-                    >
-                      Create
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* PORTAL BASED ADD TO PLAYLIST MODAL */}
+      <AddToPlaylistModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        movie={{
+          id: id || title,
+          title,
+          unsplash_url,
+          year,
+          duration,
+          category,
+        }}
+      />
     </div>
   );
 }

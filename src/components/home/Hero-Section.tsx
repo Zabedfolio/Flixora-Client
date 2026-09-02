@@ -1,17 +1,14 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Bot,
-  ChevronLeft,
-  ChevronRight,
-  Send,
-  Sparkles,
-} from 'lucide-react';
-import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
-import { getGenreName } from '@/data/home/newReleases';
-import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
+import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
+import { getGenreName } from "@/data/home/newReleases";
+import ReactMarkdown from "react-markdown";
+import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface Slide {
   id: number;
@@ -22,73 +19,38 @@ interface Slide {
   aiMatch: number;
 }
 
+interface AiChatResult {
+  message: string | null;
+  movies: AiMovie[];
+}
+
 const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
 
-interface AiSuggestion {
-  title: string;
-  reason: string;
-}
-
-const AI_KEYWORD_MAP: { keywords: string[]; suggestion: AiSuggestion }[] = [
-  {
-    keywords: ['intense', 'action', 'war', 'fight'],
-    suggestion: { title: 'Fury: Born of War', reason: 'high-stakes, unrelenting combat drama' },
-  },
-  {
-    keywords: ['feel-good', 'feel good', 'happy', 'light', 'romance'],
-    suggestion: { title: 'Echoes of Eternity', reason: 'a warm, slow-burn love story' },
-  },
-  {
-    keywords: ['space', 'sci-fi', 'scifi', 'cosmos', 'thoughtful'],
-    suggestion: { title: 'The Silent Cosmos', reason: 'a meditative journey through deep space' },
-  },
-  {
-    keywords: ['thriller', 'dark', 'crime', 'neon', 'cyberpunk'],
-    suggestion: { title: 'Neon Shadows', reason: 'a gritty, neon-soaked crime thriller' },
-  },
-];
-
-const AI_FALLBACK_SUGGESTIONS: AiSuggestion[] = [
-  { title: 'Tokyo Cyber-Run', reason: "it's trending hard with viewers like you" },
-  { title: 'Chrono Drift', reason: 'a fan-favorite pick across all moods' },
-  { title: 'Project Zero: Genesis', reason: "Flixora's top-rated new release" },
-];
-
-function getAiSuggestion(query: string): AiSuggestion {
-  const normalized = query.toLowerCase();
-  const match = AI_KEYWORD_MAP.find(({ keywords }) =>
-    keywords.some((keyword) => normalized.includes(keyword))
-  );
-
-  if (match) {
-    return match.suggestion;
-  }
-
-  return AI_FALLBACK_SUGGESTIONS[
-    Math.floor(Math.random() * AI_FALLBACK_SUGGESTIONS.length)
-  ];
-}
-
 export default function HeroBanner() {
+  const router = useRouter();
   const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const [aiQuery, setAiQuery] = useState('');
+  const [aiQuery, setAiQuery] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
+  const [aiResult, setAiResult] = useState<AiChatResult | null>(null);
+  const [username, setUsername] = useState("Viewer");
   const { data: session } = authClient.useSession();
-  const username = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
+  const userName = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
 
   useEffect(() => {
-    fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=1')
+    fetchFromTMDB<{ results: any[] }>("/movie/popular?language=en-US&page=1")
       .then((data) => {
         if (data.results && data.results.length > 0) {
           const mapped = data.results.slice(0, 5).map((movie) => ({
             id: movie.id,
-            image: getTMDBImageUrl(movie.backdrop_path || movie.poster_path, 'original'),
+            image: getTMDBImageUrl(
+              movie.backdrop_path || movie.poster_path,
+              "original",
+            ),
             title: movie.title,
             subtitle: movie.overview,
             highlight: `Popular in ${getGenreName(movie.genre_ids)}`,
@@ -99,9 +61,20 @@ export default function HeroBanner() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Error fetching banner backdrops:', err);
+        console.error("Error fetching banner backdrops:", err);
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedRole = localStorage.getItem("flixora-session-role");
+      if (savedRole === "admin") {
+        setUsername("Admin");
+      } else {
+        setUsername("Viewer");
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -110,7 +83,7 @@ export default function HeroBanner() {
     }
 
     const timer = setInterval(() => {
-      setCurrentSlide(previous => (previous + 1) % slides.length);
+      setCurrentSlide((previous) => (previous + 1) % slides.length);
     }, AUTO_PLAY_INTERVAL);
 
     return () => clearInterval(timer);
@@ -131,17 +104,19 @@ export default function HeroBanner() {
 
   const goToNextSlide = () => {
     if (slides.length === 0) return;
-    setCurrentSlide(previous => (previous + 1) % slides.length);
+    setCurrentSlide((previous) => (previous + 1) % slides.length);
     pauseAutoPlay();
   };
 
   const goToPreviousSlide = () => {
     if (slides.length === 0) return;
-    setCurrentSlide(previous => (previous - 1 + slides.length) % slides.length);
+    setCurrentSlide(
+      (previous) => (previous - 1 + slides.length) % slides.length,
+    );
     pauseAutoPlay();
   };
 
-  const runAiSearch = (query: string) => {
+  const runAiSearch = async (query: string) => {
     const trimmed = query.trim();
 
     if (!trimmed) {
@@ -150,12 +125,67 @@ export default function HeroBanner() {
 
     pauseAutoPlay();
     setAiLoading(true);
-    setAiSuggestion(null);
+    setAiResult(null);
 
-    window.setTimeout(() => {
-      setAiSuggestion(getAiSuggestion(trimmed));
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: trimmed,
+          }),
+        },
+      );
+   
+      if (!response.ok) {
+        throw new Error("Failed to get AI recommendation");
+      }
+
+      const result = await response.json();
+      console.log(result);
+      if (!result.success) {
+        throw new Error(result.message || "AI recommendation failed");
+      }
+
+      // Backend can respond with a plain message, a movies list (like the
+      // TMDB-shaped search payload), or both — normalize all shapes here.
+      const message: string | null =
+        result.data?.message ?? result.message ?? null;
+
+      const rawMovies =
+        result.data?.movies ?? result.movies ?? result.data?.results ?? [];
+
+      const movies: AiMovie[] = Array.isArray(rawMovies)
+        ? rawMovies.map((movie: any) => ({
+          id: movie.id,
+          title: movie.title ?? movie.original_title ?? "Untitled",
+          original_title: movie.original_title,
+          overview: movie.overview,
+          poster_path: movie.poster_path ?? null,
+          backdrop_path: movie.backdrop_path ?? null,
+          release_date: movie.release_date,
+          vote_average: movie.vote_average,
+          vote_count: movie.vote_count,
+          media_type: movie.media_type,
+        }))
+        : [];
+
+      setAiResult({ message, movies });
+    } catch (error) {
+      console.error("AI recommendation error:", error);
+
+      setAiResult({
+        message:
+          "Sorry, I could not get movie recommendations right now. Please try again.",
+        movies: [],
+      });
+    } finally {
       setAiLoading(false);
-    }, 900);
+    }
   };
 
   const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -169,7 +199,9 @@ export default function HeroBanner() {
     return (
       <section className="relative h-screen min-h-[640px] w-full bg-black flex flex-col items-center justify-center">
         <span className="loading loading-spinner text-[#FF4C00] loading-lg"></span>
-        <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">Synchronizing Spotlight...</p>
+        <p className="text-[10px] text-zinc-500 mt-4 tracking-widest uppercase font-bold">
+          Synchronizing Spotlight...
+        </p>
       </section>
     );
   }
@@ -194,7 +226,7 @@ export default function HeroBanner() {
           }}
           transition={{
             duration: 0.8,
-            ease: 'easeInOut',
+            ease: "easeInOut",
           }}
           className="absolute inset-0"
         >
@@ -231,7 +263,7 @@ export default function HeroBanner() {
         >
           <div className="mb-6 text-center sm:text-left animate-in fade-in duration-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
-              Welcome, <span className="text-[#FF4C00]">{username}</span>!
+              Welcome, <span className="text-[#FF4C00]">{userName}</span>!
             </h2>
             <p className="text-xs md:text-sm text-zinc-300 font-bold uppercase tracking-widest mt-2">
               Our bot will help you find movies based on your mood
@@ -266,35 +298,85 @@ export default function HeroBanner() {
 
           {/* AI response */}
           <AnimatePresence mode="wait">
-            {(aiLoading || aiSuggestion) && (
+            {(aiLoading || aiResult) && (
               <motion.div
-                key={aiLoading ? 'loading' : aiSuggestion?.title}
+                key={aiLoading ? "loading" : "response"}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3 flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                className="mt-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
               >
-                <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
+                <div className="flex items-start gap-2.5">
+                  <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
 
-                {aiLoading ? (
-                  <span className="text-xs font-medium text-zinc-400">
-                    Flix is thinking
-                    <span className="animate-pulse">...</span>
-                  </span>
-                ) : (
-                  <p className="text-xs font-medium leading-relaxed text-zinc-300">
-                    Try{' '}
-                    <span className="font-bold text-white">
-                      {aiSuggestion?.title}
-                    </span>{' '}
-                    — {aiSuggestion?.reason}.
-                  </p>
+                  {aiLoading ? (
+                    <span className="text-xs font-medium text-zinc-400">
+                      Flix is thinking
+                      <span className="animate-pulse">...</span>
+                    </span>
+                  ) : (
+                    aiResult?.message && (
+                      <ReactMarkdown
+                        components={{
+                          h3: ({ children }: { children?: React.ReactNode }) => (
+                            <h3 className="mt-3 text-sm font-bold text-white">
+                              {children}
+                            </h3>
+                          ),
+
+                          p: ({ children }: { children?: React.ReactNode }) => (
+                            <p className="mt-1 text-xs leading-relaxed text-zinc-300">
+                              {children}
+                            </p>
+                          ),
+
+                          strong: ({ children }: { children?: React.ReactNode }) => (
+                            <strong className="font-bold text-white">
+                              {children}
+                            </strong>
+                          ),
+
+                          ul: ({ children }: { children?: React.ReactNode }) => (
+                            <ul className="mt-2 list-disc space-y-1 pl-4">
+                              {children}
+                            </ul>
+                          ),
+                        }}
+                      >
+                        {aiResult.message}
+                      </ReactMarkdown>
+                    )
+                  )}
+                </div>
+
+                {/* Movie results carousel */}
+                {!aiLoading && aiResult && aiResult.movies.length > 0 && (
+                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {aiResult.movies.map((movie, index) => (
+                      <AiMovieResultCard
+                        key={movie.id}
+                        movie={movie}
+                        index={index}
+                        onSelect={(m) => router.push(`/movie/${m.id}`)}
+                      />
+                    ))}
+                  </div>
                 )}
+
+                {!aiLoading &&
+                  aiResult &&
+                  aiResult.movies.length === 0 &&
+                  !aiResult.message && (
+                    <p className="mt-1 text-xs font-medium text-zinc-400">
+                      No matches found for that one — try describing the mood
+                      differently.
+                    </p>
+                  )}
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>       
+        </motion.div>
       </div>
 
       {/* Previous */}
@@ -325,11 +407,10 @@ export default function HeroBanner() {
             type="button"
             onClick={() => goToSlide(index)}
             aria-label={`Go to slide ${index + 1}`}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              index === currentSlide
-                ? 'w-10 bg-[#FF4C00]'
-                : 'w-2.5 bg-white/30 hover:bg-white/50'
-            }`}
+            className={`h-2.5 rounded-full transition-all duration-300 ${index === currentSlide
+              ? "w-10 bg-[#FF4C00]"
+              : "w-2.5 bg-white/30 hover:bg-white/50"
+              }`}
           />
         ))}
       </div>

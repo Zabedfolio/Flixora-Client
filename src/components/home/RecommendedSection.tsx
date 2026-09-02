@@ -193,6 +193,7 @@ export default function RecommendedSection() {
                 className="group/card flex-none w-[160px] sm:w-[200px] snap-start flex flex-col gap-2.5 animate-in fade-in"
               >
                 <MediaCard
+                  id={pick.id}
                   title={pick.title}
                   unsplash_url={pick.image}
                   rating={pick.rating.toFixed(1)}

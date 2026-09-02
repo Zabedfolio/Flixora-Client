@@ -9,6 +9,7 @@ import MoodBasedPicks from '@/components/home/ModeBasedSection';
 import GenreRows from '@/components/home/GenreRows';
 import TopRated from '@/components/home/TopReatedSection';
 import FeaturedActors from '@/components/home/FeatureBased';
+import ReviewSection from "@/components/home/ReviewSection";
 import FAQ from '@/components/home/FAQ';
 
 export default function Home() {
@@ -18,11 +19,13 @@ export default function Home() {
       <TrendingNow />
       <RecommendedSection />
       <NewReleases />
-      <TitleRow />
+
       <MoodBasedPicks />
       <GenreRows />
       <TopRated />
+      <TitleRow />
       <FeaturedActors />
+      <ReviewSection />
       <FAQ />
     </div>
   );

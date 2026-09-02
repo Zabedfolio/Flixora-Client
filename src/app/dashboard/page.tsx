@@ -35,12 +35,41 @@ interface ChartBar {
 }
 
 
+interface UserProfileData {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+  avatarId?: string;
+  role: string;
+  plan: string;
+  planId?: string;
+}
+
 export default function UserDashboardPage() {
   const { data: session } = authClient.useSession();
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [watchlistCount, setWatchlistCount] = useState(0);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [chartTab, setChartTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchLiveProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUserProfile(data.user);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch live user profile:', err);
+      }
+    };
+    fetchLiveProfile();
+  }, [session]);
 
   useEffect(() => {
     setWatchlistCount(getWatchlistCount());
@@ -257,22 +286,22 @@ export default function UserDashboardPage() {
           {/* Top-right Profile Mirror badge */}
           <div className="flex items-center gap-3 bg-[#0A0A0A] border border-[#1A1A1A] px-4 py-2 rounded-2xl w-fit shrink-0 self-start sm:self-center">
             <div className="w-8 h-8 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 overflow-hidden flex items-center justify-center font-bold text-white shadow-inner bg-zinc-950 shrink-0">
-              {session?.user.image ? (
+              {(userProfile?.image || session?.user.image) ? (
                 <img
-                  src={session.user.image}
+                  src={userProfile?.image || session?.user.image || ''}
                   alt="Avatar"
                   className="w-full h-full object-cover"
                 />
               ) : (
-                session?.user.name?.charAt(0).toUpperCase() || 'U'
+                (userProfile?.name || session?.user.name)?.charAt(0).toUpperCase() || 'U'
               )}
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-black text-white truncate max-w-[120px]">
-                {session?.user.name || 'User Portal'}
+                {userProfile?.name || session?.user.name || 'User Portal'}
               </span>
-              <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider">
-                Premium Member
+              <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider font-mono">
+                {userProfile?.plan ? `${userProfile.plan} Member` : (session?.user as any)?.plan ? `${(session?.user as any).plan} Member` : 'Basic Member'}
               </span>
             </div>
           </div>

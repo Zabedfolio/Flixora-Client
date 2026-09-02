@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Star, Calendar, Play, Info } from 'lucide-react';
 import MediaCard from '@/components/ui/card';
-import { getWatchlist, WatchlistItem } from '@/data/watchlistStore';
+import { getWatchlist, fetchWatchlist, WatchlistItem } from '@/data/watchlistStore';
 
 import EmptyState from '@/components/common/EmptyState';
 
@@ -12,6 +12,7 @@ export default function DashboardMyListPage() {
 
   useEffect(() => {
     setItems(getWatchlist());
+    fetchWatchlist();
 
     const handleUpdate = () => {
       setItems(getWatchlist());
@@ -58,6 +59,7 @@ export default function DashboardMyListPage() {
               {items.map((item) => (
                 <MediaCard
                   key={item.id}
+                  id={item.id}
                   title={item.title}
                   unsplash_url={item.unsplash_url}
                   rating="8.5"
