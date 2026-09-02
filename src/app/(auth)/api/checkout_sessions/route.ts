@@ -19,6 +19,7 @@ async function handleCheckout(request: NextRequest) {
     let fromPlanId = searchParams.get('fromPlanId') || '';
     let emailParam = searchParams.get('email') || undefined;
     let nameParam = searchParams.get('name') || undefined;
+    let userIdParam = searchParams.get('userId') || undefined;
 
     // Parse JSON body if POST
     if (request.method === 'POST') {
@@ -28,6 +29,7 @@ async function handleCheckout(request: NextRequest) {
         if (body.fromPlanId) fromPlanId = body.fromPlanId;
         if (body.email) emailParam = body.email;
         if (body.name) nameParam = body.name;
+        if (body.userId) userIdParam = body.userId;
       } catch (e) {
         // Ignore empty body
       }
@@ -77,6 +79,7 @@ async function handleCheckout(request: NextRequest) {
 
     const email = authSession?.user?.email || emailParam;
     const name = authSession?.user?.name || nameParam;
+    const userId = authSession?.user?.id || userIdParam;
 
     let customerId: string | undefined = undefined;
     if (email) {
@@ -101,6 +104,12 @@ async function handleCheckout(request: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       ...(customerId ? { customer: customerId } : { customer_email: email }),
+      metadata: {
+        userId: userId || '',
+        planId: resolvedKey,
+        fromPlanId: fromPlanId || '',
+        userEmail: email || '',
+      },
       payment_method_types: ['card'],
       line_items: [
         {
@@ -126,7 +135,6 @@ async function handleCheckout(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Failed to create Stripe session.' }, { status: 500 });
     }
 
-    // Always return JSON with Stripe Checkout URL
     return NextResponse.json({ success: true, url: session.url });
   } catch (err: any) {
     console.error('Error creating checkout session:', err);
