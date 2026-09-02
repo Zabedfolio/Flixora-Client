@@ -8,6 +8,7 @@ import {
   Bell,
   Tv,
   Eye,
+  EyeOff,
   Plus,
   Edit2,
   Check,
@@ -20,7 +21,10 @@ import {
   Crown,
   Zap,
   Flame,
-  Sparkles
+  Sparkles,
+  Loader2,
+  KeyRound,
+  Send
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
@@ -93,6 +97,47 @@ export default function SettingsPage() {
   const [selectedRole, setSelectedRole] = useState('user');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Account & Security States
+  const [email, setEmail] = useState('user@flixora.com');
+  const [twoFactor, setTwoFactor] = useState(false);
+
+  // Change Email Modal (Better Auth OTP)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailStep, setEmailStep] = useState<'input' | 'otp'>('input');
+  const [newEmailInput, setNewEmailInput] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  // Change Password Modal (Better Auth OTP)
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordStep, setPasswordStep] = useState<'send' | 'otp'>('send');
+  const [passwordOtpInput, setPasswordOtpInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSendingPasswordOtp, setIsSendingPasswordOtp] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // 2-Step Delete Account Modals
+  const [isDeleteAlertModalOpen, setIsDeleteAlertModalOpen] = useState(false);
+  const [isDeletePasswordModalOpen, setIsDeletePasswordModalOpen] = useState(false);
+  const [deletePasswordInput, setDeletePasswordInput] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  // Notification states
+  const [notifyNewEpisodes, setNotifyNewEpisodes] = useState(true);
+  const [notifyRecommend, setNotifyRecommend] = useState(true);
+  const [notifyPromo, setNotifyPromo] = useState(false);
+  const [notifyAi, setNotifyAi] = useState(true);
+
+  // Playback states
+  const [quality, setQuality] = useState('Auto');
+  const [autoplay, setAutoplay] = useState(true);
+  const [subtitles, setSubtitles] = useState(true);
+
   useEffect(() => {
     if (session?.user) {
       setSelectedRole((session.user as any).role || 'user');
@@ -113,12 +158,6 @@ export default function SettingsPage() {
     }
     return true;
   };
-
-  // Account inputs
-  const [email, setEmail] = useState('user@flixora.com');
-  const [twoFactor, setTwoFactor] = useState(false);
-  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Dynamically load profiles from the backend database and account email
   useEffect(() => {
@@ -158,7 +197,7 @@ export default function SettingsPage() {
             }
           }
         } catch (error) {
-          console.error("Error fetching profiles:", error);
+          console.error('Failed to load profiles:', error);
         }
       };
 
@@ -166,76 +205,268 @@ export default function SettingsPage() {
     }
   }, [session]);
 
-  // Sync session name as the default display name
-  useEffect(() => {
-    if (session?.user?.name && !editName) {
-      setEditName(session.user.name);
-    }
-  }, [session]);
-
-  // Notifications inputs
-  const [notifyNewEpisodes, setNotifyNewEpisodes] = useState(true);
-  const [notifyRecommend, setNotifyRecommend] = useState(false);
-  const [notifyPromo, setNotifyPromo] = useState(false);
-  const [notifyAi, setNotifyAi] = useState(true);
-
-  // Playback inputs
-  const [quality, setQuality] = useState('Auto');
-  const [autoplay, setAutoplay] = useState(true);
-  const [subtitle, setSubtitle] = useState('English');
-  const [dataUsage, setDataUsage] = useState('Wifi');
-
-  // Privacy inputs
-  const [spoilerMode, setSpoilerMode] = useState(true);
-  const [socialVisibility, setSocialVisibility] = useState(false);
-
-  // Auto-save triggers small brand orange toasts
-  const triggerAutoSaveToast = (settingName: string) => {
-    setToastMessage(`${settingName} updated successfully`);
+  const triggerAutoSaveToast = (fieldLabel: string) => {
+    setToastMessage(`${fieldLabel} updated`);
     setTimeout(() => {
       setToastMessage(null);
-    }, 2000);
+    }, 2500);
   };
 
-  // Profile Save
-  const handleSaveSingleProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editName.trim()) return;
+  // -------------------------------------------------------------
+  // HANDLERS FOR SECURITY (EMAIL, PASSWORD, DELETE ACCOUNT)
+  // -------------------------------------------------------------
 
+  // 1. Send OTP via Better Auth emailOTP plugin (requestEmailChange)
+  const handleSendEmailOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newEmailInput.trim() || !newEmailInput.includes('@')) {
+      toast.error('Please enter a valid new email address.');
+      return;
+    }
+    if (newEmailInput.trim().toLowerCase() === email.toLowerCase()) {
+      toast.error('New email must be different from your current email.');
+      return;
+    }
+
+    setIsSendingOtp(true);
     try {
-      const roleSuccess = await updateRole();
-      if (!roleSuccess) return;
+      let res = await (authClient as any).emailOtp.requestEmailChange({
+        newEmail: newEmailInput.trim(),
+      });
 
-      if (profiles.length > 0) {
-        // UPDATE (PUT)
-        const mainProfile = profiles[0];
-        const res = await fetch(`${API_BASE}/api/profiles/${mainProfile._id}`, {
-          method: 'PUT',
+      if (res?.error) {
+        res = await (authClient as any).emailOtp.sendVerificationOtp({
+          email: newEmailInput.trim(),
+          type: 'email-verification',
+        });
+      }
+
+      if (res?.error) {
+        toast.error(res.error.message || 'Failed to send OTP code.');
+      } else {
+        setEmailStep('otp');
+        toast.success(`Verification code sent to ${newEmailInput.trim()}`);
+      }
+    } catch (err: any) {
+      console.error('Error sending OTP:', err);
+      toast.error(err.message || 'Failed to send verification code.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // 2. Verify OTP & Change Email via Better Auth
+  const handleVerifyEmailOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!otpInput.trim() || otpInput.trim().length < 4) {
+      toast.error('Please enter the verification code.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const res = await (authClient as any).emailOtp.changeEmail({
+        newEmail: newEmailInput.trim(),
+        otp: otpInput.trim(),
+      });
+
+      if (res?.error) {
+        toast.error(res.error.message || 'Invalid or expired OTP code.');
+      } else {
+        setEmail(newEmailInput.trim());
+        setIsEmailModalOpen(false);
+        setEmailStep('input');
+        setNewEmailInput('');
+        setOtpInput('');
+        toast.success('Email address updated successfully!');
+      }
+    } catch (err: any) {
+      console.error('Error changing email:', err);
+      toast.error(err.message || 'Failed to verify code.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  // 3a. Send Password Reset OTP via Better Auth
+  const handleSendPasswordOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSendingPasswordOtp(true);
+    try {
+      let res = await (authClient as any).emailOtp.requestPasswordReset({
+        email: email,
+      });
+
+      if (res?.error) {
+        res = await (authClient as any).emailOtp.sendVerificationOtp({
+          email: email,
+          type: 'forget-password',
+        });
+      }
+
+      if (res?.error) {
+        toast.error(res.error.message || 'Failed to send OTP code.');
+      } else {
+        setPasswordStep('otp');
+        toast.success(`Verification code sent to ${email}`);
+      }
+    } catch (err: any) {
+      console.error('Error sending password reset OTP:', err);
+      toast.error(err.message || 'Failed to send verification code.');
+    } finally {
+      setIsSendingPasswordOtp(false);
+    }
+  };
+
+  // 3b. Verify OTP & Reset Password via Better Auth
+  const handleResetPasswordWithOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!passwordOtpInput.trim() || passwordOtpInput.trim().length < 4) {
+      toast.error('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (!newPasswordInput || newPasswordInput.trim().length < 8) {
+      toast.error('New password must be at least 8 characters long.');
+      return;
+    }
+    if (newPasswordInput.trim() !== confirmPasswordInput.trim()) {
+      toast.error('New password and repeat password do not match.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      let res = await (authClient as any).emailOtp.resetPassword({
+        email: email,
+        otp: passwordOtpInput.trim(),
+        password: newPasswordInput.trim(),
+      });
+
+      if (res?.error) {
+        const apiRes = await fetch('/api/user/change-password', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: editName.trim(),
-            avatar: editAvatar,
-            avatarId: editAvatarId
-          })
+            newPassword: newPasswordInput.trim(),
+          }),
         });
-        if (res.ok) {
-          const updated = await res.json();
-          setProfiles([updated]);
-          toast.success('Profile settings updated successfully!');
-          triggerAutoSaveToast('Profile settings');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        } else {
-          toast.error('Failed to update profile');
-        }
-      } else {
-        // CREATE (POST)
-        if (!session?.user?.id) {
-          toast.error('User session not loaded. Please wait.');
+        const apiData = await apiRes.json();
+        if (!apiRes.ok || !apiData.success) {
+          toast.error(res.error.message || apiData.message || 'Failed to reset password.');
           return;
         }
-        const res = await fetch(`${API_BASE}/api/profiles`, {
+      }
+
+      toast.success('Password updated successfully!');
+      setIsPasswordModalOpen(false);
+      setPasswordStep('send');
+      setPasswordOtpInput('');
+      setNewPasswordInput('');
+      setConfirmPasswordInput('');
+    } catch (err: any) {
+      console.error('Error resetting password:', err);
+      toast.error(err.message || 'Failed to reset password.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // 4. Delete Account (2-Step Authorization)
+  const handleDeleteAccountConfirm = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!deletePasswordInput) {
+      toast.error('Please enter your password to authorize account deletion.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      const res = await fetch('/api/user/delete-account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePasswordInput }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.message || 'Incorrect password. Account deletion failed.');
+      } else {
+        toast.success('Account permanently deleted.');
+        setIsDeletePasswordModalOpen(false);
+        await authClient.signOut();
+        window.location.href = '/';
+      }
+    } catch (err: any) {
+      console.error('Error deleting account:', err);
+      toast.error(err.message || 'Failed to delete account.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  // Handle image file upload for avatar
+  const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        setEditAvatar(data.url);
+        setEditAvatarId('custom_upload');
+        toast.success('Custom avatar uploaded!');
+      } else {
+        throw new Error('No URL returned from upload server');
+      }
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast.error(error.message || 'Failed to upload avatar image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Inline Profile Update Handler
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+
+    if (!session?.user?.id) {
+      toast.error('You must be logged in to update profile');
+      return;
+    }
+
+    try {
+      let currentProfId = profiles[0]?._id;
+
+      if (!currentProfId) {
+        const createRes = await fetch(`${API_BASE}/api/profiles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -245,262 +476,190 @@ export default function SettingsPage() {
             avatarId: editAvatarId
           })
         });
-        if (res.ok) {
-          const created = await res.json();
-          setProfiles([created]);
-          toast.success('Profile created successfully!');
-          triggerAutoSaveToast('Profile settings');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        } else {
-          toast.error('Failed to save profile');
+        if (createRes.ok) {
+          const newProf = await createRes.json();
+          currentProfId = newProf._id;
         }
       }
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Error saving profile');
-    }
-  };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check size limit (2MB)
-    const limitBytes = 2 * 1024 * 1024;
-    if (file.size > limitBytes) {
-      toast.error('Image size must be within 2MB');
-      return;
-    }
-
-    setUploadingImage(true);
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const base64String = reader.result as string;
-      try {
-        const res = await fetch(`${API_BASE}/api/upload`, {
-          method: 'POST',
+      if (currentProfId) {
+        const res = await fetch(`${API_BASE}/api/profiles/${currentProfId}`, {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64String })
+          body: JSON.stringify({
+            name: editName.trim(),
+            avatar: editAvatar,
+            avatarId: editAvatarId
+          })
         });
-        if (res.ok) {
-          const data = await res.json();
-          setEditAvatar(data.url);
-          setEditAvatarId('custom');
-          toast.success('Custom avatar uploaded!');
-        } else {
-          const err = await res.json();
-          toast.error(err.error || 'Failed to upload custom avatar');
+
+        if (!res.ok) {
+          throw new Error('Failed to update profile details');
         }
-      } catch (error) {
-        console.error('Error uploading avatar:', error);
-        toast.error('Upload failed');
-      } finally {
-        setUploadingImage(false);
+
+        const updatedProfile = await res.json();
+        setProfiles([updatedProfile]);
       }
-    };
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      toast.error('Failed to read image file');
-      setUploadingImage(false);
-    };
-  };
 
-  //  delete account handler
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
-      toast.error('Please type DELETE to confirm deletion');
-      return;
-    }
+      const roleOk = await updateRole();
 
-    try {
-      const res = await fetch(`${API_BASE}/api/user/delete`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: session?.user?.id })
-      });
-
-      if (res.ok) {
-        toast.success('Account deleted successfully');
-        // to redirect to login page
-        await authClient.signOut();
-        window.location.href = '/login';
-      } else {
-        const data = await res.json();
-        toast.error(data.message || 'Failed to delete account');
+      if (roleOk) {
+        triggerAutoSaveToast('Profile settings');
       }
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      toast.error('An unexpected error occurred');
+    } catch (error: any) {
+      console.error('Failed to save profile settings:', error);
+      toast.error(error.message || 'Failed to save settings');
     }
   };
+
+  const SUB_TABS = [
+    { id: 'profile', label: 'Profiles', icon: User },
+    { id: 'account', label: 'Security', icon: Shield },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'playback', label: 'Playback', icon: Tv },
+    { id: 'privacy', label: 'Privacy', icon: Eye },
+  ];
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans relative">
-      <main className="pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-8">
-
+    <div className="min-h-screen bg-black font-sans text-white overflow-x-hidden w-full relative flex flex-col justify-between select-none">
+      <main className="flex-grow pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full">
         {/* PAGE HEADER */}
-        <div className="flex flex-col gap-1.5 border-b border-[#1A1A1A] pb-5">
+        <div className="flex flex-col gap-2.5 mb-8">
           <div className="flex items-center gap-2.5">
             <Settings className="text-[#FF4C00] shrink-0" size={24} fill="currentColor" />
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase">
-              System Settings
+              Settings
             </h1>
           </div>
-          <p className="text-xs md:text-sm text-zinc-550 font-medium max-w-2xl leading-relaxed">
+          <p className="text-xs md:text-sm text-zinc-550 font-medium max-w-2xl leading-relaxed border-b border-[#1A1A1A] pb-5">
             Manage your profiles, change passwords, and configure defaults.
           </p>
         </div>
 
-        {/* TWO COLUMN SIDEBAR LAYOUT */}
-        <div className="flex flex-col lg:flex-row items-start gap-8 mt-2">
-
-          {/* Sub Navigation Left Column (Vertical on Desktop, Horizontal Scroll on Mobile) */}
-          <nav className="flex lg:flex-col gap-2.5 w-full lg:w-60 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 scrollbar-none shrink-0 border-b lg:border-b-0 border-[#1A1A1A] -mx-2 px-2">
-            {[
-              { id: 'profile', label: 'Profiles', icon: User },
-              { id: 'account', label: 'Security', icon: Shield },
-              { id: 'notifications', label: 'Notifications', icon: Bell },
-              { id: 'playback', label: 'Playback', icon: Tv },
-              { id: 'privacy', label: 'Privacy', icon: Eye }
-            ].map((tab) => {
-              const TabIcon = tab.icon;
+        {/* SETTINGS MAIN CONTAINER */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* LEFT SUB-TAB NAVIGATION */}
+          <div className="w-full lg:w-56 shrink-0 flex lg:flex-col gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none border-b lg:border-b-0 lg:border-r border-[#1A1A1A] lg:pr-6">
+            {SUB_TABS.map((tab) => {
+              const Icon = tab.icon;
               const isActive = activeSubTab === tab.id;
-
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveSubTab(tab.id as any)}
-                  className={`flex items-center gap-3 px-5 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 outline-none shrink-0 cursor-pointer text-left ${isActive
-                    ? 'bg-[#1A1A1A] text-[#FF4C00] border-l-3 border-[#FF4C00] font-extrabold'
-                    : 'text-zinc-400 hover:text-white'
-                    }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'bg-[#141414] text-[#FF4C00] border-l-2 border-[#FF4C00] font-black shadow-md'
+                      : 'text-zinc-450 hover:text-white hover:bg-zinc-950/60'
+                  }`}
                 >
-                  <TabIcon size={15} />
+                  <Icon size={16} className={isActive ? 'text-[#FF4C00]' : 'text-zinc-500'} />
                   <span>{tab.label}</span>
                 </button>
               );
             })}
-          </nav>
+          </div>
 
-          {/* Sub Navigation Target Tab Panels */}
-          <div className="flex-1 w-full bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-6 md:p-8 min-h-[420px] transition-all">
-
+          {/* RIGHT CONTENT PANEL */}
+          <div className="flex-1 w-full bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl p-6 md:p-8 min-h-[500px]">
             {/* SUB-TAB 1: PROFILE MANAGEMENT */}
             {activeSubTab === 'profile' && (
-              <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-white">Profile Settings</h3>
-                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">Customize your display name and avatar</p>
-                </div>
+              <div className="flex flex-col gap-8 animate-in fade-in duration-200">
+                <form onSubmit={handleSaveProfile} className="flex flex-col gap-8">
+                  {/* Avatar Picker Section */}
+                  <div className="flex flex-col gap-4">
+                    <label className="text-xs font-black uppercase tracking-wider text-zinc-400">
+                      Select Account Avatar
+                    </label>
+                    <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-10 gap-3 max-h-[220px] overflow-y-auto p-2 bg-[#141414] border border-[#262626] rounded-xl custom-scrollbar">
+                      {PRESET_AVATARS.map((avatar) => {
+                        const isSelected = editAvatarId === avatar.id;
+                        return (
+                          <div
+                            key={avatar.id}
+                            onClick={() => {
+                              setEditAvatar(avatar.url);
+                              setEditAvatarId(avatar.id);
+                            }}
+                            className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all border-2 ${
+                              isSelected
+                                ? 'border-[#FF4C00] scale-105 shadow-lg shadow-[#FF4C00]/30 z-10'
+                                : 'border-transparent opacity-60 hover:opacity-100 hover:scale-102'
+                            }`}
+                            title={avatar.name}
+                          >
+                            <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-[#FF4C00]/20 flex items-center justify-center">
+                                <Check size={14} className="text-white drop-shadow-md" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
 
-                <form onSubmit={handleSaveSingleProfile} className="flex flex-col gap-6 max-w-xl">
-                  {/* Name Input */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Name</label>
+                    {/* Custom Image Upload Option */}
+                    <div className="flex items-center gap-4 mt-1">
+                      <label className="border border-zinc-700 hover:border-[#FF4C00] text-zinc-300 hover:text-white font-bold text-xs uppercase tracking-wider py-2.5 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-2">
+                        {uploadingImage ? <Loader2 size={14} className="animate-spin text-[#FF4C00]" /> : <Plus size={14} />}
+                        <span>{uploadingImage ? 'Uploading...' : 'Upload Custom Avatar'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCustomImageUpload}
+                          disabled={uploadingImage}
+                          className="hidden"
+                        />
+                      </label>
+                      {editAvatarId === 'custom_upload' && (
+                        <span className="text-[10px] text-[#FF4C00] font-bold uppercase tracking-wider">
+                          Custom Avatar Selected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Profile Display Name */}
+                  <div className="flex flex-col gap-2 max-w-md">
+                    <label className="text-xs font-black uppercase tracking-wider text-zinc-400">
+                      Profile Display Name
+                    </label>
                     <input
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Your Name"
+                      placeholder="Enter profile name..."
+                      className="bg-[#141414] border border-[#262626] text-white text-sm font-semibold rounded-xl px-4 py-3 focus:outline-none focus:border-[#FF4C00] transition-colors"
                       required
-                      className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3.5 text-xs font-semibold focus:outline-none focus:border-[#FF4C00]"
                     />
                   </div>
 
-                  {/* Custom Image Upload & Current Preview */}
-                  <div className="flex flex-col gap-3 border-t border-[#1A1A1A] pt-5">
-                    <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Picture</label>
-
-                    <div className="flex items-center gap-5">
-                      {/* Current selected preview */}
-                      <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative shadow-lg">
-                        <img src={editAvatar} alt="preview" className="w-full h-full object-cover" />
-                        {uploadingImage && (
-                          <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
-                            <span className="loading loading-spinner loading-sm text-[#FF4C00]"></span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploadingImage}
-                          className="file-input file-input-bordered file-input-sm w-full max-w-xs bg-zinc-950 text-xs border-zinc-850 text-gray-300 focus:outline-hidden"
-                        />
-                        <span className="text-[8px] text-zinc-550 font-black uppercase tracking-wide">PNG, JPG or WEBP (Max 2MB)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Preset Vector Avatars Selector */}
-                  <div className="flex flex-col gap-2.5 border-t border-[#1A1A1A] pt-5">
-                    <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Choose a preset avatar</label>
-
-                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 p-3 bg-[#111] border border-[#262626] rounded-xl max-h-[140px] overflow-y-auto scrollbar-thin">
-                      {PRESET_AVATARS.map((avatar) => (
-                        <button
-                          key={avatar.id}
-                          type="button"
-                          onClick={() => {
-                            setEditAvatar(avatar.url);
-                            setEditAvatarId(avatar.id);
-                          }}
-                          className={`relative aspect-square w-full rounded-lg border overflow-hidden hover:scale-105 transition-all cursor-pointer ${editAvatarId === avatar.id ? 'border-[#FF4C00] ring-2 ring-[#FF4C00]/30' : 'border-zinc-800'
-                            }`}
-                        >
-                          <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
-                          {editAvatarId === avatar.id && (
-                            <div className="absolute inset-0 bg-[#FF4C00]/10 flex items-center justify-center">
-                              <div className="bg-[#FF4C00] text-black rounded-full p-0.5">
-                                <Check size={8} strokeWidth={4} />
-                              </div>
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hero Character Role Selection Dropdown */}
-                  {session?.user && (session.user as any).role !== 'admin' && (() => {
-                    const currentSelectedOption = ROLE_OPTIONS.find(o => o.id === selectedRole) || ROLE_OPTIONS[0];
-                    const CurrentSelectedIcon = currentSelectedOption.icon;
+                  {/* Role Selector Dropdown */}
+                  {(() => {
+                    const currentRoleObj = ROLE_OPTIONS.find((r) => r.id === selectedRole) || ROLE_OPTIONS[0];
+                    const CurrentIcon = currentRoleObj.icon;
                     return (
-                      <div className="flex flex-col gap-2 border-t border-[#1A1A1A] pt-5 relative">
-                        <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest flex items-center gap-1.5">
-                          <Shield size={12} className="text-[#FF4C00]" />
-                          Select Hero Character Role
+                      <div className="flex flex-col gap-2 max-w-md">
+                        <label className="text-xs font-black uppercase tracking-wider text-zinc-400">
+                          Account Character Tag / Role
                         </label>
-
-                        {/* Custom Dropdown Trigger Button */}
-                        <div className="relative w-full">
+                        <div className="relative">
                           <button
                             type="button"
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full bg-[#141414] border border-[#262626] hover:border-zinc-800 text-white rounded-xl px-4 py-3.5 text-xs font-semibold focus:outline-none flex items-center justify-between transition-all cursor-pointer select-none"
+                            className="flex items-center justify-between w-full bg-[#141414] border border-[#262626] hover:border-zinc-700 text-white rounded-xl px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-2.5">
-                              <CurrentSelectedIcon size={14} className={currentSelectedOption.color} />
-                              <span className="uppercase tracking-wider">{currentSelectedOption.name}</span>
+                              <CurrentIcon size={14} className={currentRoleObj.color} />
+                              <span>{currentRoleObj.name}</span>
                             </div>
-                            <ChevronDown size={14} className={`text-zinc-550 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-zinc-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                           </button>
 
-                          {/* Custom Dropdown Options Menu */}
                           {isDropdownOpen && (
                             <>
-                              {/* Invisible backdrop to close dropdown on clicking outside */}
-                              <div
-                                className="fixed inset-0 z-30"
-                                onClick={() => setIsDropdownOpen(false)}
-                              />
+                              <div className="fixed inset-0 z-30" onClick={() => setIsDropdownOpen(false)} />
                               <div className="absolute bottom-[110%] left-0 right-0 z-50 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 max-h-[220px] overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 {ROLE_OPTIONS.map((option) => {
                                   const OptionIcon = option.icon;
@@ -513,10 +672,11 @@ export default function SettingsPage() {
                                         setSelectedRole(option.id);
                                         setIsDropdownOpen(false);
                                       }}
-                                      className={`flex items-center justify-between w-full px-3.5 py-3 rounded-lg text-xs font-semibold uppercase tracking-wider text-left transition-all cursor-pointer ${isSelected
-                                        ? 'bg-[#FF4C00] text-black font-black'
-                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-950'
-                                        }`}
+                                      className={`flex items-center justify-between w-full px-3.5 py-3 rounded-lg text-xs font-semibold uppercase tracking-wider text-left transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#FF4C00] text-black font-black'
+                                          : 'text-zinc-400 hover:text-white hover:bg-zinc-950'
+                                      }`}
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <OptionIcon size={13} className={isSelected ? 'text-black' : option.color} />
@@ -553,7 +713,9 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-6 animate-in fade-in duration-200 max-w-xl">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-wider text-white">Account & Security</h3>
-                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">Manage primary access emails and passwords</p>
+                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">
+                    Manage primary access emails, passwords, and security options
+                  </p>
                 </div>
 
                 {/* Email management */}
@@ -565,23 +727,25 @@ export default function SettingsPage() {
                         type="email"
                         readOnly
                         value={email}
-                        className="w-full bg-[#141414] border border-[#262626] text-zinc-500 rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none"
+                        className="w-full bg-[#141414] border border-[#262626] text-zinc-400 rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none"
                       />
-                      <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-650" />
+                      <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                     </div>
                   </div>
                   <button
                     onClick={() => {
-                      const val = prompt('Enter new email:');
-                      if (val) { setEmail(val); triggerAutoSaveToast('Email address'); }
+                      setNewEmailInput('');
+                      setOtpInput('');
+                      setEmailStep('input');
+                      setIsEmailModalOpen(true);
                     }}
-                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
+                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
                   >
                     Change Email
                   </button>
                 </div>
 
-                {/* Password field */}
+                {/* Password management */}
                 <div className="flex flex-col sm:flex-row sm:items-end gap-3 border-b border-[#1A1A1A] pb-6">
                   <div className="flex-1 flex flex-col gap-1.5">
                     <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Password</label>
@@ -590,14 +754,20 @@ export default function SettingsPage() {
                         type="password"
                         readOnly
                         value="••••••••••••••"
-                        className="w-full bg-[#141414] border border-[#262626] text-zinc-500 rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none"
+                        className="w-full bg-[#141414] border border-[#262626] text-zinc-400 rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none"
                       />
-                      <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-650" />
+                      <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                     </div>
                   </div>
                   <button
-                    onClick={() => toast.success('Change password flow initiated!')}
-                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
+                    onClick={() => {
+                      setPasswordStep('send');
+                      setPasswordOtpInput('');
+                      setNewPasswordInput('');
+                      setConfirmPasswordInput('');
+                      setIsPasswordModalOpen(true);
+                    }}
+                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
                   >
                     Change Password
                   </button>
@@ -612,7 +782,10 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={twoFactor}
-                    onChange={(e) => { setTwoFactor(e.target.checked); triggerAutoSaveToast('2FA settings'); }}
+                    onChange={(e) => {
+                      setTwoFactor(e.target.checked);
+                      triggerAutoSaveToast('2FA settings');
+                    }}
                     className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
                   />
                 </div>
@@ -622,7 +795,7 @@ export default function SettingsPage() {
                   <span className="text-xs font-bold text-red-500 uppercase tracking-wide">Danger Zone</span>
                   <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed mt-1 uppercase tracking-wide">Permanently purge your Flixora account data</p>
                   <button
-                    onClick={() => setIsDeleteAccountModalOpen(true)}
+                    onClick={() => setIsDeleteAlertModalOpen(true)}
                     className="mt-4 border border-red-500/40 hover:bg-red-950/20 text-red-500 font-bold text-xs uppercase tracking-wider py-3 px-5 rounded-xl transition-all cursor-pointer outline-none"
                   >
                     Delete Account
@@ -698,43 +871,23 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={autoplay}
-                    onChange={(e) => { setAutoplay(e.target.checked); triggerAutoSaveToast('Autoplay options'); }}
+                    onChange={(e) => { setAutoplay(e.target.checked); triggerAutoSaveToast('Autoplay preference'); }}
                     className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
                   />
                 </div>
 
-                {/* Subtitles dropdown */}
-                <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-5">
+                {/* Default Subtitles toggle */}
+                <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-white uppercase tracking-wide">Subtitle Language</span>
-                    <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Default language tags</span>
+                    <span className="text-xs font-bold text-white uppercase tracking-wide">Enable Subtitles by Default</span>
+                    <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Loads English captions on playback</span>
                   </div>
-                  <select
-                    value={subtitle}
-                    onChange={(e) => { setSubtitle(e.target.value); triggerAutoSaveToast('Subtitle language'); }}
-                    className="bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-2.5 text-xs font-bold outline-none cursor-pointer focus:border-[#FF4C00]/50 transition-all uppercase tracking-wider"
-                  >
-                    <option value="English">English</option>
-                    <option value="Spanish">Spanish</option>
-                    <option value="French">French</option>
-                    <option value="Japanese">Japanese</option>
-                  </select>
-                </div>
-
-                {/* Data usage */}
-                <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-white uppercase tracking-wide">Data Usage Preference</span>
-                    <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Limit downloads to Wifi connection</span>
-                  </div>
-                  <select
-                    value={dataUsage}
-                    onChange={(e) => { setDataUsage(e.target.value); triggerAutoSaveToast('Data Usage'); }}
-                    className="bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-2.5 text-xs font-bold outline-none cursor-pointer focus:border-[#FF4C00]/50 transition-all uppercase tracking-wider"
-                  >
-                    <option value="Wifi">Wifi Only</option>
-                    <option value="Always">Always Allow Mobile Data</option>
-                  </select>
+                  <input
+                    type="checkbox"
+                    checked={subtitles}
+                    onChange={(e) => { setSubtitles(e.target.checked); triggerAutoSaveToast('Subtitle preference'); }}
+                    className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
+                  />
                 </div>
               </div>
             )}
@@ -744,58 +897,43 @@ export default function SettingsPage() {
               <div className="flex flex-col gap-6 animate-in fade-in duration-200 max-w-lg">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-wider text-white">Privacy & Visibility</h3>
-                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">Control content access, tracking options, and audits</p>
+                  <p className="text-[10px] text-zinc-500 font-semibold mt-1 uppercase tracking-wide">Control your profile visibility and data collection</p>
                 </div>
 
-                {/* Spoiler mode */}
-                <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-white uppercase tracking-wide">Spoiler-Safe Mode</span>
-                    <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Blur episode synopsis descriptions on unwatched titles</span>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">Public Activity Feed</span>
+                      <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Allow friends to view your movie reviews</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      onChange={() => triggerAutoSaveToast('Privacy feed settings')}
+                      className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={spoilerMode}
-                    onChange={(e) => { setSpoilerMode(e.target.checked); triggerAutoSaveToast('Spoiler mode'); }}
-                    className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
-                  />
-                </div>
 
-                {/* Visibility visibility */}
-                <div className="flex items-center justify-between border-b border-[#1A1A1A]/40 pb-5">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-white uppercase tracking-wide">Viewing Activity Visibility</span>
-                    <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Allow profile stats sharing to linked taste-twins</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">Watch History Data Sync</span>
+                      <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Store continue-watching progress in cloud</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      onChange={() => triggerAutoSaveToast('Data sync settings')}
+                      className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={socialVisibility}
-                    onChange={(e) => { setSocialVisibility(e.target.checked); triggerAutoSaveToast('Social visibility'); }}
-                    className="toggle toggle-[#FF4C00] checked:bg-[#FF4C00] checked:border-[#FF4C00]"
-                  />
-                </div>
-
-                {/* Download data */}
-                <div className="mt-4">
-                  <span className="text-xs font-bold text-white uppercase tracking-wide">Data Exports</span>
-                  <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed mt-1 uppercase tracking-wide">Request a ZIP download archive of all watch history and ratings</p>
-                  <button
-                    onClick={() => toast.success('Data export compilation request sent to your registered email.')}
-                    className="mt-4 border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
-                  >
-                    Download My Data
-                  </button>
                 </div>
               </div>
             )}
-
           </div>
-
         </div>
-
       </main>
 
-      {/* FIXED FEEDBACK AUTO-SAVE TOAST */}
+      {/* AUTO-SAVE FLOATING TOAST */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-55 bg-[#FF4C00] text-black text-xs font-black uppercase tracking-wider px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 duration-200">
           <Check size={14} strokeWidth={3} />
@@ -803,56 +941,480 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Edit modal removed: profile updates are now managed directly inline */}
-
-      {/* DELETE ACCOUNT CONFIRMATION MODAL */}
-      {isDeleteAccountModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
+      {/* =========================================================
+          CHANGE EMAIL MODAL (Better Auth OTP Plugin Integration)
+      ========================================================= */}
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 relative select-none animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => {
+                setIsEmailModalOpen(false);
+                setEmailStep('input');
+                setNewEmailInput('');
+                setOtpInput('');
+              }}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors p-1 rounded-full cursor-pointer"
+            >
+              <X size={16} />
+            </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-950/20 border border-red-900/50 flex items-center justify-center text-red-500 shrink-0">
-                <AlertTriangle size={18} />
+              <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] shrink-0">
+                <Mail size={18} />
               </div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-white">
-                Delete Account?
-              </h3>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                  Change Account Email
+                </h3>
+                <p className="text-[10px] text-zinc-500 font-medium">
+                  {emailStep === 'input'
+                    ? 'Enter your new email address to receive a 6-digit OTP'
+                    : `Enter the 6-digit code sent to ${newEmailInput}`}
+                </p>
+              </div>
             </div>
 
-            <p className="text-xs text-zinc-450 leading-relaxed font-semibold">
-              This action is permanent. All payment histories, playlists, and profiles will be lost.
-              Please type <strong className="text-white">DELETE</strong> below to confirm.
-            </p>
+            {emailStep === 'input' ? (
+              <form onSubmit={handleSendEmailOtp} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    Current Email
+                  </label>
+                  <input
+                    type="email"
+                    readOnly
+                    value={email}
+                    className="w-full bg-[#141414] border border-[#262626] text-zinc-500 rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none"
+                  />
+                </div>
 
-            <div className="flex flex-col gap-4">
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder="Type DELETE"
-                className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-red-500"
-              />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    New Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newEmailInput}
+                    onChange={(e) => setNewEmailInput(e.target.value)}
+                    placeholder="Enter new email address..."
+                    className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-[#FF4C00]"
+                  />
+                </div>
 
-              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEmailModalOpen(false)}
+                    className="border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3 px-5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingOtp}
+                    className="bg-[#FF4C00] hover:bg-[#e04300] text-black font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-[#FF4C00]/20 disabled:opacity-50"
+                  >
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Sending OTP...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={14} />
+                        <span>Send Verification OTP</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyEmailOtp} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    6-Digit Verification Code (OTP)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otpInput}
+                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full bg-[#141414] border border-[#262626] text-center text-white text-lg font-mono font-bold tracking-[8px] rounded-xl px-4 py-3 focus:outline-none focus:border-[#FF4C00]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                  <span>Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={handleSendEmailOtp}
+                    disabled={isSendingOtp}
+                    className="text-[#FF4C00] hover:underline font-bold cursor-pointer disabled:opacity-50"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEmailStep('input')}
+                    className="border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3 px-5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isVerifyingOtp || otpInput.length < 4}
+                    className="bg-[#FF4C00] hover:bg-[#e04300] text-black font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-[#FF4C00]/20 disabled:opacity-50"
+                  >
+                    {isVerifyingOtp ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={14} strokeWidth={3} />
+                        <span>Verify & Update Email</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          CHANGE PASSWORD MODAL (Better Auth OTP Integration)
+      ========================================================= */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 relative select-none animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => {
+                setIsPasswordModalOpen(false);
+                setPasswordStep('send');
+                setPasswordOtpInput('');
+                setNewPasswordInput('');
+                setConfirmPasswordInput('');
+              }}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors p-1 rounded-full cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] shrink-0">
+                <KeyRound size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                  Reset Password with OTP
+                </h3>
+                <p className="text-[10px] text-zinc-500 font-medium">
+                  {passwordStep === 'send'
+                    ? 'Receive a 6-digit OTP code to reset your account password'
+                    : `Enter the 6-digit code sent to ${email} and set your new password`}
+                </p>
+              </div>
+            </div>
+
+            {passwordStep === 'send' ? (
+              <form onSubmit={handleSendPasswordOtp} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    Account Email
+                  </label>
+                  <input
+                    type="email"
+                    readOnly
+                    value={email}
+                    className="w-full bg-[#141414] border border-[#262626] text-zinc-400 rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordModalOpen(false)}
+                    className="border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3 px-5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingPasswordOtp}
+                    className="bg-[#FF4C00] hover:bg-[#e04300] text-black font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-[#FF4C00]/20 disabled:opacity-50"
+                  >
+                    {isSendingPasswordOtp ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Sending OTP...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={14} />
+                        <span>Send Password Reset OTP</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPasswordWithOtp} className="flex flex-col gap-4">
+                {/* 6-Digit OTP */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    6-Digit Verification Code (OTP)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={passwordOtpInput}
+                    onChange={(e) => setPasswordOtpInput(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full bg-[#141414] border border-[#262626] text-center text-white text-lg font-mono font-bold tracking-[8px] rounded-xl px-4 py-3 focus:outline-none focus:border-[#FF4C00]"
+                  />
+                </div>
+
+                {/* New Password */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    New Password (min 8 characters)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={newPasswordInput}
+                      onChange={(e) => setNewPasswordInput(e.target.value)}
+                      placeholder="Enter new password..."
+                      className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl pl-4 pr-10 py-3 text-xs font-semibold focus:outline-none focus:border-[#FF4C00]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    >
+                      {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Repeat New Password */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                    Repeat New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPasswordInput}
+                      onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                      placeholder="Repeat new password..."
+                      className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl pl-4 pr-10 py-3 text-xs font-semibold focus:outline-none focus:border-[#FF4C00]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    >
+                      {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                  <span>Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={handleSendPasswordOtp}
+                    disabled={isSendingPasswordOtp}
+                    className="text-[#FF4C00] hover:underline font-bold cursor-pointer disabled:opacity-50"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPasswordStep('send')}
+                    className="border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3 px-5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isChangingPassword || passwordOtpInput.length < 4}
+                    className="bg-[#FF4C00] hover:bg-[#e04300] text-black font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-[#FF4C00]/20 disabled:opacity-50"
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Resetting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={14} />
+                        <span>Verify OTP & Reset Password</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          2-STEP DELETE ACCOUNT STEP 1: WARNING ALERT MODAL
+      ========================================================= */}
+      {isDeleteAlertModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-red-900/50 rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-950/40 border border-red-800/60 flex items-center justify-center text-red-500 shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="text-base font-black uppercase tracking-wider text-red-500">
+                  Delete Account Warning
+                </h3>
+                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                  Permanent & Irreversible Action
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-red-950/15 border border-red-900/30 rounded-xl p-4 text-xs text-zinc-300 leading-relaxed flex flex-col gap-2">
+              <p className="font-bold text-white">
+                Are you sure you want to permanently delete your Flixora account?
+              </p>
+              <ul className="list-disc pl-4 text-zinc-400 space-y-1 text-[11px]">
+                <li>All profile avatars, custom nicknames, and roles will be purged.</li>
+                <li>Saved playlists, watch history, and My List items will be deleted.</li>
+                <li>Movie reviews and active plan subscriptions will be removed.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                onClick={() => setIsDeleteAlertModalOpen(false)}
+                className="flex-1 border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setIsDeleteAlertModalOpen(false);
+                  setDeletePasswordInput('');
+                  setIsDeletePasswordModalOpen(true);
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-red-600/20"
+              >
+                I Understand, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          2-STEP DELETE ACCOUNT STEP 2: PASSWORD AUTHORIZATION MODAL
+      ========================================================= */}
+      {isDeletePasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-red-900/50 rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200 relative">
+            <button
+              onClick={() => {
+                setIsDeletePasswordModalOpen(false);
+                setDeletePasswordInput('');
+              }}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors p-1 rounded-full cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-950/40 border border-red-800/60 flex items-center justify-center text-red-500 shrink-0">
+                <Lock size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                  Authorize Account Deletion
+                </h3>
+                <p className="text-[10px] text-zinc-400 font-semibold">
+                  Please enter your account password to confirm permanent deletion
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleDeleteAccountConfirm} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Account Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showDeletePassword ? 'text' : 'password'}
+                    required
+                    value={deletePasswordInput}
+                    onChange={(e) => setDeletePasswordInput(e.target.value)}
+                    placeholder="Enter your account password..."
+                    className="w-full bg-[#141414] border border-[#262626] text-white rounded-xl pl-4 pr-10 py-3 text-xs font-semibold focus:outline-none focus:border-red-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                  >
+                    {showDeletePassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
                 <button
-                  onClick={() => { setIsDeleteAccountModalOpen(false); setDeleteConfirmText(''); }}
-                  className="flex-1 border border-[#262626] hover:bg-zinc-950 text-zinc-400 hover:text-white py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                  type="button"
+                  onClick={() => {
+                    setIsDeletePasswordModalOpen(false);
+                    setDeletePasswordInput('');
+                  }}
+                  className="flex-1 border border-[#262626] hover:bg-zinc-900 text-zinc-400 hover:text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  disabled={deleteConfirmText !== 'DELETE'}
-                  onClick={handleDeleteAccount}
-                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${deleteConfirmText === 'DELETE'
-                    ? 'bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow-lg shadow-red-600/10'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-550 cursor-not-allowed'
-                    }`}
+                  type="submit"
+                  disabled={isDeletingAccount || !deletePasswordInput}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  Delete
+                  {isDeletingAccount ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Deleting Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={14} />
+                      <span>Permanently Delete</span>
+                    </>
+                  )}
                 </button>
               </div>
-            </div>
-
+            </form>
           </div>
         </div>
       )}
