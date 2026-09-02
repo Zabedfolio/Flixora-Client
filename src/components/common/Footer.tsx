@@ -21,20 +21,20 @@ const FOOTER_COLUMNS: FooterColumn[] = [
   {
     title: 'Company',
     links: [
-      { label: 'About Us', href: '/about' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Press', href: '/press' },
-      { label: 'Contact', href: '/contact' },
+      { label: 'About Us', href: '/' },
+      { label: 'Careers', href: '/' },
+      { label: 'Press', href: '/' },
+      { label: 'Contact', href: '/' },
     ],
   },
   {
     title: 'Explore',
     links: [
-      { label: 'Movies', href: '/movies' },
-      { label: 'TV Shows', href: '/shows' },
-      { label: 'Anime', href: '/anime' },
-      { label: 'Genres', href: '/genres' },
-      { label: 'New Releases', href: '/new' },
+      { label: 'Movies', href: '/explore' },
+      { label: 'TV Shows', href: '/explore' },
+      { label: 'Anime', href: '/explore' },
+      { label: 'Genres', href: '/explore' },
+      { label: 'New Releases', href: '/trending' },
     ],
   },
   {
@@ -42,19 +42,19 @@ const FOOTER_COLUMNS: FooterColumn[] = [
     links: [
       {
         label: 'Manage Subscription',
-        href: '/subscription',
+        href: '/dashboard/subscription',
       },
       {
         label: 'Billing',
-        href: '/billing',
+        href: '/dashboard/subscription',
       },
       {
         label: 'Account Settings',
-        href: '/settings',
+        href: '/dashboard/setting',
       },
       {
         label: 'Help Center',
-        href: '/help',
+        href: '/',
       },
     ],
   },
@@ -63,19 +63,19 @@ const FOOTER_COLUMNS: FooterColumn[] = [
     links: [
       {
         label: 'Privacy Policy',
-        href: '/privacy',
+        href: '/',
       },
       {
         label: 'Terms of Service',
-        href: '/terms',
+        href: '/',
       },
       {
         label: 'Cookie Preferences',
-        href: '/cookies',
+        href: '/',
       },
       {
         label: 'Content Guidelines',
-        href: '/guidelines',
+        href: '/',
       },
     ],
   },
