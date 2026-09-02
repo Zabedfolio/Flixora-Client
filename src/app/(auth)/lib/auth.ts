@@ -39,6 +39,13 @@ function getRandomMoviePosters(count = 3) {
 }
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+  trustedOrigins: [
+    'http://localhost:3000',
+    'https://flixora-client.vercel.app',
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+  ],
   plugins: [
     emailOTP({
       changeEmail: {
