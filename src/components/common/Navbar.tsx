@@ -253,11 +253,11 @@ export default function Navbar({
           </div>
 
           {/* =========================================
-            RIGHT SECTION
+            RIGHT SECTION (Search & Profile)
         ========================================== */}
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            {/* Search */}
-            <div className="hidden sm:block">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end max-w-full">
+            {/* Search Bar Container */}
+            <div className="flex items-center justify-end flex-1 max-w-full">
               <SearchBar />
             </div>
 

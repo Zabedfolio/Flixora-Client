@@ -128,8 +128,9 @@ export default function MediaCard({
   };
 
   const handleCardClick = () => {
-    if (id) {
-      router.push(`/movie/${id}`);
+    const targetId = id || title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    if (targetId) {
+      router.push(`/movie/${targetId}`);
     }
   };
 
