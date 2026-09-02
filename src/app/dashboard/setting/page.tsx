@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  User, 
-  Shield, 
-  Bell, 
-  Tv, 
-  Eye, 
-  Plus, 
-  Edit2, 
-  Check, 
-  Trash2, 
+import {
+  Settings,
+  User,
+  Shield,
+  Bell,
+  Tv,
+  Eye,
+  Plus,
+  Edit2,
+  Check,
+  Trash2,
   X,
   Lock,
   Mail,
@@ -124,7 +124,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (session?.user?.id) {
       setEmail(session.user.email);
-      
+
       const fetchProfiles = async () => {
         try {
           const res = await fetch(`${API_BASE}/api/profiles?userId=${session.user.id}`);
@@ -161,7 +161,7 @@ export default function SettingsPage() {
           console.error("Error fetching profiles:", error);
         }
       };
-      
+
       fetchProfiles();
     }
   }, [session]);
@@ -309,10 +309,39 @@ export default function SettingsPage() {
     };
   };
 
+  //  delete account handler
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+      toast.error('Please type DELETE to confirm deletion');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/user/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: session?.user?.id })
+      });
+
+      if (res.ok) {
+        toast.success('Account deleted successfully');
+        // to redirect to login page
+        await authClient.signOut();
+        window.location.href = '/login';
+      } else {
+        const data = await res.json();
+        toast.error(data.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans relative">
       <main className="pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none flex flex-col gap-8">
-        
+
         {/* PAGE HEADER */}
         <div className="flex flex-col gap-1.5 border-b border-[#1A1A1A] pb-5">
           <div className="flex items-center gap-2.5">
@@ -328,7 +357,7 @@ export default function SettingsPage() {
 
         {/* TWO COLUMN SIDEBAR LAYOUT */}
         <div className="flex flex-col lg:flex-row items-start gap-8 mt-2">
-          
+
           {/* Sub Navigation Left Column (Vertical on Desktop, Horizontal Scroll on Mobile) */}
           <nav className="flex lg:flex-col gap-2.5 w-full lg:w-60 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 scrollbar-none shrink-0 border-b lg:border-b-0 border-[#1A1A1A] -mx-2 px-2">
             {[
@@ -340,16 +369,15 @@ export default function SettingsPage() {
             ].map((tab) => {
               const TabIcon = tab.icon;
               const isActive = activeSubTab === tab.id;
-              
+
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveSubTab(tab.id as any)}
-                  className={`flex items-center gap-3 px-5 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 outline-none shrink-0 cursor-pointer text-left ${
-                    isActive
-                      ? 'bg-[#1A1A1A] text-[#FF4C00] border-l-3 border-[#FF4C00] font-extrabold'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-3 px-5 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 outline-none shrink-0 cursor-pointer text-left ${isActive
+                    ? 'bg-[#1A1A1A] text-[#FF4C00] border-l-3 border-[#FF4C00] font-extrabold'
+                    : 'text-zinc-400 hover:text-white'
+                    }`}
                 >
                   <TabIcon size={15} />
                   <span>{tab.label}</span>
@@ -360,7 +388,7 @@ export default function SettingsPage() {
 
           {/* Sub Navigation Target Tab Panels */}
           <div className="flex-1 w-full bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl p-6 md:p-8 min-h-[420px] transition-all">
-            
+
             {/* SUB-TAB 1: PROFILE MANAGEMENT */}
             {activeSubTab === 'profile' && (
               <div className="flex flex-col gap-6 animate-in fade-in duration-200">
@@ -373,8 +401,8 @@ export default function SettingsPage() {
                   {/* Name Input */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       placeholder="Your Name"
@@ -386,7 +414,7 @@ export default function SettingsPage() {
                   {/* Custom Image Upload & Current Preview */}
                   <div className="flex flex-col gap-3 border-t border-[#1A1A1A] pt-5">
                     <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Profile Picture</label>
-                    
+
                     <div className="flex items-center gap-5">
                       {/* Current selected preview */}
                       <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center relative shadow-lg">
@@ -397,10 +425,10 @@ export default function SettingsPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex flex-col gap-2">
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
                           disabled={uploadingImage}
@@ -414,7 +442,7 @@ export default function SettingsPage() {
                   {/* Preset Vector Avatars Selector */}
                   <div className="flex flex-col gap-2.5 border-t border-[#1A1A1A] pt-5">
                     <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Choose a preset avatar</label>
-                    
+
                     <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 p-3 bg-[#111] border border-[#262626] rounded-xl max-h-[140px] overflow-y-auto scrollbar-thin">
                       {PRESET_AVATARS.map((avatar) => (
                         <button
@@ -424,9 +452,8 @@ export default function SettingsPage() {
                             setEditAvatar(avatar.url);
                             setEditAvatarId(avatar.id);
                           }}
-                          className={`relative aspect-square w-full rounded-lg border overflow-hidden hover:scale-105 transition-all cursor-pointer ${
-                            editAvatarId === avatar.id ? 'border-[#FF4C00] ring-2 ring-[#FF4C00]/30' : 'border-zinc-800'
-                          }`}
+                          className={`relative aspect-square w-full rounded-lg border overflow-hidden hover:scale-105 transition-all cursor-pointer ${editAvatarId === avatar.id ? 'border-[#FF4C00] ring-2 ring-[#FF4C00]/30' : 'border-zinc-800'
+                            }`}
                         >
                           <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
                           {editAvatarId === avatar.id && (
@@ -451,7 +478,7 @@ export default function SettingsPage() {
                           <Shield size={12} className="text-[#FF4C00]" />
                           Select Hero Character Role
                         </label>
-                        
+
                         {/* Custom Dropdown Trigger Button */}
                         <div className="relative w-full">
                           <button
@@ -470,8 +497,8 @@ export default function SettingsPage() {
                           {isDropdownOpen && (
                             <>
                               {/* Invisible backdrop to close dropdown on clicking outside */}
-                              <div 
-                                className="fixed inset-0 z-30" 
+                              <div
+                                className="fixed inset-0 z-30"
                                 onClick={() => setIsDropdownOpen(false)}
                               />
                               <div className="absolute bottom-[110%] left-0 right-0 z-50 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 max-h-[220px] overflow-y-auto scrollbar-thin animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -486,11 +513,10 @@ export default function SettingsPage() {
                                         setSelectedRole(option.id);
                                         setIsDropdownOpen(false);
                                       }}
-                                      className={`flex items-center justify-between w-full px-3.5 py-3 rounded-lg text-xs font-semibold uppercase tracking-wider text-left transition-all cursor-pointer ${
-                                        isSelected 
-                                          ? 'bg-[#FF4C00] text-black font-black' 
-                                          : 'text-zinc-400 hover:text-white hover:bg-zinc-950'
-                                      }`}
+                                      className={`flex items-center justify-between w-full px-3.5 py-3 rounded-lg text-xs font-semibold uppercase tracking-wider text-left transition-all cursor-pointer ${isSelected
+                                        ? 'bg-[#FF4C00] text-black font-black'
+                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-950'
+                                        }`}
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <OptionIcon size={13} className={isSelected ? 'text-black' : option.color} />
@@ -535,16 +561,16 @@ export default function SettingsPage() {
                   <div className="flex-1 flex flex-col gap-1.5">
                     <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Email Address</label>
                     <div className="relative">
-                      <input 
-                        type="email" 
-                        readOnly 
+                      <input
+                        type="email"
+                        readOnly
                         value={email}
                         className="w-full bg-[#141414] border border-[#262626] text-zinc-500 rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none"
                       />
                       <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-650" />
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       const val = prompt('Enter new email:');
                       if (val) { setEmail(val); triggerAutoSaveToast('Email address'); }
@@ -560,16 +586,16 @@ export default function SettingsPage() {
                   <div className="flex-1 flex flex-col gap-1.5">
                     <label className="text-[9px] font-bold text-zinc-450 uppercase tracking-widest">Password</label>
                     <div className="relative">
-                      <input 
-                        type="password" 
-                        readOnly 
+                      <input
+                        type="password"
+                        readOnly
                         value="••••••••••••••"
                         className="w-full bg-[#141414] border border-[#262626] text-zinc-500 rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none"
                       />
                       <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-650" />
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => toast.success('Change password flow initiated!')}
                     className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
                   >
@@ -583,7 +609,7 @@ export default function SettingsPage() {
                     <span className="text-xs font-bold text-white uppercase tracking-wide">Two-Factor Authentication</span>
                     <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Secure your account with multi-factor tokens</span>
                   </div>
-                  <input 
+                  <input
                     type="checkbox"
                     checked={twoFactor}
                     onChange={(e) => { setTwoFactor(e.target.checked); triggerAutoSaveToast('2FA settings'); }}
@@ -595,7 +621,7 @@ export default function SettingsPage() {
                 <div className="mt-4 pt-4 border-t border-red-950/20">
                   <span className="text-xs font-bold text-red-500 uppercase tracking-wide">Danger Zone</span>
                   <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed mt-1 uppercase tracking-wide">Permanently purge your Flixora account data</p>
-                  <button 
+                  <button
                     onClick={() => setIsDeleteAccountModalOpen(true)}
                     className="mt-4 border border-red-500/40 hover:bg-red-950/20 text-red-500 font-bold text-xs uppercase tracking-wider py-3 px-5 rounded-xl transition-all cursor-pointer outline-none"
                   >
@@ -625,7 +651,7 @@ export default function SettingsPage() {
                         <span className="text-xs font-bold text-white uppercase tracking-wide">{item.title}</span>
                         <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">{item.desc}</span>
                       </div>
-                      <input 
+                      <input
                         type="checkbox"
                         checked={item.state}
                         onChange={(e) => { item.setState(e.target.checked); triggerAutoSaveToast(item.title); }}
@@ -669,7 +695,7 @@ export default function SettingsPage() {
                     <span className="text-xs font-bold text-white uppercase tracking-wide">Autoplay Next Episode</span>
                     <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Automatically start queue titles</span>
                   </div>
-                  <input 
+                  <input
                     type="checkbox"
                     checked={autoplay}
                     onChange={(e) => { setAutoplay(e.target.checked); triggerAutoSaveToast('Autoplay options'); }}
@@ -727,7 +753,7 @@ export default function SettingsPage() {
                     <span className="text-xs font-bold text-white uppercase tracking-wide">Spoiler-Safe Mode</span>
                     <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Blur episode synopsis descriptions on unwatched titles</span>
                   </div>
-                  <input 
+                  <input
                     type="checkbox"
                     checked={spoilerMode}
                     onChange={(e) => { setSpoilerMode(e.target.checked); triggerAutoSaveToast('Spoiler mode'); }}
@@ -741,7 +767,7 @@ export default function SettingsPage() {
                     <span className="text-xs font-bold text-white uppercase tracking-wide">Viewing Activity Visibility</span>
                     <span className="text-[10px] text-zinc-500 font-semibold leading-relaxed">Allow profile stats sharing to linked taste-twins</span>
                   </div>
-                  <input 
+                  <input
                     type="checkbox"
                     checked={socialVisibility}
                     onChange={(e) => { setSocialVisibility(e.target.checked); triggerAutoSaveToast('Social visibility'); }}
@@ -753,7 +779,7 @@ export default function SettingsPage() {
                 <div className="mt-4">
                   <span className="text-xs font-bold text-white uppercase tracking-wide">Data Exports</span>
                   <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed mt-1 uppercase tracking-wide">Request a ZIP download archive of all watch history and ratings</p>
-                  <button 
+                  <button
                     onClick={() => toast.success('Data export compilation request sent to your registered email.')}
                     className="mt-4 border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none"
                   >
@@ -783,7 +809,7 @@ export default function SettingsPage() {
       {isDeleteAccountModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 flex flex-col gap-5 select-none animate-in zoom-in-95 duration-200">
-            
+
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-950/20 border border-red-900/50 flex items-center justify-center text-red-500 shrink-0">
                 <AlertTriangle size={18} />
@@ -799,8 +825,8 @@ export default function SettingsPage() {
             </p>
 
             <div className="flex flex-col gap-4">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="Type DELETE"
@@ -816,12 +842,11 @@ export default function SettingsPage() {
                 </button>
                 <button
                   disabled={deleteConfirmText !== 'DELETE'}
-                  onClick={() => { toast.success('Account successfully purged'); setIsDeleteAccountModalOpen(false); }}
-                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-                    deleteConfirmText === 'DELETE'
-                      ? 'bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow-lg shadow-red-600/10'
-                      : 'bg-zinc-900 border border-zinc-800 text-zinc-550 cursor-not-allowed'
-                  }`}
+                  onClick={handleDeleteAccount}
+                  className={`flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${deleteConfirmText === 'DELETE'
+                    ? 'bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow-lg shadow-red-600/10'
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-550 cursor-not-allowed'
+                    }`}
                 >
                   Delete
                 </button>
