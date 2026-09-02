@@ -19,7 +19,6 @@ async function handleCheckout(request: NextRequest) {
     let fromPlanId = searchParams.get('fromPlanId') || '';
     let emailParam = searchParams.get('email') || undefined;
     let nameParam = searchParams.get('name') || undefined;
-    let isJson = searchParams.get('format') === 'json' || request.headers.get('accept')?.includes('application/json');
 
     // Parse JSON body if POST
     if (request.method === 'POST') {
@@ -29,7 +28,6 @@ async function handleCheckout(request: NextRequest) {
         if (body.fromPlanId) fromPlanId = body.fromPlanId;
         if (body.email) emailParam = body.email;
         if (body.name) nameParam = body.name;
-        isJson = true;
       } catch (e) {
         // Ignore empty body
       }
@@ -125,25 +123,14 @@ async function handleCheckout(request: NextRequest) {
     });
 
     if (!session.url) {
-      if (isJson) {
-        return NextResponse.json({ success: false, message: 'Failed to create Stripe session.' }, { status: 500 });
-      }
-      return NextResponse.redirect(`${origin}/cancel?error=Failed%20to%20create%20checkout%20session`);
+      return NextResponse.json({ success: false, message: 'Failed to create Stripe session.' }, { status: 500 });
     }
 
-    if (isJson) {
-      return NextResponse.json({ success: true, url: session.url });
-    }
-
-    return NextResponse.redirect(session.url, 303);
+    // Always return JSON with Stripe Checkout URL
+    return NextResponse.json({ success: true, url: session.url });
   } catch (err: any) {
     console.error('Error creating checkout session:', err);
-    const origin = request.nextUrl.origin;
     const errorMessage = err instanceof Error ? err.message : 'An error occurred during checkout';
-
-    if (request.headers.get('accept')?.includes('application/json')) {
-      return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
-    }
-    return NextResponse.redirect(`${origin}/cancel?error=${encodeURIComponent(errorMessage)}`);
+    return NextResponse.json({ success: false, message: errorMessage }, { status: 500 });
   }
 }
