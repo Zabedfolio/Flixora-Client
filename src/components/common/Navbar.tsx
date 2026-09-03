@@ -340,13 +340,6 @@ export default function Navbar({
               </Link>
             )}
 
-            {/* =========================================
-              MOBILE SEARCH
-              < 640px
-          ========================================== */}
-            <div className="sm:hidden">
-              <SearchBar />
-            </div>
 
             {/* =========================================
               HAMBURGER
