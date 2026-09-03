@@ -55,29 +55,23 @@ export async function GET() {
     // Retrieve plans from the database
     const plans = await db.collection('plans').find({}).toArray();
 
-    // Find the Basic plan ID
-    const basicPlan = plans.find((p: any) => p.name.toLowerCase() === 'basic');
-    if (basicPlan) {
-      const basicPlanId = basicPlan._id.toString();
-
-      // 2. Perform Migration for existing users (who signed up before plans integration)
-      // Query A: Seed default 'user' role for accounts missing the role field (does NOT touch plan details)
-      await db.collection('user').updateMany(
-        { 
-          $or: [
-            { role: { $exists: false } },
-            { role: "" },
-            { role: null }
-          ]
-        },
-        { 
-          $set: { 
-            role: 'user',
-            updatedAt: new Date()
-          } 
-        }
-      );
-    }
+    // 2. Perform Migration for existing users (who signed up before role integration)
+    // Seed default 'user' role for accounts missing the role field (does NOT touch plan details)
+    await db.collection('user').updateMany(
+      { 
+        $or: [
+          { role: { $exists: false } },
+          { role: "" },
+          { role: null }
+        ]
+      },
+      { 
+        $set: { 
+          role: 'user',
+          updatedAt: new Date()
+        } 
+      }
+    );
 
     // Convert ObjectId to string for all plans
     const formattedPlans = plans.map((p: any) => ({
