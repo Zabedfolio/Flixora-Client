@@ -236,10 +236,25 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          return {
+            data: {
+              ...user,
+              planId: '',
+              plan: '',
+              role: 'user',
+            },
+          };
+        },
         after: async (user) => {
           try {
+            const rawId = (user as any)._id || (user as any).id;
+            const filter = ObjectId.isValid(rawId)
+              ? { _id: new ObjectId(rawId) }
+              : { _id: rawId };
+
             await db.collection('user').updateOne(
-              { _id: new ObjectId((user as any).id) },
+              filter,
               { 
                 $set: { 
                   planId: '',
@@ -249,7 +264,7 @@ export const auth = betterAuth({
               }
             );
           } catch (err) {
-            console.error('Error initializing user record in database hook:', err);
+            console.error('Error in user creation after hook:', err);
           }
         }
       }
