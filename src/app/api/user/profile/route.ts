@@ -18,9 +18,13 @@ export async function GET() {
     }
 
     const { db } = await connectToDatabase();
-    const userDoc = await db
-      .collection('user')
-      .findOne({ _id: new ObjectId(authSession.user.id) });
+
+    const rawId = authSession.user.id;
+    const filter = ObjectId.isValid(rawId)
+      ? { $or: [{ _id: new ObjectId(rawId) }, { _id: rawId }] }
+      : { _id: rawId };
+
+    const userDoc = await db.collection('user').findOne(filter);
 
     if (!userDoc) {
       return NextResponse.json(
