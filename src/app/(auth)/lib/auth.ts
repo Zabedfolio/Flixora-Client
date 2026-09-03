@@ -223,7 +223,7 @@ export const auth = betterAuth({
       plan: {
         type: 'string',
         required: false,
-        defaultValue: 'Basic'
+        defaultValue: ''
       },
       role: {
         type: 'string',
@@ -238,21 +238,18 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           try {
-            const basicPlan = await db.collection('plans').findOne({ name: 'Basic' });
-            if (basicPlan) {
-              await db.collection('user').updateOne(
-                { _id: new ObjectId((user as any).id) },
-                { 
-                  $set: { 
-                    planId: basicPlan._id.toString(),
-                    plan: 'Basic',
-                    role: 'user'
-                  } 
-                }
-              );
-            }
+            await db.collection('user').updateOne(
+              { _id: new ObjectId((user as any).id) },
+              { 
+                $set: { 
+                  planId: '',
+                  plan: '',
+                  role: 'user'
+                } 
+              }
+            );
           } catch (err) {
-            console.error('Error assigning default plan in database hook:', err);
+            console.error('Error initializing user record in database hook:', err);
           }
         }
       }

@@ -38,7 +38,7 @@ export async function GET() {
         image: userDoc.image || authSession.user.image || null,
         avatarId: userDoc.avatarId || null,
         role: userDoc.role || 'user',
-        plan: userDoc.plan || 'Basic',
+        plan: userDoc.plan || '',
         planId: userDoc.planId || '',
         createdAt: userDoc.createdAt,
         updatedAt: userDoc.updatedAt,

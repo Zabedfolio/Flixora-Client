@@ -301,7 +301,7 @@ export default function UserDashboardPage() {
                 {userProfile?.name || session?.user.name || 'User Portal'}
               </span>
               <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider font-mono">
-                {userProfile?.plan ? `${userProfile.plan} Member` : (session?.user as any)?.plan ? `${(session?.user as any).plan} Member` : 'Basic Member'}
+                {userProfile?.plan ? `${userProfile.plan} Member` : 'Free Member'}
               </span>
             </div>
           </div>

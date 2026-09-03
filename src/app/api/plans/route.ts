@@ -77,27 +77,6 @@ export async function GET() {
           } 
         }
       );
-
-      // Query B: Seed default 'Basic' plan details for accounts missing the plan fields (does NOT touch role details)
-      await db.collection('user').updateMany(
-        { 
-          $or: [
-            { planId: { $exists: false } },
-            { planId: "" },
-            { planId: null },
-            { plan: { $exists: false } },
-            { plan: "" },
-            { plan: null }
-          ]
-        },
-        { 
-          $set: { 
-            planId: basicPlanId,
-            plan: 'Basic',
-            updatedAt: new Date()
-          } 
-        }
-      );
     }
 
     // Convert ObjectId to string for all plans
