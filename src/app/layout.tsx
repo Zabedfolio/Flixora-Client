@@ -6,6 +6,7 @@ import Footer from '@/components/common/Footer';
 import RouteTransition from '@/components/common/RouteTransition';
 import { Toaster } from 'react-hot-toast';
 import SignupModal from '@/components/SignupPopup';
+import SessionTracker from '@/components/common/SessionTracker';
 
 /* =========================================================
    METADATA
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <Footer />
         </RouteTransition>
         <SignupModal />
+        <SessionTracker />
       </body>
     </html>
   );
