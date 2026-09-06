@@ -9,10 +9,11 @@ import { getGenreName } from "@/data/home/newReleases";
 import ReactMarkdown from "react-markdown";
 import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
 import { authClient } from "@/app/(auth)/lib/auth-client";
-import { Bebas_Neue, Plus_Jakarta_Sans } from "next/font/google";
+import { Bebas_Neue, Plus_Jakarta_Sans, Caveat } from "next/font/google";
 
 const bebas = Bebas_Neue({ weight: "400", subsets: ["latin"] });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "600", "700", "800"] });
+const caveat = Caveat({ weight: ["600", "700"], subsets: ["latin"] });
 
 interface Slide {
   id: number;
@@ -286,8 +287,11 @@ export default function HeroBanner() {
               <span>AI Movie Engine</span>
             </div>
 
-            <h2 className={`${bebas.className} text-4xl sm:text-5xl md:text-6xl tracking-wider text-white uppercase drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] leading-tight`}>
-              {tagline} <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4C00] via-[#FF7A00] to-[#FF4C00] drop-shadow-[0_0_20px_rgba(255,76,0,0.6)]">{userName}</span>!
+            <h2 className={`${bebas.className} text-4xl sm:text-5xl md:text-6xl tracking-wider text-white uppercase drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] leading-tight flex flex-wrap items-center justify-center sm:justify-start gap-x-3`}>
+              <span>{tagline}</span>
+              <span className={`${caveat.className} capitalize normal-case text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF4C00] via-[#FF7A00] to-[#FF4C00] drop-shadow-[0_0_20px_rgba(255,76,0,0.6)] px-1 -rotate-2`}>
+                {userName}!
+              </span>
             </h2>
 
             <p className={`${jakarta.className} text-xs md:text-sm text-zinc-300 font-semibold tracking-widest uppercase mt-1 opacity-90`}>
