@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { authClient } from '@/app/(auth)/lib/auth-client';
 import { getWatchlistCount } from '@/data/watchlistStore';
 import { getHistory, HistoryItem } from '@/data/historyStore';
@@ -47,6 +48,7 @@ interface UserProfileData {
 }
 
 export default function UserDashboardPage() {
+  const router = useRouter();
   const { data: session } = authClient.useSession();
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [watchlistCount, setWatchlistCount] = useState(0);
@@ -62,6 +64,9 @@ export default function UserDashboardPage() {
           const data = await res.json();
           if (data.user) {
             setUserProfile(data.user);
+            if (data.user.role === 'admin') {
+              router.push('/admin');
+            }
           }
         }
       } catch (err) {
@@ -69,7 +74,7 @@ export default function UserDashboardPage() {
       }
     };
     fetchLiveProfile();
-  }, [session]);
+  }, [session, router]);
 
   useEffect(() => {
     setWatchlistCount(getWatchlistCount());
@@ -301,7 +306,7 @@ export default function UserDashboardPage() {
                 {userProfile?.name || session?.user.name || 'User Portal'}
               </span>
               <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider font-mono">
-                {userProfile?.plan ? `${userProfile.plan} Member` : (session?.user as any)?.plan ? `${(session?.user as any).plan} Member` : 'Basic Member'}
+                {userProfile?.plan ? `${userProfile.plan} Member` : 'Free Member'}
               </span>
             </div>
           </div>

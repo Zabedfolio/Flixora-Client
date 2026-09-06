@@ -109,6 +109,8 @@ export default function SubscriptionPage() {
 
       if (resolvedPlanIdentifier) {
         setCurrentPlan(resolvedPlanIdentifier);
+      } else {
+        setCurrentPlan(null);
       }
     } catch (error: any) {
       toast.error(error.message || 'Error loading subscription data');

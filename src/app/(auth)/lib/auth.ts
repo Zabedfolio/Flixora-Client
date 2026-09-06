@@ -223,7 +223,7 @@ export const auth = betterAuth({
       plan: {
         type: 'string',
         required: false,
-        defaultValue: 'Basic'
+        defaultValue: ''
       },
       role: {
         type: 'string',
@@ -236,23 +236,35 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          return {
+            data: {
+              ...user,
+              planId: '',
+              plan: '',
+              role: 'user',
+            },
+          };
+        },
         after: async (user) => {
           try {
-            const basicPlan = await db.collection('plans').findOne({ name: 'Basic' });
-            if (basicPlan) {
-              await db.collection('user').updateOne(
-                { _id: new ObjectId((user as any).id) },
-                { 
-                  $set: { 
-                    planId: basicPlan._id.toString(),
-                    plan: 'Basic',
-                    role: 'user'
-                  } 
-                }
-              );
-            }
+            const rawId = (user as any)._id || (user as any).id;
+            const filter = ObjectId.isValid(rawId)
+              ? { _id: new ObjectId(rawId) }
+              : { _id: rawId };
+
+            await db.collection('user').updateOne(
+              filter,
+              { 
+                $set: { 
+                  planId: '',
+                  plan: '',
+                  role: 'user'
+                } 
+              }
+            );
           } catch (err) {
-            console.error('Error assigning default plan in database hook:', err);
+            console.error('Error in user creation after hook:', err);
           }
         }
       }
