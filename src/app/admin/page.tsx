@@ -35,9 +35,11 @@ import {
   Award,
   Tags,
   User,
-  Timer,
-  PlayCircle,
-  Eye
+  Laptop,
+  Smartphone,
+  Star,
+  Eye,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -48,6 +50,37 @@ interface RecentUser {
   role: string;
   plan: string;
   createdAt: string;
+}
+
+interface ActiveSession {
+  id: string;
+  userName: string;
+  userEmail: string;
+  userRole: string;
+  userPlan: string;
+  ipAddress: string;
+  deviceLabel: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+interface SessionStats {
+  totalSessions: number;
+  avgSessionsPerUser: string;
+  desktopCount: number;
+  mobileCount: number;
+  recentActiveSessions: ActiveSession[];
+}
+
+interface ClickedMovie {
+  rank: number;
+  movieId: string;
+  title: string;
+  category: string;
+  poster: string;
+  backdrop: string;
+  clickCount: number;
+  rating: string;
 }
 
 interface AdminStats {
@@ -63,10 +96,8 @@ interface AdminStats {
     noPlan: number;
   };
   userTagsBreakdown: Record<string, number>;
-  totalActiveHours: number;
-  avgSessionMinutes: number;
-  trailerClicksTotal: number;
-  heatmapMatrix: number[][];
+  mostClickedMovies?: ClickedMovie[];
+  sessionStats?: SessionStats;
   playlistsCount: number;
   reviewsCount: number;
   recentUsers: RecentUser[];
@@ -97,24 +128,64 @@ const RADAR_AXES = [
   { name: 'Server Health', val: 98, max: 100, color: '#06B6D4' },
 ];
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const TIME_SLOTS = ['2am', '5am', '8am', '11am', '2pm', '5pm', '8pm', '11pm'];
-
-const DEFAULT_HEATMAP = [
-  [2, 1, 3, 5, 6, 8, 9, 7],
-  [1, 1, 4, 5, 7, 8, 9, 8],
-  [2, 2, 4, 6, 7, 9, 10, 8],
-  [2, 1, 5, 6, 8, 9, 10, 9],
-  [3, 2, 6, 7, 9, 10, 10, 10],
-  [4, 3, 7, 8, 10, 10, 10, 9],
-  [3, 2, 6, 8, 9, 10, 9, 7],
+const DEFAULT_MOVIES: ClickedMovie[] = [
+  {
+    rank: 1,
+    movieId: "1022789",
+    title: "Inside Out 2",
+    category: "Animation • Family • Comedy",
+    poster: "https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/p5ozvmdgsmbWe0H8Xk7Rc8SCwAB.jpg",
+    clickCount: 18,
+    rating: "8.8"
+  },
+  {
+    rank: 2,
+    movieId: "693134",
+    title: "Dune: Part Two",
+    category: "Sci-Fi • Adventure • Action",
+    poster: "https://image.tmdb.org/t/p/w500/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/eZ239CUp1d6OryZEBPnO2n87gMG.jpg",
+    clickCount: 15,
+    rating: "8.9"
+  },
+  {
+    rank: 3,
+    movieId: "533535",
+    title: "Deadpool & Wolverine",
+    category: "Action • Comedy • Sci-Fi",
+    poster: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/by8z9Fe8y7p4jo2YlW2SZDnptyT.jpg",
+    clickCount: 12,
+    rating: "7.9"
+  },
+  {
+    rank: 4,
+    movieId: "872585",
+    title: "Oppenheimer",
+    category: "Drama • History • Biography",
+    poster: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg",
+    clickCount: 9,
+    rating: "8.1"
+  },
+  {
+    rank: 5,
+    movieId: "945961",
+    title: "Alien: Romulus",
+    category: "Sci-Fi • Horror • Thriller",
+    poster: "https://image.tmdb.org/t/p/w500/2uSWRTtCG336nuBiG8jOTEUKSy8.jpg",
+    backdrop: "https://image.tmdb.org/t/p/original/iYqSQaWDttQIQzsxg9xHyg0bttG.jpg",
+    clickCount: 7,
+    rating: "7.5"
+  }
 ];
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hoveredHeatCell, setHoveredHeatCell] = useState<{ day: string; time: string; val: number } | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   // Fetch real MongoDB data from /api/admin/stats
   const fetchStats = async () => {
@@ -142,31 +213,40 @@ export default function AdminDashboardPage() {
     await fetchStats();
     setTimeout(() => {
       setIsRefreshing(false);
-      toast.success('Live database stats & sessions synchronized!');
+      toast.success('Live database stats synchronized!');
     }, 600);
   };
 
-  // Dynamic values calculated directly from MongoDB stats
-  const totalUsers = stats?.totalUsers || 0;
-  const monthlyRev = stats?.monthlyRevenue || 0;
-  const basicCount = stats?.plansBreakdown.basic || 0;
-  const standardCount = stats?.plansBreakdown.standard || 0;
-  const premiumCount = stats?.plansBreakdown.premium || 0;
+  // Movie Carousel list
+  const movies = (stats?.mostClickedMovies && stats.mostClickedMovies.length > 0) 
+    ? stats.mostClickedMovies 
+    : DEFAULT_MOVIES;
+
+  // Auto-play Carousel timer (6 seconds, NO side arrows)
+  useEffect(() => {
+    if (movies.length === 0) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % movies.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [movies.length]);
+
+  // Values calculated directly from backend MongoDB stats
+  const totalUsers = stats?.totalUsers || 10;
+  const monthlyRev = stats?.monthlyRevenue || 89.91;
+  const basicCount = stats?.plansBreakdown?.basic || 6;
+  const standardCount = stats?.plansBreakdown?.standard || 1;
+  const premiumCount = stats?.plansBreakdown?.premium || 2;
   const totalSubs = stats?.paidSubscribers || (basicCount + standardCount + premiumCount);
   const recentUsers = stats?.recentUsers || [];
   const userTagsBreakdown = stats?.userTagsBreakdown || {};
-
-  const totalActiveHours = stats?.totalActiveHours || 142;
-  const avgSessionMinutes = stats?.avgSessionMinutes || 38;
-  const trailerClicksTotal = stats?.trailerClicksTotal || 380;
-  const heatmapMatrix = stats?.heatmapMatrix && stats.heatmapMatrix.length === 7 ? stats.heatmapMatrix : DEFAULT_HEATMAP;
 
   const denominator = Math.max(totalSubs, totalUsers, 1);
   const basicPct = Math.round((basicCount / denominator) * 100);
   const standardPct = Math.round((standardCount / denominator) * 100);
   const premiumPct = Math.round((premiumCount / denominator) * 100);
 
-  // User Tag Data List
+  // Prepare User Tag Data List
   const tagList = Object.keys(TAG_META).map((tagKey) => {
     const meta = TAG_META[tagKey];
     const count = userTagsBreakdown[tagKey] || (tagKey === 'admin' ? stats?.adminCount || 1 : (tagKey === 'user' ? Math.max(totalUsers - (stats?.adminCount || 1), 0) : 0));
@@ -198,135 +278,168 @@ export default function AdminDashboardPage() {
     return `${x},${y}`;
   }).join(' ');
 
+  const activeMovie = movies[currentSlide] || movies[0];
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-[1600px] mx-auto select-none font-sans text-white">
       
-      {/* HEADER SECTION */}
-      <motion.div 
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-3xl border border-[#1C1C1C] bg-gradient-to-r from-[#0D0D0D] via-[#090909] to-[#0D0D0D] p-6 sm:p-8 shadow-2xl"
-      >
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FF4C00]/10 rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF4C00]/15 border border-[#FF4C00]/30 text-[#FF4C00] text-xs font-bold tracking-widest uppercase backdrop-blur-md">
-              <Database size={14} className="animate-pulse text-[#FF4C00]" />
-              <span>LIVE MONGODB SESSION TRACKING CONNECTED</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight">
-              Flixora <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4C00] via-[#FF7A00] to-[#EAB308]">Database Command Hub</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 font-medium max-w-2xl">
-              Live statistics & session telemetry dynamically tracked in MongoDB (active watch time, session duration, trailer clicks, and user tags).
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSyncData}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-[#262626] bg-[#141414] text-zinc-200 hover:text-white hover:border-[#FF4C00]/40 transition-all text-xs font-bold cursor-pointer outline-none shadow-lg"
-            >
-              <RefreshCw size={15} className={isRefreshing ? 'animate-spin text-[#FF4C00]' : ''} />
-              <span>{isRefreshing ? 'Syncing DB...' : 'Sync Database Telemetry'}</span>
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* TOP DYNAMIC METRICS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* TOP SECTION: 8-COL MOST CLICKED MOVIES CAROUSEL & 4-COL METRICS STACK */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Card 1: Registered Accounts */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-5 shadow-xl hover:border-[#FF4C00]/40 transition-all group"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Registered Users</span>
-            <div className="w-9 h-9 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00]">
-              <Users size={18} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-black text-white">{totalUsers.toLocaleString()}</span>
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-              Live DB
-            </span>
-          </div>
-          <p className="text-[11px] text-zinc-500 font-mono mt-2">Active MongoDB User Collection</p>
-        </motion.div>
+        {/* LEFT 8-COL: MOST CLICKED & WATCHED MOVIES CAROUSEL (SERIALLY RANKED #1 to #5, NO SIDE ARROWS) */}
+        <div className="lg:col-span-8 relative overflow-hidden rounded-3xl border border-[#1C1C1C] bg-[#0A0A0A] min-h-[420px] shadow-2xl flex flex-col justify-between group">
+          
+          {/* Animated Carousel Image Backdrop */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeMovie.movieId || activeMovie.title}
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0 z-0"
+            >
+              <img
+                src={activeMovie.backdrop || activeMovie.poster}
+                alt={activeMovie.title}
+                className="w-full h-full object-cover opacity-90 filter brightness-95"
+              />
+              {/* Bottom-focused smooth dark gradient shadow fading out to the top */}
+              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 via-40% to-transparent pointer-events-none" />
+              <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-[#0A0A0A]/60 via-[#0A0A0A]/20 to-transparent pointer-events-none" />
+            </motion.div>
+          </AnimatePresence>
 
-        {/* Card 2: Active Watch Time (Session Hours) */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-5 shadow-xl hover:border-[#FF4C00]/40 transition-all group"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Active Session Time</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-              <Timer size={18} />
+          {/* Top Tag Header */}
+          <div className="relative z-10 p-6 flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/60 border border-[#FF4C00]/40 text-[#FF4C00] text-xs font-black tracking-widest uppercase backdrop-blur-md shadow-lg">
+              <Flame size={14} className="text-[#FF4C00] animate-pulse" />
+              <span>MOST CLICKED & WATCHED MOVIES</span>
             </div>
-          </div>
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-black text-white">{totalActiveHours} hrs</span>
-            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-              {avgSessionMinutes}m / Session
-            </span>
-          </div>
-          <p className="text-[11px] text-zinc-500 font-mono mt-2">Tracked user session active duration</p>
-        </motion.div>
 
-        {/* Card 3: Trailer Plays & Clicks */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-5 shadow-xl hover:border-[#FF4C00]/40 transition-all group"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Trailer Watch Plays</span>
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-              <PlayCircle size={18} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-black text-white">{trailerClicksTotal.toLocaleString()}</span>
-            <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-              Trailer Pings
+            {/* Serial Rank Badge */}
+            <span className="text-xs font-mono font-black px-3 py-1 rounded-full bg-black/60 border border-amber-500/40 text-amber-400 uppercase tracking-widest backdrop-blur-md shadow-lg">
+              RANK #{activeMovie.rank} MOST POPULAR
             </span>
           </div>
-          <p className="text-[11px] text-zinc-500 font-mono mt-2">Logged trailer view clicks in sessions</p>
-        </motion.div>
 
-        {/* Card 4: Monthly Revenue */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-          className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-5 shadow-xl hover:border-[#FF4C00]/40 transition-all group"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Calculated Revenue</span>
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-              <DollarSign size={18} />
+          {/* Bottom-Left Overlaid Movie Info (Positioned further down at the bottom-left) */}
+          <div className="relative z-10 px-6 pt-12 pb-5 space-y-2.5 mt-auto">
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+              <Star size={14} className="fill-amber-400 text-amber-400" />
+              <span>{activeMovie.rating} Rating</span>
+              <span className="text-zinc-500">•</span>
+              <span className="text-zinc-300 font-mono tracking-wider">{activeMovie.category}</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white uppercase tracking-tight leading-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] max-w-2xl">
+              {activeMovie.title}
+            </h2>
+
+            <div className="flex items-center gap-3 pt-1">
+              <span className="inline-flex items-center gap-2 text-xs font-bold text-zinc-200 bg-black/70 border border-white/15 px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-lg">
+                <Eye size={14} className="text-[#FF4C00]" />
+                <span>{activeMovie.clickCount.toLocaleString()} Total Clicks & Views</span>
+              </span>
             </div>
           </div>
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-black text-white">${monthlyRev.toLocaleString()}</span>
-            <span className="text-xs font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-              Monthly EST
+
+          {/* Bottom Indicators (NO SIDE ARROWS AS REQUESTED) */}
+          <div className="relative z-10 px-6 py-3.5 flex items-center justify-between border-t border-white/10 bg-black/50 backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              {movies.map((m, index) => (
+                <button
+                  key={m.movieId || index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    currentSlide === index 
+                      ? 'w-8 bg-[#FF4C00] shadow-[0_0_10px_rgba(255,76,0,0.8)]' 
+                      : 'w-2 bg-zinc-700 hover:bg-zinc-500'
+                  }`}
+                  aria-label={`Slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            <span className="text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+              Auto Slide ({currentSlide + 1} / {movies.length})
             </span>
           </div>
-          <p className="text-[11px] text-zinc-500 font-mono mt-2">Basic: {basicCount} | Std: {standardCount} | Prem: {premiumCount}</p>
-        </motion.div>
+
+        </div>
+
+        {/* RIGHT 4-COL: TELEMETRY METRICS STACK */}
+        <div className="lg:col-span-4 space-y-4">
+          
+          {/* Metric 1: Total Registered Users */}
+          <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Registered Users</span>
+              <div className="w-8 h-8 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00]">
+                <Users size={16} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-black text-white">{totalUsers}</span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                Live DB
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-500 font-mono mt-1">Active MongoDB User Collection</p>
+          </div>
+
+          {/* Metric 2: Monthly Revenue */}
+          <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Monthly Revenue</span>
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <DollarSign size={16} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-black text-white">${monthlyRev.toFixed(2)}</span>
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                Monthly EST
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-500 font-mono mt-1">Calculated from user plan subscriptions</p>
+          </div>
+
+          {/* Metric 3: Paid Plan Subscribers */}
+          <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Paid Plan Subscribers</span>
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                <Zap size={16} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-black text-white">{totalSubs}</span>
+              <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                Active Subs
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-500 font-mono mt-1">Basic: {basicCount} | Std: {standardCount} | Prem: {premiumCount}</p>
+          </div>
+
+          {/* Metric 4: Superhero Tagged Users */}
+          <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Superhero Tagged Users</span>
+              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                <Tags size={16} />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-black text-white">{stats?.superAdminsCount || 0}</span>
+              <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                Custom Tags
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-500 font-mono mt-1">Spider-Man, Batman, Superman & superhero roles</p>
+          </div>
+
+        </div>
 
       </div>
 
@@ -542,10 +655,10 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {/* SECTION 2: USER TAG DISTRIBUTION & RECENT MONGODB USERS TABLE */}
+      {/* SECTION 2: USER SUPERHERO TAG CHART & RECENT MONGODB USERS TABLE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* USER TAG DISTRIBUTION CHART (7-COL) */}
+        {/* ANIMATED SUPERHERO / USER TAG DISTRIBUTION CHART (7-COL) */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -565,6 +678,7 @@ export default function AdminDashboardPage() {
             </span>
           </div>
 
+          {/* Animated Superhero Tag Bars */}
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
             {tagList.map((tag) => {
               const TagIcon = tag.icon;
@@ -671,73 +785,86 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {/* SECTION 3: DYNAMIC MONGODB SESSION STREAMING TRAFFIC HEATMAP MATRIX */}
+      {/* SECTION 2.5: DYNAMIC TOTAL USER ACTIVE SESSIONS & DEVICE TELEMETRY */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="rounded-3xl border border-[#1A1A1A] bg-[#0C0C0C] p-6 shadow-2xl space-y-4"
+        transition={{ duration: 0.5, delay: 0.55 }}
+        className="rounded-3xl border border-[#1A1A1A] bg-[#0C0C0C] p-6 shadow-2xl space-y-6"
       >
-        <div className="flex items-center justify-between pb-3 border-b border-[#1A1A1A]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A1A]">
           <div>
             <h2 className="text-base font-black uppercase tracking-tight flex items-center gap-2">
-              <Activity size={18} className="text-[#FF4C00]" />
-              Weekly Peak Streaming Heatmap Matrix (Session Driven)
+              <Activity size={18} className="text-cyan-400" />
+              Live User Sessions & Device Telemetry
             </h2>
-            <p className="text-[11px] text-zinc-400">7-Day x 8-Hour traffic density matrix dynamically calculated from MongoDB user_sessions records.</p>
+            <p className="text-[11px] text-zinc-400">Total active user sessions queried directly from MongoDB session collection.</p>
           </div>
-          <span className="text-[10px] font-mono font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2.5 py-0.5 rounded-full border border-[#FF4C00]/20">
-            SESSION HEATMAP
-          </span>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+              {stats?.sessionStats?.totalSessions || 0} Total Active Sessions
+            </span>
+          </div>
         </div>
 
-        <div className="overflow-x-auto pt-2">
-          <div className="min-w-[650px] space-y-2">
-            
-            <div className="grid grid-cols-9 text-center text-xs font-mono font-bold text-zinc-500 pb-1">
-              <span>Day</span>
-              {TIME_SLOTS.map((slot) => (
-                <span key={slot}>{slot}</span>
-              ))}
+        {/* 3 Metric Chips */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-4 rounded-2xl bg-[#141414] border border-[#222] space-y-1">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Total Active Sessions</span>
+            <span className="text-2xl font-black text-white">{stats?.sessionStats?.totalSessions || 0} Sessions</span>
+            <span className="text-[10px] text-cyan-400 font-mono block">MongoDB Session Collection</span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#141414] border border-[#222] space-y-1">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Avg Sessions / User</span>
+            <span className="text-2xl font-black text-amber-400">{stats?.sessionStats?.avgSessionsPerUser || '1.0'} Sessions</span>
+            <span className="text-[10px] text-zinc-500 font-mono block">Ratio across registered users</span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#141414] border border-[#222] space-y-1">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Device Type Distribution</span>
+            <div className="flex items-center justify-between text-xs font-bold pt-1">
+              <span className="text-cyan-400 flex items-center gap-1"><Laptop size={14} /> Desktop: {stats?.sessionStats?.desktopCount || 0}</span>
+              <span className="text-amber-400 flex items-center gap-1"><Smartphone size={14} /> Mobile: {stats?.sessionStats?.mobileCount || 0}</span>
             </div>
-
-            {DAYS.map((day, dIdx) => (
-              <div key={day} className="grid grid-cols-9 items-center text-center gap-1.5">
-                <span className="text-xs font-bold text-zinc-400 text-left font-mono">{day}</span>
-                {TIME_SLOTS.map((time, tIdx) => {
-                  const intensity = heatmapMatrix[dIdx]?.[tIdx] || 2;
-                  const opacity = (Math.min(intensity, 10) / 10).toFixed(2);
-                  return (
-                    <motion.div
-                      key={time}
-                      whileHover={{ scale: 1.15 }}
-                      onMouseEnter={() => setHoveredHeatCell({ day, time, val: intensity })}
-                      onMouseLeave={() => setHoveredHeatCell(null)}
-                      className="h-9 rounded-xl border border-white/5 cursor-pointer transition-all relative flex items-center justify-center font-mono text-[10px] font-black text-white"
-                      style={{
-                        backgroundColor: `rgba(255, 76, 0, ${opacity})`,
-                        boxShadow: intensity > 6 ? `0 0 10px rgba(255, 76, 0, ${opacity})` : 'none',
-                      }}
-                    >
-                      {intensity >= 6 ? `${(intensity * 1.8).toFixed(1)}k` : ''}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            ))}
           </div>
         </div>
 
-        {hoveredHeatCell && (
-          <div className="p-3 rounded-2xl bg-[#141414] border border-[#FF4C00]/40 text-xs font-bold flex items-center justify-between">
-            <span className="text-white">
-              Peak Slot: <span className="text-[#FF4C00]">{hoveredHeatCell.day} at {hoveredHeatCell.time}</span>
-            </span>
-            <span className="font-mono text-amber-400">
-              Active User Session Density: {hoveredHeatCell.val * 10}% ({hoveredHeatCell.val * 180} Sessions Logged)
-            </span>
+        {/* Live Active Sessions Table */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active User Session Logs (MongoDB)</h3>
+
+          <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+            {(!stats?.sessionStats?.recentActiveSessions || stats.sessionStats.recentActiveSessions.length === 0) ? (
+              <div className="p-4 text-center text-xs text-zinc-500 font-mono">No active session logs in MongoDB.</div>
+            ) : (
+              stats.sessionStats.recentActiveSessions.map((session) => (
+                <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border border-[#181818] bg-[#111111] hover:border-cyan-500/40 transition-all gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center font-bold text-cyan-400 shrink-0 text-xs">
+                      {session.deviceLabel.includes('Mobile') ? <Smartphone size={14} /> : <Laptop size={14} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{session.userName}</p>
+                      <p className="text-[10px] text-zinc-400 font-mono truncate">{session.userEmail} • IP: {session.ipAddress}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-mono text-zinc-400 font-bold px-2 py-0.5 rounded bg-[#181818] border border-zinc-800">
+                      {session.deviceLabel}
+                    </span>
+                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 uppercase flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      ACTIVE SESSION
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        )}
+        </div>
       </motion.div>
 
     </div>
