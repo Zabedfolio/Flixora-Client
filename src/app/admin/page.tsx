@@ -461,7 +461,7 @@ export default function AdminDashboardPage() {
               </h2>
               <p className="text-[11px] text-zinc-400">Dynamic concentric radial rings calculated from MongoDB plans.</p>
             </div>
-            <span className="text-[10px] font-mono font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2 py-0.5 rounded border border-[#FF4C00]/20">
+            <span className="text-[10px] font-mono font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2.5 py-0.5 rounded border border-[#FF4C00]/20 whitespace-nowrap shrink-0">
               LIVE RADIAL
             </span>
           </div>
@@ -570,7 +570,7 @@ export default function AdminDashboardPage() {
               </h2>
               <p className="text-[11px] text-zinc-400">Dynamic polygon matrix monitoring key operational health metrics.</p>
             </div>
-            <span className="text-[10px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+            <span className="text-[10px] font-mono font-bold text-purple-400 bg-purple-500/10 px-2.5 py-0.5 rounded border border-purple-500/20 whitespace-nowrap shrink-0">
               RADAR SPIDER
             </span>
           </div>
@@ -673,7 +673,7 @@ export default function AdminDashboardPage() {
               </h2>
               <p className="text-[11px] text-zinc-400">Total accounts breakdown grouped by chosen Superhero character tags.</p>
             </div>
-            <span className="text-[10px] font-mono font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2 py-0.5 rounded border border-[#FF4C00]/20">
+            <span className="text-[10px] font-mono font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2.5 py-0.5 rounded border border-[#FF4C00]/20 whitespace-nowrap shrink-0">
               TAG DISTRIBUTION
             </span>
           </div>
@@ -742,7 +742,7 @@ export default function AdminDashboardPage() {
               </h2>
               <p className="text-[11px] text-zinc-400">Live records queried from MongoDB user collection.</p>
             </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 uppercase">
+            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20 uppercase whitespace-nowrap shrink-0">
               {recentUsers.length} Users
             </span>
           </div>
