@@ -4,20 +4,25 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Globe, ChevronDown, Film } from 'lucide-react';
-import { FaInstagram, FaTwitter, FaFacebookF, FaYoutube } from 'react-icons/fa';
+import { Globe, ChevronDown } from 'lucide-react';
+import {
+  FaInstagram,
+  FaTwitter,
+  FaFacebookF,
+  FaYoutube,
+} from 'react-icons/fa';
 
-interface FooterLink {
+interface Link {
   label: string;
   href: string;
 }
 
-interface FooterColumn {
+interface Column {
   title: string;
-  links: FooterLink[];
+  links: Link[];
 }
 
-const FOOTER_COLUMNS: FooterColumn[] = [
+const _COLUMNS: Column[] = [
   {
     title: 'Company',
     links: [
@@ -110,6 +115,7 @@ export default function Footer() {
   const [expandedSections, setExpandedSections] = useState<
     Record<number, boolean>
   >({});
+
   const pathname = usePathname();
 
   const toggleSection = (index: number) => {
@@ -119,14 +125,19 @@ export default function Footer() {
     }));
   };
 
-  // Hide Footer on authentication, dashboard, and admin routes
-  if (pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+  // Hide footer on authentication, dashboard, and admin routes
+  if (
+    pathname?.startsWith('/auth') ||
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/admin')
+  ) {
     return null;
   }
 
   return (
     <footer className="w-full overflow-hidden border-t border-[#1A1A1A] bg-[#0A0A0A] px-4 pb-8 pt-14 text-zinc-500">
       <div className="mx-auto flex max-w-7xl flex-col gap-10">
+
         {/* Header */}
         <div className="flex flex-col justify-between gap-6 border-b border-[#1A1A1A]/50 pb-8 md:flex-row md:items-center">
           <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
@@ -164,13 +175,14 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Footer Columns */}
+        {/* Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          {FOOTER_COLUMNS.map((column, index) => {
+          {_COLUMNS.map((column, index) => {
             const isExpanded = expandedSections[index] ?? false;
 
             return (
               <div key={column.title}>
+
                 {/* Column Header */}
                 <button
                   type="button"
@@ -188,7 +200,9 @@ export default function Footer() {
                   <ChevronDown
                     size={14}
                     className={`text-zinc-500 transition-transform duration-300 md:hidden ${
-                      isExpanded ? 'rotate-180 text-[#FF4C00]' : ''
+                      isExpanded
+                        ? 'rotate-180 text-[#FF4C00]'
+                        : ''
                     }`}
                   />
                 </button>
@@ -202,8 +216,10 @@ export default function Footer() {
                   }`}
                 >
                   <ul className="space-y-3 py-4 md:py-5">
-                    {column.links.map(link => (
-                      <li key={link.href}>
+                    {column.links.map((link, index) => (
+                      <li
+                        key={`${link.href}-${link.label}-${index}`}
+                      >
                         <Link
                           href={link.href}
                           className="rounded text-[13px] font-medium text-[#B3B3B3] outline-none transition-colors hover:text-[#FF4C00] focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/50"
@@ -221,6 +237,7 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="flex flex-col items-center justify-between gap-6 border-t border-[#1A1A1A] pt-8 md:flex-row">
+
           {/* Copyright */}
           <p className="order-3 text-center text-[11px] text-zinc-600 md:order-1 md:text-left">
             © 2026 Flixora. All rights reserved.
@@ -240,7 +257,10 @@ export default function Footer() {
 
           {/* Language */}
           <div className="order-1 relative flex items-center rounded-full border border-zinc-900 bg-zinc-950 px-3.5 py-2 text-zinc-400 transition-colors hover:border-[#FF4C00]/50 hover:text-white md:order-3">
-            <Globe size={14} className="mr-2 text-[#FF4C00]" />
+            <Globe
+              size={14}
+              className="mr-2 text-[#FF4C00]"
+            />
 
             <select
               aria-label="Select language"
@@ -248,11 +268,8 @@ export default function Footer() {
               className="cursor-pointer appearance-none bg-transparent pr-5 text-xs font-bold outline-none"
             >
               <option value="en-US">English (US)</option>
-
               <option value="es-ES">Español</option>
-
               <option value="fr-FR">Français</option>
-
               <option value="ja-JP">日本語</option>
             </select>
 
