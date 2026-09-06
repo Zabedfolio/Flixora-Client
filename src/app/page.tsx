@@ -7,6 +7,7 @@ import NewReleases from '@/components/home/NewReleases';
 import TitleRow from '@/components/home/TitleRow';
 import MoodBasedPicks from '@/components/home/ModeBasedSection';
 import GenreRows from '@/components/home/GenreRows';
+import PopularAnime from '@/components/home/PopularAnime';
 import TopRated from '@/components/home/TopReatedSection';
 import FeaturedActors from '@/components/home/FeatureBased';
 import ReviewSection from "@/components/home/ReviewSection";
@@ -22,6 +23,7 @@ export default function Home() {
 
       <MoodBasedPicks />
       <GenreRows />
+      <PopularAnime />
       <TopRated />
       <TitleRow />
       <FeaturedActors />
