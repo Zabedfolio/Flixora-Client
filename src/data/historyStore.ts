@@ -5,6 +5,7 @@
 
 export interface HistoryItem {
   id: string;
+  movieId?: string;
   title: string;
   type: 'movie' | 'tv';
   genres: string[];

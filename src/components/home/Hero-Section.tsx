@@ -10,8 +10,12 @@ import ReactMarkdown from "react-markdown";
 
 
 
+
 import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
 
+
+import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
+ 382608ce1d033c5e3a1fa2e472da8c675125f4c4
 import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface Slide {

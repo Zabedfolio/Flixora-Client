@@ -19,11 +19,11 @@ export default function Home() {
       <TrendingNow />
       <RecommendedSection />
       <NewReleases />
-      
+
       <MoodBasedPicks />
       <GenreRows />
       <TopRated />
-       <TitleRow />
+      <TitleRow />
       <FeaturedActors />
       <ReviewSection />
       <FAQ />

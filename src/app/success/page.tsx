@@ -64,7 +64,7 @@ export default async function Success({ searchParams }: SuccessProps) {
   // Fetch active user session details
   // -----------------------------------
   const authSession = await auth.api.getSession({
-    headers: await headers()
+    headers: await headers(),
   });
 
   const userName = authSession?.user?.name || 'User';
@@ -79,8 +79,18 @@ export default async function Success({ searchParams }: SuccessProps) {
   const fromPlanId = params.from || '';
   const toPlanId = params.to || '';
 
-  const fromPlan = plans.find((p: any) => p._id.toString() === fromPlanId || p.name.toLowerCase() === fromPlanId.toLowerCase());
-  const toPlan = plans.find((p: any) => p._id.toString() === toPlanId || p.name.toLowerCase() === toPlanId.toLowerCase());
+  const fromPlan = plans.find(
+    (p: any) =>
+      p.slug === fromPlanId ||
+      p._id.toString() === fromPlanId ||
+      p.name.toLowerCase() === fromPlanId.toLowerCase(),
+  );
+  const toPlan = plans.find(
+    (p: any) =>
+      p.slug === toPlanId ||
+      p._id.toString() === toPlanId ||
+      p.name.toLowerCase() === toPlanId.toLowerCase(),
+  );
 
   const fromPlanName = fromPlan?.name || 'Basic';
   const toPlanName = toPlan?.name || 'Premium';
@@ -96,36 +106,57 @@ export default async function Success({ searchParams }: SuccessProps) {
     : '$14.99';
 
   // -----------------------------------
-  // Update User Plan & Record Payment in MongoDB
+  // Update User Plan & Record Payment in MongoDB (with metadata fallback)
   // -----------------------------------
-  if (authSession?.user?.id && toPlan) {
-    try {
-      // 1. Update user active planId
-      await db.collection('user').updateOne(
-        { _id: new ObjectId(authSession.user.id) },
-        { 
-          $set: { 
-            planId: toPlan._id.toString(),
-            plan: toPlan.name,
-            updatedAt: new Date()
-          } 
-        }
-      );
+  const targetUserId = authSession?.user?.id || session.metadata?.userId;
+  const targetPlanKey = params.to || session.metadata?.planId || 'premium';
 
-      // 2. Log payment details in payments collection if not already recorded
-      const existingPayment = await db.collection('payments').findOne({ stripeSessionId: sessionId });
-      if (!existingPayment) {
-        const invoiceNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
-        
-        await db.collection('payments').insertOne({
-          userId: authSession.user.id,
-          planId: toPlan._id.toString(),
-          amount: amountPaid,
-          status: 'Paid',
-          stripeSessionId: sessionId,
-          invoiceId: invoiceNum,
-          createdAt: new Date()
-        });
+  const resolvedPlan = plans.find(
+    (p: any) =>
+      p.slug === targetPlanKey ||
+      p._id.toString() === targetPlanKey ||
+      p.name.toLowerCase().includes(targetPlanKey.toLowerCase()),
+  ) || toPlan;
+
+  if (targetUserId && resolvedPlan) {
+    try {
+      let filter: any = {};
+      if (ObjectId.isValid(targetUserId)) {
+        filter = { _id: new ObjectId(targetUserId) };
+      } else if (customerEmail && customerEmail !== 'Your Stripe billing email') {
+        filter = { email: customerEmail };
+      }
+
+      if (filter._id || filter.email) {
+        // 1. Update user active planId
+        await db.collection('user').updateOne(
+          filter,
+          {
+            $set: {
+              planId: resolvedPlan._id.toString(),
+              plan: resolvedPlan.name,
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        // 2. Log payment details in payments collection if not already recorded
+        const existingPayment = await db
+          .collection('payments')
+          .findOne({ stripeSessionId: sessionId });
+        if (!existingPayment) {
+          const invoiceNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
+
+          await db.collection('payments').insertOne({
+            userId: targetUserId,
+            planId: resolvedPlan._id.toString(),
+            amount: amountPaid,
+            status: 'Paid',
+            stripeSessionId: sessionId,
+            invoiceId: invoiceNum,
+            createdAt: new Date(),
+          });
+        }
       }
     } catch (dbErr) {
       console.error('Error updating user plan or recording payment:', dbErr);
@@ -153,7 +184,8 @@ export default async function Success({ searchParams }: SuccessProps) {
           Subscription Upgraded!
         </h1>
         <p className="text-xs text-zinc-400 font-medium max-w-xs mb-4 leading-relaxed">
-          Your payment was processed successfully. Enjoy streaming in high quality resolution!
+          Your payment was processed successfully. Enjoy streaming in high
+          quality resolution!
         </p>
 
         {/* User Card */}
@@ -172,21 +204,35 @@ export default async function Success({ searchParams }: SuccessProps) {
             </div>
           )}
           <div className="flex flex-col text-left">
-            <span className="text-[7px] text-zinc-500 font-black uppercase tracking-wider">Account User</span>
-            <span className="text-xs font-black text-white leading-tight">{userName}</span>
+            <span className="text-[7px] text-zinc-500 font-black uppercase tracking-wider">
+              Account User
+            </span>
+            <span className="text-xs font-black text-white leading-tight">
+              {userName}
+            </span>
           </div>
         </div>
 
         {/* Plan Upgrade Visual Flow */}
         <div className="flex items-center justify-between gap-4 mb-4 bg-[#111] border border-zinc-900 p-3 rounded-xl w-full max-w-sm text-center">
           <div className="flex flex-col flex-1">
-            <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">Previous Plan</span>
-            <span className="text-[11px] font-black text-zinc-400 mt-0.5 uppercase tracking-wide">{fromPlanName}</span>
+            <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">
+              Previous Plan
+            </span>
+            <span className="text-[11px] font-black text-zinc-400 mt-0.5 uppercase tracking-wide">
+              {fromPlanName}
+            </span>
           </div>
-          <div className="text-[#FF4C00] font-black animate-pulse flex items-center shrink-0">➔</div>
+          <div className="text-[#FF4C00] flex items-center shrink-0">
+            <ArrowRight size={14} />
+          </div>
           <div className="flex flex-col flex-1">
-            <span className="text-[8px] text-[#FF4C00] font-bold uppercase tracking-wider">Active Plan</span>
-            <span className="text-[11px] font-black text-white mt-0.5 uppercase tracking-wide">{toPlanName}</span>
+            <span className="text-[8px] text-[#FF4C00] font-bold uppercase tracking-wider">
+              Active Plan
+            </span>
+            <span className="text-[11px] font-black text-white mt-0.5 uppercase tracking-wide">
+              {toPlanName}
+            </span>
           </div>
         </div>
 
