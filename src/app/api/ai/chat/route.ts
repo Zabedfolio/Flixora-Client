@@ -11,16 +11,38 @@ export async function POST(req: NextRequest) {
     const userMessage = (query || (messages.length > 0 ? messages[messages.length - 1].text : '')).trim();
     const qLower = userMessage.toLowerCase();
 
-    // Helper function to extract TMDB movies array
-    const extractMovies = (results: any[]) => {
-      return (results || []).slice(0, 2).map((m: any) => ({
+    // Parse requested count (e.g. "suggest 5 movies" -> 5)
+    const countMatch = qLower.match(/\b([1-9]|10)\b/);
+    const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 6) : 4;
+
+    // Helper function to extract TMDB movies array with dynamic count
+    const extractMovies = (results: any[], count: number = 4) => {
+      return (results || []).slice(0, count).map((m: any) => ({
         id: m.id.toString(),
         title: m.title,
         year: m.release_date ? new Date(m.release_date).getFullYear() : 2026,
         rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
         genres: ['Featured'],
         posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
+        overview: m.overview || '',
       }));
+    };
+
+    // Helper to build rich AI markdown response listing items
+    const buildAIReply = (emoji: string, category: string, moviesList: any[]) => {
+      if (!moviesList || moviesList.length === 0) {
+        return `${emoji} Here are top ${category} movies for you on Flixora:`;
+      }
+      const lines = [
+        `${emoji} Here are ${moviesList.length} top ${category} recommendations for your movie night:\n`
+      ];
+      moviesList.forEach((m, idx) => {
+        const yearStr = m.year ? ` (${m.year})` : '';
+        const ratingStr = m.rating ? ` ⭐ ${m.rating}` : '';
+        const descStr = m.overview ? ` — *${m.overview.slice(0, 70)}...*` : '';
+        lines.push(`${idx + 1}. **${m.title}**${yearStr}${ratingStr}${descStr}`);
+      });
+      return lines.join('\n');
     };
 
     // 1. Try calling Kimi / Moonshot AI API Endpoint if key is available
@@ -57,7 +79,6 @@ export async function POST(req: NextRequest) {
             let movies = undefined;
 
             if (!isGreeting) {
-              // Try genre search or popular fallback
               let searchEndpoint = `/search/movie?query=${encodeURIComponent(userMessage.slice(0, 30))}&language=en-US&page=1`;
               if (/sci[- ]?fi|science\s*fiction|scifi|space/i.test(qLower)) {
                 searchEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
@@ -73,7 +94,7 @@ export async function POST(req: NextRequest) {
               if (!tmdbData?.results?.length) {
                 tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => null);
               }
-              const extracted = extractMovies(tmdbData?.results);
+              const extracted = extractMovies(tmdbData?.results, requestedCount);
               if (extracted.length > 0) movies = extracted;
             }
 
@@ -139,44 +160,57 @@ export async function POST(req: NextRequest) {
 
     // Flexible Genre and Movie Intent handling with TMDB rich cards
     let tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-    let replyText = `Here are top recommendations streaming on Flixora:`;
+    let categoryName = 'Popular';
+    let emojiHeader = '🍿';
 
     if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `🚀 Top recommended Sci-Fi picks streaming on Flixora:`;
+      categoryName = 'Sci-Fi';
+      emojiHeader = '🚀';
     } else if (/action|fight|superhero|explosive|martial\s*arts/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=28&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `⚡️ High-octane Action movies for your movie night:`;
+      categoryName = 'Action';
+      emojiHeader = '⚡️';
     } else if (/trending|popular|hits|top\s*rated|blockbuster/i.test(qLower)) {
       tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-      replyText = `🔥 Blockbuster movies trending right now:`;
+      categoryName = 'Trending Blockbuster';
+      emojiHeader = '🔥';
     } else if (/horror|scary|spooky|creepy|ghost|slasher|zombie|vampire/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=27&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `👻 Thrilling Horror picks on Flixora:`;
+      categoryName = 'Horror';
+      emojiHeader = '👻';
     } else if (/comedy|funny|hilarious|laugh|humor/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=35&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `🍿 Hilarious Comedy titles to cheer up your evening:`;
+      categoryName = 'Hilarious Comedy';
+      emojiHeader = '🍿';
     } else if (/anime|animation|animated|cartoon/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=16&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `✨ Top-rated Animation & Anime masterpieces:`;
+      categoryName = 'Animation & Anime';
+      emojiHeader = '✨';
     } else if (/thriller|suspense|crime|mystery|detective/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=53&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `🔍 Suspenseful Thrillers to keep you on the edge of your seat:`;
+      categoryName = 'Suspenseful Thriller';
+      emojiHeader = '🔍';
     } else if (/romance|romantic|love\s*movie|date\s*night/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=10749&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `❤️ Romantic movies perfect for date night:`;
+      categoryName = 'Romantic';
+      emojiHeader = '❤️';
     } else if (/drama|emotional/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=18&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `🎭 Powerful Drama films streaming on Flixora:`;
+      categoryName = 'Drama';
+      emojiHeader = '🎭';
     } else if (/fantasy|adventure|magic/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=14&sort_by=popularity.desc&language=en-US&page=1';
-      replyText = `⚔️ Epic Fantasy & Adventure films for you:`;
+      categoryName = 'Fantasy & Adventure';
+      emojiHeader = '⚔️';
     } else if (/recommend|suggest|what\s*(should|to)\s*watch|movie\s*night|good\s*movie/i.test(qLower)) {
       tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-      replyText = `🍿 Here are top trending blockbusters recommended for your movie night:`;
+      categoryName = 'Movie Night';
+      emojiHeader = '🍿';
     } else if (userMessage) {
       tmdbEndpoint = `/search/movie?query=${encodeURIComponent(userMessage)}&language=en-US&page=1`;
-      replyText = `🎬 Found these titles matching "${userMessage}":`;
+      categoryName = `"${userMessage}" Search`;
+      emojiHeader = '🎬';
     }
 
     let tmdbData = await fetchFromTMDB<any>(tmdbEndpoint).catch(() => ({ results: [] }));
@@ -184,10 +218,12 @@ export async function POST(req: NextRequest) {
     // Fallback to trending if search returned no results
     if (!tmdbData?.results?.length && userMessage) {
       tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => ({ results: [] }));
-      replyText = `🎬 I couldn't find exact matches for "${userMessage}", but check out these trending blockbusters streaming on Flixora:`;
+      categoryName = 'Trending Movie';
+      emojiHeader = '🎬';
     }
 
-    const movies = extractMovies(tmdbData?.results);
+    const movies = extractMovies(tmdbData?.results, requestedCount);
+    const replyText = buildAIReply(emojiHeader, categoryName, movies);
 
     return NextResponse.json({
       success: true,
