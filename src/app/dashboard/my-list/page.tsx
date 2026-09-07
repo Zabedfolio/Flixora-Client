@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bookmark, Star, Calendar, Play, Info } from 'lucide-react';
 import MediaCard from '@/components/ui/card';
+import { getWatchlist, fetchWatchlist, WatchlistItem } from '@/data/watchlistStore';
 
 const MY_LIST_CATALOG = [
   {
@@ -44,6 +45,21 @@ const MY_LIST_CATALOG = [
 ];
 
 export default function DashboardMyListPage() {
+  const [items, setItems] = useState<WatchlistItem[]>([]);
+
+  useEffect(() => {
+    fetchWatchlist();
+
+    const handleUpdate = () => {
+      setItems(getWatchlist());
+    };
+
+    window.addEventListener('watchlist-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('watchlist-updated', handleUpdate);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-black font-sans text-white overflow-x-hidden w-full relative flex flex-col justify-between">
       <main className="flex-grow pt-8 pb-16 px-6 md:px-12 max-w-7xl mx-auto w-full select-none">

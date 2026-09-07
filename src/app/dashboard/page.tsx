@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { authClient } from '@/app/(auth)/lib/auth-client';
+import { getWatchlistCount } from '@/data/watchlistStore';
+import { getHistory, HistoryItem } from '@/data/historyStore';
 import { 
   LayoutGrid, 
   Clock, 
@@ -110,9 +114,108 @@ const TASTE_TAGS = [
   { label: 'Dark Fantasy', size: 'text-xs font-semibold' }
 ];
 
+interface UserProfileData {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+  avatarId?: string;
+  role: string;
+  plan: string;
+  planId?: string;
+}
+
 export default function UserDashboardPage() {
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+  const [watchlistCount, setWatchlistCount] = useState(0);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [chartTab, setChartTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchLiveProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUserProfile(data.user);
+            if (data.user.role === 'admin') {
+              router.push('/admin');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch live user profile:', err);
+      }
+    };
+    fetchLiveProfile();
+  }, [session, router]);
+
+  useEffect(() => {
+    setWatchlistCount(getWatchlistCount());
+    setHistory(getHistory());
+
+    const handleWatchlistUpdate = () => {
+      setWatchlistCount(getWatchlistCount());
+    };
+
+    const handleHistoryUpdate = () => {
+      setHistory(getHistory());
+    };
+
+    window.addEventListener('watchlist-updated', handleWatchlistUpdate);
+    window.addEventListener('history-updated', handleHistoryUpdate);
+    return () => {
+      window.removeEventListener('watchlist-updated', handleWatchlistUpdate);
+      window.removeEventListener('history-updated', handleHistoryUpdate);
+    };
+  }, []);
+
+  const totalHours = history.reduce((sum, item) => sum + item.hoursWatched, 0);
+  const continueWatchingCount = history.filter(item => item.progressPercent !== undefined).length;
+  const completedCount = history.filter(item => item.progressPercent === undefined).length;
+
+  const getGenrePercentages = () => {
+    if (history.length === 0) {
+      return [
+        { label: 'Sci-Fi', percent: 0 },
+        { label: 'Drama', percent: 0 },
+        { label: 'Action', percent: 0 },
+        { label: 'Other', percent: 0 }
+      ];
+    }
+    const counts: Record<string, number> = {};
+    let total = 0;
+    history.forEach(item => {
+      item.genres.forEach(g => {
+        counts[g] = (counts[g] || 0) + 1;
+        total++;
+      });
+    });
+    
+    const sorted = Object.entries(counts)
+      .map(([label, count]) => ({
+        label,
+        percent: Math.round((count / total) * 100)
+      }))
+      .sort((a, b) => b.percent - a.percent);
+      
+    if (sorted.length <= 3) {
+      return sorted;
+    }
+    const top3 = sorted.slice(0, 3);
+    const otherPercent = 100 - top3.reduce((sum, item) => sum + item.percent, 0);
+    return [...top3, { label: 'Other', percent: Math.max(0, otherPercent) }];
+  };
+
+  const getMostWatched = () => {
+    return [...history]
+      .sort((a, b) => b.hoursWatched - a.hoursWatched)
+      .slice(0, 4);
+  };
 
   const getChartData = () => {
     switch (chartTab) {
@@ -145,15 +248,23 @@ export default function UserDashboardPage() {
 
           {/* Top-right Profile Mirror badge */}
           <div className="flex items-center gap-3 bg-[#0A0A0A] border border-[#1A1A1A] px-4 py-2 rounded-2xl w-fit shrink-0 self-start sm:self-center">
-            <div className="w-8 h-8 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center font-bold text-white shadow-inner">
-              U
+            <div className="w-8 h-8 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 overflow-hidden flex items-center justify-center font-bold text-white shadow-inner bg-zinc-950 shrink-0">
+              {(userProfile?.image || session?.user.image) ? (
+                <img
+                  src={userProfile?.image || session?.user.image || ''}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                (userProfile?.name || session?.user.name)?.charAt(0).toUpperCase() || 'U'
+              )}
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-black text-white truncate max-w-[120px]">
-                {session?.user.name || 'User Portal'}
+                {userProfile?.name || session?.user.name || 'User Portal'}
               </span>
               <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider font-mono">
-                {(session?.user as any)?.plan ? `${(session?.user as any).plan} Member` : 'Basic Member'}
+                {userProfile?.plan ? `${userProfile.plan} Member` : 'Free Member'}
               </span>
             </div>
           </div>

@@ -37,7 +37,7 @@ export default function AIChatbot() {
 
   // Sync chat messages to localStorage and auto-scroll
   useEffect(() => {
-    localStorage.setItem('flixora_chat_history', JSON.stringify(messages));
+    
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 

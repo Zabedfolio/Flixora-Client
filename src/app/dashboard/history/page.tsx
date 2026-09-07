@@ -13,13 +13,10 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import Link from 'next/link';
-<<<<<<< .merge_file_AvzYyu
-=======
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { HistoryItem } from '@/data/historyStore';
 import EmptyState from '@/components/common/EmptyState';
->>>>>>> .merge_file_0jCtbV
 
 interface HistoryItem {
   id: string;
@@ -96,24 +93,6 @@ export default function HistoryPage() {
   const [sortOption, setSortOption] = useState<string>('recent');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-<<<<<<< .merge_file_AvzYyu
-  useEffect(() => {
-    // Simulate initial loading skeleton state
-    const timer = setTimeout(() => {
-      setHistory(INITIAL_HISTORY);
-      setIsLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleRemoveItem = (id: string) => {
-    setHistory(prev => prev.filter(item => item.id !== id));
-  };
-
-  const handleClearHistory = () => {
-    setHistory([]);
-    setIsConfirmOpen(false);
-=======
   const fetchHistory = async () => {
     try {
       setIsLoading(true);
@@ -169,7 +148,6 @@ export default function HistoryPage() {
     } finally {
       setIsConfirmOpen(false);
     }
->>>>>>> .merge_file_0jCtbV
   };
 
   // Get items matching active filter tabs

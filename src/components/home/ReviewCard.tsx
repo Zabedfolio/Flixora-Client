@@ -1,7 +1,6 @@
-"use client";
-
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, Film } from "lucide-react";
 
 interface ReviewCardProps {
   name: string;
@@ -9,6 +8,8 @@ interface ReviewCardProps {
   review: string;
   rating: number;
   avatar: string;
+  movieTitle?: string;
+  movieId?: string;
 }
 
 export default function ReviewCard({
@@ -17,6 +18,8 @@ export default function ReviewCard({
   review,
   rating,
   avatar,
+  movieTitle,
+  movieId,
 }: ReviewCardProps) {
   return (
     <motion.div
@@ -92,8 +95,28 @@ export default function ReviewCard({
         </div>
       </div>
 
+      {/* Movie Tag */}
+      {movieTitle && (
+        <div className="relative z-10 mt-3.5">
+          {movieId ? (
+            <Link
+              href={`/movie/${movieId}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-[#FF4C00]/40 text-zinc-300 hover:text-white text-[11px] font-semibold transition-colors max-w-full"
+            >
+              <Film size={12} className="text-[#FF4C00] shrink-0" />
+              <span className="truncate">{movieTitle}</span>
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px] font-semibold max-w-full">
+              <Film size={12} className="text-[#FF4C00] shrink-0" />
+              <span className="truncate">{movieTitle}</span>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Rating */}
-      <div className="relative z-10 mt-5 flex items-center gap-1">
+      <div className="relative z-10 mt-4 flex items-center gap-1">
         {Array.from({ length: 5 }).map((_, index) => (
           <Star
             key={index}
