@@ -33,7 +33,7 @@ export default function AIChatbot() {
       ];
   });
   const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // Sync chat messages to localStorage and auto-scroll
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function AIChatbot() {
     };
   }, [isOpen]);
 
-  const handleSendMessage = (textToSend) => {
+  const handleSendMessage = (textToSend?: string) => {
     const query = textToSend || input;
     if (!query.trim()) return;
 
@@ -64,14 +64,14 @@ export default function AIChatbot() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev: any[]) => [...prev, userMsg]);
     if (!textToSend) setInput('');
     setIsTyping(true);
 
     // Simulated AI response (Replace with real API endpoint)
     setTimeout(() => {
       const botResponse = generateAIResponse(query);
-      setMessages((prev) => [
+      setMessages((prev: any[]) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
@@ -84,7 +84,7 @@ export default function AIChatbot() {
     }, 1200);
   };
 
-  const generateAIResponse = (query) => {
+  const generateAIResponse = (query: string) => {
     const q = query.toLowerCase();
     if (q.includes('sci-fi') || q.includes('science fiction')) {
       return '🚀 Highly recommended Sci-Fi picks on Flixora:\n\n1. Interstellar (2014) - Sci-Fi/Drama\n2. Blade Runner 2049 (2017) - Sci-Fi/Cyberpunk\n3. Dune: Part Two (2024) - Epic Sci-Fi';
@@ -161,7 +161,7 @@ export default function AIChatbot() {
 
           {/* Chat Messages Feed */}
           <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 bg-slate-950/60 scrollbar-thin scrollbar-thumb-slate-800">
-            {messages.map((msg) => (
+            {messages.map((msg: any) => (
               <div
                 key={msg.id}
                 className={`flex gap-2 text-xs ${msg.sender === 'user' ? 'justify-end' : 'justify-start'

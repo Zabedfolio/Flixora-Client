@@ -5,6 +5,8 @@ import React, { useEffect, useRef } from "react";
 interface TrailerPlaybackProps {
   trailerEmbedUrl: string;
   MovieTitle: string;
+  userId?: string;
+  movie?: any;
 }
 
 const TrailerPlayback: React.FC<TrailerPlaybackProps> = ({
@@ -73,7 +75,7 @@ const TrailerPlayback: React.FC<TrailerPlaybackProps> = ({
         ) {
           if (!hasTrackedRef.current) {
             hasTrackedRef.current = true;
-            saveWatchHistory(userId);
+            if (userId) saveWatchHistory(userId);
           }
         }
       } catch (e) {
