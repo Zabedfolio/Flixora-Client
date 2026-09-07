@@ -15,11 +15,11 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { HistoryItem } from '@/data/historyStore';
 import EmptyState from '@/components/common/EmptyState';
 
 interface HistoryItem {
   id: string;
+  movieId?: string;
   title: string;
   type: 'movie' | 'tv';
   genres: string[];
