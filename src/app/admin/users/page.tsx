@@ -71,6 +71,10 @@ type UpdatePayload =
   | {
       action: "promo";
       promoAccess: boolean;
+    }
+  | {
+      action: "image";
+      image: string;
     };
 
 interface User {
@@ -136,6 +140,50 @@ function getRoleLabel(role?: string): string {
   const normalized = role.toLowerCase();
   if (ROLE_LABEL[normalized]) return ROLE_LABEL[normalized];
   return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+/* =====================================================
+   USER AVATAR COMPONENT
+===================================================== */
+
+function UserAvatar({
+  user,
+  size = "md",
+}: {
+  user: { name: string; image?: string };
+  size?: "sm" | "md" | "lg";
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [user.image]);
+
+  const dimensionClass =
+    size === "lg"
+      ? "w-12 h-12 text-base"
+      : size === "sm"
+      ? "w-8 h-8 text-xs"
+      : "w-10 h-10 text-sm";
+
+  if (user.image && !imgError) {
+    return (
+      <img
+        src={user.image}
+        alt={user.name || "User avatar"}
+        onError={() => setImgError(true)}
+        className={`${dimensionClass} rounded-full object-cover border border-[#FF4C00]/30 shadow-sm shrink-0`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${dimensionClass} rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center font-black text-[#FF4C00] shrink-0`}
+    >
+      {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+    </div>
+  );
 }
 
 /* =====================================================
@@ -594,11 +642,7 @@ export default function UsersPage() {
 
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-sm font-black text-[#FF4C00]">
-                              {user.name
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
+                            <UserAvatar user={user} size="md" />
 
                             <div>
                               <p className="text-sm font-bold">
@@ -868,14 +912,17 @@ export default function UsersPage() {
               {/* MODAL HEADER */}
 
               <div className="flex items-center justify-between p-6 border-b border-[#242424]">
-                <div>
-                  <h2 className="text-lg font-black">
-                    Manage User
-                  </h2>
+                <div className="flex items-center gap-3">
+                  <UserAvatar user={selectedUser} size="lg" />
+                  <div>
+                    <h2 className="text-lg font-black">
+                      {selectedUser.name}
+                    </h2>
 
-                  <p className="text-xs text-zinc-500 mt-1">
-                    {selectedUser.email}
-                  </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {selectedUser.email}
+                    </p>
+                  </div>
                 </div>
 
                 <button
@@ -890,6 +937,50 @@ export default function UsersPage() {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* =================================
+                    AVATAR IMAGE URL (OPTIONAL)
+                ================================= */}
+
+                <div>
+                  <label
+                    htmlFor="user-image"
+                    className="text-xs font-bold text-zinc-500 uppercase"
+                  >
+                    Avatar Image URL (Optional)
+                  </label>
+
+                  <input
+                    id="user-image"
+                    type="url"
+                    value={selectedUser.image || ""}
+                    placeholder="https://example.com/avatar.jpg"
+                    onChange={(event) => {
+                      setSelectedUser({
+                        ...selectedUser,
+                        image: event.target.value,
+                      });
+                    }}
+                    className="w-full mt-2 h-11 bg-[#080808] border border-[#292929] rounded-xl px-3 text-sm text-white outline-none focus:border-[#FF4C00]/60 placeholder:text-zinc-600"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() =>
+                      void updateUser(
+                        selectedUser.id,
+                        {
+                          action: "image",
+                          image: selectedUser.image || "",
+                        }
+                      )
+                    }
+                    className="mt-2 px-4 py-2 bg-[#181818] border border-[#292929] rounded-lg text-xs font-bold hover:border-[#FF4C00]/50 disabled:opacity-40"
+                  >
+                    Update Avatar
+                  </button>
+                </div>
+
                 {/* =================================
                     ROLE
                 ================================= */}

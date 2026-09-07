@@ -23,6 +23,8 @@ interface UpdateData {
   planId?: string;
   subscriptionExpiresAt?: string;
   promoAccess?: boolean;
+  image?: string;
+  avatar?: string;
 }
 
 const mongoUri = process.env.MONGODB_URI;
@@ -42,6 +44,7 @@ const safeUser = (user: UserDocument) => ({
   name: user.name || "Unknown User",
   email: user.email || "",
   image: user.image || user.avatar || "",
+  avatar: user.avatar || user.image || "",
   role: user.role || "user",
   plan: user.plan || "No Plan",
   planId: user.planId || "",
@@ -329,6 +332,19 @@ export async function PATCH(request: NextRequest) {
       case "promo": {
         updateData.promoAccess =
           Boolean(promoAccess);
+
+        break;
+      }
+
+      /* ===============================================
+         AVATAR / IMAGE
+      =============================================== */
+
+      case "image":
+      case "avatar": {
+        const imageUrl = (body as { image?: string; avatar?: string }).image || (body as { image?: string; avatar?: string }).avatar || "";
+        updateData.image = imageUrl.trim();
+        updateData.avatar = imageUrl.trim();
 
         break;
       }
