@@ -158,50 +158,43 @@ export default function HeroBanner() {
     setAiResult(null);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: trimmed,
-          }),
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-   
+        body: JSON.stringify({
+          query: trimmed,
+          prompt: trimmed,
+        }),
+      });
+
       if (!response.ok) {
         throw new Error("Failed to get AI recommendation");
       }
 
       const result = await response.json();
-      console.log(result);
-      if (!result.success) {
-        throw new Error(result.message || "AI recommendation failed");
-      }
+      console.log("AI Search Result:", result);
 
-      // Backend can respond with a plain message, a movies list (like the
-      // TMDB-shaped search payload), or both — normalize all shapes here.
       const message: string | null =
-        result.data?.message ?? result.message ?? null;
+        result.reply ?? result.message ?? result.data?.message ?? null;
 
       const rawMovies =
-        result.data?.movies ?? result.movies ?? result.data?.results ?? [];
+        result.movies ?? result.data?.movies ?? result.data?.results ?? [];
 
       const movies: AiMovie[] = Array.isArray(rawMovies)
         ? rawMovies.map((movie: any) => ({
-          id: movie.id,
-          title: movie.title ?? movie.original_title ?? "Untitled",
-          original_title: movie.original_title,
-          overview: movie.overview,
-          poster_path: movie.poster_path ?? null,
-          backdrop_path: movie.backdrop_path ?? null,
-          release_date: movie.release_date,
-          vote_average: movie.vote_average,
-          vote_count: movie.vote_count,
-          media_type: movie.media_type,
-        }))
+            id: Number(movie.id) || Math.floor(Math.random() * 10000),
+            title: movie.title ?? movie.original_title ?? "Untitled",
+            original_title: movie.original_title,
+            overview: movie.overview,
+            poster_path: movie.posterUrl ?? movie.poster_path ?? null,
+            backdrop_path: movie.backdrop_path ?? null,
+            release_date: movie.release_date ?? (movie.year ? String(movie.year) : undefined),
+            vote_average: typeof movie.vote_average === "number" ? movie.vote_average : movie.rating,
+            vote_count: movie.vote_count,
+            media_type: movie.media_type,
+          }))
         : [];
 
       setAiResult({ message, movies });
@@ -335,7 +328,7 @@ export default function HeroBanner() {
             </button>
           </form>
 
-          {/* AI response */}
+          {/* AI response - Only cards in Hero Banner */}
           <AnimatePresence mode="wait">
             {(aiLoading || aiResult) && (
               <motion.div
@@ -344,74 +337,41 @@ export default function HeroBanner() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                className="mt-3 rounded-2xl border border-[#FF4C00]/30 bg-zinc-950/90 p-3 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] z-20 relative font-sans"
               >
-                <div className="flex items-start gap-2.5">
-                  <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
-
-                  {aiLoading ? (
+                {aiLoading ? (
+                  <div className="flex items-center gap-2.5 px-2 py-1">
+                    <Sparkles size={14} className="flex-shrink-0 text-[#FF4C00] animate-pulse" />
                     <span className="text-xs font-medium text-zinc-400">
-                      Flix is thinking
-                      <span className="animate-pulse">...</span>
+                      Flix AI is discovering movies for you...
                     </span>
-                  ) : (
-                    aiResult?.message && (
-                      <ReactMarkdown
-                        components={{
-                          h3: ({ children }: { children?: React.ReactNode }) => (
-                            <h3 className="mt-3 text-sm font-bold text-white">
-                              {children}
-                            </h3>
-                          ),
-
-                          p: ({ children }: { children?: React.ReactNode }) => (
-                            <p className="mt-1 text-xs leading-relaxed text-zinc-300">
-                              {children}
-                            </p>
-                          ),
-
-                          strong: ({ children }: { children?: React.ReactNode }) => (
-                            <strong className="font-bold text-white">
-                              {children}
-                            </strong>
-                          ),
-
-                          ul: ({ children }: { children?: React.ReactNode }) => (
-                            <ul className="mt-2 list-disc space-y-1 pl-4">
-                              {children}
-                            </ul>
-                          ),
-                        }}
-                      >
-                        {aiResult.message}
-                      </ReactMarkdown>
-                    )
-                  )}
-                </div>
-
-                {/* Movie results carousel */}
-                {!aiLoading && aiResult && aiResult.movies.length > 0 && (
-                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {aiResult.movies.map((movie, index) => (
-                      <AiMovieResultCard
-                        key={movie.id}
-                        movie={movie}
-                        index={index}
-                        onSelect={(m) => router.push(`/movie/${m.id}`)}
-                      />
-                    ))}
                   </div>
+                ) : (
+                  aiResult && (
+                    <>
+                      {/* Movie results carousel - ONLY CARDS */}
+                      {aiResult.movies.length > 0 ? (
+                        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto p-1 scrollbar-none">
+                          {aiResult.movies.map((movie, index) => (
+                            <AiMovieResultCard
+                              key={movie.id}
+                              movie={movie}
+                              index={index}
+                              onSelect={(m) => router.push(`/movie/${m.id}`)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 px-2 py-1">
+                          <Sparkles size={14} className="text-zinc-500" />
+                          <p className="text-xs font-medium text-zinc-400">
+                            No movie matches found for that search — try another genre or title.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )
                 )}
-
-                {!aiLoading &&
-                  aiResult &&
-                  aiResult.movies.length === 0 &&
-                  !aiResult.message && (
-                    <p className="mt-1 text-xs font-medium text-zinc-400">
-                      No matches found for that one — try describing the mood
-                      differently.
-                    </p>
-                  )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -439,7 +399,7 @@ export default function HeroBanner() {
       </button>
 
       {/* Indicators */}
-      <div className="absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+      <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-3">
         {slides.map((slide, index) => (
           <button
             key={slide.id}
