@@ -155,7 +155,8 @@ export default async function MovieDetailsPage({ params }: PageProps) {
     console.error("Error recording watch history:", err);
   }
 
-  const cast = creditsData?.cast?.slice(0, 6).map((c: any) => ({
+  const cast = creditsData?.cast?.slice(0, 12).map((c: any) => ({
+    id: c.id,
     name: c.name,
     character: c.character,
     profile: c.profile_path ? getTMDBImageUrl(c.profile_path, 'w200') : null

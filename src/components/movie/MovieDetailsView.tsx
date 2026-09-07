@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film } from 'lucide-react';
 import MovieActions from '@/components/movie/MovieActions';
 import MovieReviewsSection from '@/components/movie/MovieReviewsSection';
@@ -36,6 +37,7 @@ export interface MovieDetailsProps {
     }>;
   };
   cast?: Array<{
+    id?: number | string;
     name: string;
     character: string;
     profile: string | null;
@@ -341,9 +343,10 @@ export default function MovieDetailsView({
           {cast.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {cast.map((actor: any, idx: number) => (
-                <div
+                <Link
                   key={idx}
-                  className="group overflow-hidden rounded-2xl border border-zinc-800 bg-[#0A0A0A] transition duration-300 hover:-translate-y-1 hover:border-[#FF4C00]/50 hover:shadow-[0_8px_24px_rgba(255,76,0,0.15)]"
+                  href={actor.id ? `/person/${actor.id}` : '#'}
+                  className="group overflow-hidden rounded-2xl border border-zinc-800 bg-[#0A0A0A] transition duration-300 hover:-translate-y-1 hover:border-[#FF4C00]/50 hover:shadow-[0_8px_24px_rgba(255,76,0,0.15)] cursor-pointer"
                 >
                   <div className="aspect-[3/4] overflow-hidden bg-zinc-900 relative">
                     {actor.profile ? (
@@ -368,7 +371,7 @@ export default function MovieDetailsView({
                       {actor.character}
                     </p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
