@@ -1,14 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
 
+const SERVER_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('sessionId') || '';
+    const userId = searchParams.get('userId') || '';
+
+    const res = await fetch(`${SERVER_URL}/api/ai/chat/history?sessionId=${encodeURIComponent(sessionId)}&userId=${encodeURIComponent(userId)}`, {
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data);
+    }
+  } catch (err) {
+    console.warn('Backend GET chat history failed, returning empty list:', err);
+  }
+  return NextResponse.json({ success: true, messages: [] });
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { searchParams } = new URL(req.url);
+    const sessionId = body.sessionId || searchParams.get('sessionId') || '';
+    const userId = body.userId || searchParams.get('userId') || '';
+
+    const res = await fetch(`${SERVER_URL}/api/ai/chat/history`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, userId })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data);
+    }
+  } catch (err) {
+    console.warn('Backend DELETE chat history failed:', err);
+  }
+  return NextResponse.json({ success: true, message: 'Chat history cleared' });
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages = [], query = '' } = body;
+    const { messages = [], query = '', sessionId, userId } = body;
 
     const userMessage = (query || (messages.length > 0 ? messages[messages.length - 1].text : '')).trim();
+
+    // 0. Primary Delegation: Call Flixora-Server Express + MongoDB Backend Endpoint
+    try {
+      const serverRes = await fetch(`${SERVER_URL}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: userMessage, query: userMessage, sessionId, userId, messages }),
+      });
+
+      if (serverRes.ok) {
+        const serverData = await serverRes.json();
+        if (serverData.success && serverData.reply) {
+          return NextResponse.json(serverData);
+        }
+      }
+    } catch (serverErr) {
+      console.warn('Backend server call failed, executing client-side AI fallback engine:', serverErr);
+    }
+
     const qLower = userMessage.toLowerCase();
 
     // Parse requested count (e.g. "suggest 5 movies" -> 5)

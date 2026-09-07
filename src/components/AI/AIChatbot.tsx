@@ -47,6 +47,16 @@ export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState('');
+  const [sessionId] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'sess_default';
+    let id = localStorage.getItem('flixora_chat_session_id');
+    if (!id) {
+      id = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('flixora_chat_session_id', id);
+    }
+    return id;
+  });
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     if (typeof window === 'undefined') return [];
     const saved = localStorage.getItem('flixora_chat_history');
@@ -63,6 +73,25 @@ export default function AIChatbot() {
   });
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Fetch persisted chat history from MongoDB on mount
+  useEffect(() => {
+    const fetchHistoryFromDB = async () => {
+      try {
+        const res = await fetch(`/api/ai/chat?sessionId=${encodeURIComponent(sessionId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && data.messages.length > 0) {
+            setMessages(data.messages);
+            localStorage.setItem('flixora_chat_history', JSON.stringify(data.messages));
+          }
+        }
+      } catch (err) {
+        console.warn('Backend MongoDB history fetch notice:', err);
+      }
+    };
+    fetchHistoryFromDB();
+  }, [sessionId]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -102,7 +131,7 @@ export default function AIChatbot() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, messages: updatedMessages }),
+        body: JSON.stringify({ query, messages: updatedMessages, sessionId }),
       });
 
       const data = await res.json();
@@ -275,7 +304,7 @@ export default function AIChatbot() {
     };
   };
 
-  const handleClearChat = () => {
+  const handleClearChat = async () => {
     const defaultMsg: ChatMessage[] = [
       {
         id: '1',
@@ -286,6 +315,16 @@ export default function AIChatbot() {
     ];
     setMessages(defaultMsg);
     localStorage.removeItem('flixora_chat_history');
+
+    try {
+      await fetch('/api/ai/chat', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+    } catch (err) {
+      console.warn('Backend DELETE chat history notice:', err);
+    }
   };
 
   return (
