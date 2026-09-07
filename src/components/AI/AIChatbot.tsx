@@ -367,7 +367,7 @@ export default function AIChatbot() {
             </div>
 
             {/* Chat Messages Feed */}
-            <div className="relative z-10 flex-1 p-4 overflow-y-auto space-y-4 bg-zinc-950/70 scrollbar-thin scrollbar-thumb-zinc-800">
+            <div className="relative z-10 flex-1 p-4 overflow-y-auto overflow-x-hidden space-y-4 bg-zinc-950/70 scrollbar-thin scrollbar-thumb-zinc-800">
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
@@ -376,7 +376,7 @@ export default function AIChatbot() {
                   transition={{ duration: 0.25 }}
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className={`flex gap-2.5 text-xs max-w-[86%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`flex gap-2.5 text-xs max-w-[88%] min-w-0 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                     {msg.sender === 'bot' ? (
                       <div className="w-8 h-8 rounded-2xl bg-[#FF4C00]/15 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] shrink-0 mt-0.5 shadow-md shadow-[#FF4C00]/10">
                         <Bot className="w-4 h-4 text-[#FF4C00]" />
@@ -388,13 +388,13 @@ export default function AIChatbot() {
                     )}
 
                     <div
-                      className={`rounded-2xl px-4 py-3 shadow-md whitespace-pre-wrap ${
+                      className={`rounded-2xl px-4 py-3 shadow-md whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-w-0 max-w-full overflow-hidden ${
                         msg.sender === 'user'
                           ? 'bg-gradient-to-r from-[#FF4C00] to-[#E63E00] text-white rounded-tr-none font-medium shadow-[#FF4C00]/20'
                           : 'bg-zinc-900/90 text-zinc-100 border border-zinc-800/90 rounded-tl-none shadow-black/50 backdrop-blur-md'
                       }`}
                     >
-                      <p className="leading-relaxed text-[13px] sm:text-xs">{msg.text}</p>
+                      <p className="leading-relaxed text-[13px] sm:text-xs break-words [overflow-wrap:anywhere]">{msg.text}</p>
 
                       {/* Rich Mini Movie Recommendation Cards if attached */}
                       {msg.movies && msg.movies.length > 0 && (
@@ -404,7 +404,7 @@ export default function AIChatbot() {
                               key={m.id}
                               href={`/movie/${m.id}`}
                               onClick={() => setIsOpen(false)}
-                              className="group/item flex items-center gap-3 p-2 rounded-xl bg-black/50 border border-white/10 hover:border-[#FF4C00]/60 transition-all hover:bg-black/70 cursor-pointer"
+                              className="group/item flex items-center gap-3 p-2 rounded-xl bg-black/50 border border-white/10 hover:border-[#FF4C00]/60 transition-all hover:bg-black/70 cursor-pointer w-full min-w-0"
                             >
                               <div className="relative w-10 h-14 rounded-lg overflow-hidden shrink-0 bg-zinc-800">
                                 <Image src={m.posterUrl} alt={m.title} fill className="object-cover group-hover/item:scale-105 transition-transform" />
