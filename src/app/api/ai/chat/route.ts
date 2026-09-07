@@ -74,10 +74,10 @@ export async function POST(req: NextRequest) {
 
     // Parse requested count (e.g. "suggest 5 movies" -> 5)
     const countMatch = qLower.match(/\b([1-9]|10)\b/);
-    const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 6) : 4;
+    const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10) : 6;
 
     // Helper function to extract TMDB movies array with dynamic count (supports movies, anime & TV shows)
-    const extractMovies = (results: any[], count: number = 4) => {
+    const extractMovies = (results: any[], count: number = 6) => {
       return (results || [])
         .filter((m: any) => m.media_type !== 'person')
         .slice(0, count)
@@ -87,11 +87,18 @@ export async function POST(req: NextRequest) {
           return {
             id: m.id.toString(),
             title: itemTitle,
+            original_title: m.original_title || m.original_name,
             year: itemDate ? new Date(itemDate).getFullYear() : 2026,
             rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
-            genres: ['Featured'],
+            genres: m.genre_ids || ['Featured'],
             posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
+            poster_path: m.poster_path ? getTMDBImageUrl(m.poster_path, 'w500') : null,
+            backdrop_path: m.backdrop_path ? getTMDBImageUrl(m.backdrop_path, 'original') : null,
             overview: m.overview || '',
+            vote_average: m.vote_average,
+            vote_count: m.vote_count,
+            release_date: m.release_date || m.first_air_date,
+            media_type: m.media_type || 'movie',
           };
         });
     };
@@ -371,7 +378,7 @@ export async function POST(req: NextRequest) {
     let categoryName = 'Popular';
     let emojiHeader = '🍿';
 
-    if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic/i.test(qLower)) {
+    if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic|cyberpunk/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Sci-Fi';
       emojiHeader = '🚀';
@@ -379,11 +386,11 @@ export async function POST(req: NextRequest) {
       tmdbEndpoint = '/discover/movie?with_genres=28&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Action';
       emojiHeader = '⚡️';
-    } else if (/trending|popular|hits|top\s*rated|blockbuster/i.test(qLower)) {
-      tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-      categoryName = 'Trending Blockbuster';
-      emojiHeader = '🔥';
-    } else if (/horror|scary|spooky|creepy|ghost|slasher|zombie|vampire/i.test(qLower)) {
+    } else if (/adventure|journey|expedition/i.test(qLower)) {
+      tmdbEndpoint = '/discover/movie?with_genres=12&sort_by=popularity.desc&language=en-US&page=1';
+      categoryName = 'Adventure';
+      emojiHeader = '🗺️';
+    } else if (/horror|scary|spooky|creepy|ghost|zombie|vampire|slasher/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=27&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Horror';
       emojiHeader = '👻';
@@ -395,10 +402,14 @@ export async function POST(req: NextRequest) {
       tmdbEndpoint = '/discover/movie?with_genres=16&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Animation & Anime';
       emojiHeader = '✨';
-    } else if (/thriller|suspense|crime|mystery|detective/i.test(qLower)) {
+    } else if (/thriller|suspense|mystery|detective/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=53&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Suspenseful Thriller';
       emojiHeader = '🔍';
+    } else if (/crime|gangster|mafia|heist/i.test(qLower)) {
+      tmdbEndpoint = '/discover/movie?with_genres=80&sort_by=popularity.desc&language=en-US&page=1';
+      categoryName = 'Crime';
+      emojiHeader = '🕵️';
     } else if (/romance|romantic|love\s*movie|date\s*night/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=10749&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Romantic';
@@ -407,10 +418,18 @@ export async function POST(req: NextRequest) {
       tmdbEndpoint = '/discover/movie?with_genres=18&sort_by=popularity.desc&language=en-US&page=1';
       categoryName = 'Drama';
       emojiHeader = '🎭';
-    } else if (/fantasy|adventure|magic/i.test(qLower)) {
+    } else if (/fantasy|magic|mythical/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=14&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Fantasy & Adventure';
+      categoryName = 'Fantasy';
       emojiHeader = '⚔️';
+    } else if (/family|kids|children/i.test(qLower)) {
+      tmdbEndpoint = '/discover/movie?with_genres=10751&sort_by=popularity.desc&language=en-US&page=1';
+      categoryName = 'Family & Kids';
+      emojiHeader = '👨‍👩‍👧‍👦';
+    } else if (/trending|popular|hits|top\s*rated|blockbuster/i.test(qLower)) {
+      tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
+      categoryName = 'Trending Blockbuster';
+      emojiHeader = '🔥';
     } else if (/recommend|suggest|what\s*(should|to)\s*watch|movie\s*night|good\s*movie/i.test(qLower)) {
       tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
       categoryName = 'Movie Night';
