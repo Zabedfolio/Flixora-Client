@@ -64,7 +64,7 @@ interface DropdownItem {
 const PROFILE_ITEMS: DropdownItem[] = [
   {
     label: 'Profile',
-    href: '/dashboard/setting',
+    href: '/profile',
   },
   {
     label: 'Dashboard',
@@ -465,7 +465,7 @@ export default function Navbar({
                   {/* Profile Menu */}
                   <div className="flex flex-col gap-1">
                     <Link
-                      href="/dashboard/setting"
+                      href="/profile"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                     >

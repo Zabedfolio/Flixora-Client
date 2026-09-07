@@ -4,11 +4,11 @@ import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import nodemailer from 'nodemailer';
 import { emailOTP } from 'better-auth/plugins';
 
-const mongoUri = process.env.MONGODB_URI;
-if (!mongoUri) {
-  console.warn("Warning: MONGODB_URI is not set in environment variables.");
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Flixora';
+if (!process.env.MONGODB_URI) {
+  console.warn('Warning: MONGODB_URI is not set in environment variables. Falling back to localhost.');
 }
-const client = new MongoClient(mongoUri || 'mongodb://localhost:27017/Flixora');
+const client = new MongoClient(mongoUri);
 
 const db = client.db('Flixora');
 
@@ -270,10 +270,11 @@ export const auth = betterAuth({
       }
     }
   },
-
   database: mongodbAdapter(db, {
-    transaction: false,
+    // Optional: if you don't provide a client, database transactions won't be enabled.
+    client,
   }),
+  transaction: false,
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || '',
