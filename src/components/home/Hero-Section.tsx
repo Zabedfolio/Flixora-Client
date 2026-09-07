@@ -7,7 +7,15 @@ import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
 import ReactMarkdown from "react-markdown";
+
+
+
+
 import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
+
+
+
+
 import { authClient } from "@/app/(auth)/lib/auth-client";
 import { Bebas_Neue, Plus_Jakarta_Sans, Caveat } from "next/font/google";
 
