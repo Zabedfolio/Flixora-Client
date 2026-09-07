@@ -30,11 +30,7 @@ type UserStatus =
   | "suspended"
   | "banned";
 
-type UserRole =
-  | "user"
-  | "support_admin"
-  | "content_moderator"
-  | "super_admin";
+type UserRole = string;
 
 type Plan =
   | "No Plan"
@@ -95,6 +91,9 @@ interface UsersResponse {
   success: boolean;
   users: User[];
   total: number;
+  activeCount?: number;
+  suspendedCount?: number;
+  bannedCount?: number;
   page: number;
   totalPages: number;
   message?: string;
@@ -124,12 +123,20 @@ const STATUS_FILTERS: StatusFilter[] = [
   "Banned",
 ];
 
-const ROLE_LABEL: Record<UserRole, string> = {
+const ROLE_LABEL: Record<string, string> = {
   user: "User",
+  admin: "Admin",
   support_admin: "Support Admin",
   content_moderator: "Content Moderator",
   super_admin: "Super Admin",
 };
+
+function getRoleLabel(role?: string): string {
+  if (!role) return "User";
+  const normalized = role.toLowerCase();
+  if (ROLE_LABEL[normalized]) return ROLE_LABEL[normalized];
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
 
 /* =====================================================
    MAIN PAGE
@@ -204,6 +211,24 @@ export default function UsersPage() {
       setTotalUsers(
         typeof data.total === "number"
           ? data.total
+          : 0
+      );
+
+      setDbActiveCount(
+        typeof data.activeCount === "number"
+          ? data.activeCount
+          : 0
+      );
+
+      setDbSuspendedCount(
+        typeof data.suspendedCount === "number"
+          ? data.suspendedCount
+          : 0
+      );
+
+      setDbBannedCount(
+        typeof data.bannedCount === "number"
+          ? data.bannedCount
           : 0
       );
 
@@ -302,23 +327,9 @@ export default function UsersPage() {
      COUNTS
   =================================================== */
 
-  const activeCount = useMemo(() => {
-    return users.filter(
-      (user) => user.status === "active"
-    ).length;
-  }, [users]);
-
-  const suspendedCount = useMemo(() => {
-    return users.filter(
-      (user) => user.status === "suspended"
-    ).length;
-  }, [users]);
-
-  const bannedCount = useMemo(() => {
-    return users.filter(
-      (user) => user.status === "banned"
-    ).length;
-  }, [users]);
+  const [dbActiveCount, setDbActiveCount] = useState(0);
+  const [dbSuspendedCount, setDbSuspendedCount] = useState(0);
+  const [dbBannedCount, setDbBannedCount] = useState(0);
 
   /* ===================================================
      STYLES
@@ -430,7 +441,7 @@ export default function UsersPage() {
 
             <StatCard
               title="Active"
-              value={activeCount}
+              value={dbActiveCount}
               icon={<CheckCircle2 size={19} />}
               iconClass="text-emerald-400"
               bgClass="bg-emerald-500/10"
@@ -438,7 +449,7 @@ export default function UsersPage() {
 
             <StatCard
               title="Suspended"
-              value={suspendedCount}
+              value={dbSuspendedCount}
               icon={<PauseCircle size={19} />}
               iconClass="text-yellow-400"
               bgClass="bg-yellow-500/10"
@@ -446,7 +457,7 @@ export default function UsersPage() {
 
             <StatCard
               title="Banned"
-              value={bannedCount}
+              value={dbBannedCount}
               icon={<Ban size={19} />}
               iconClass="text-red-400"
               bgClass="bg-red-500/10"
@@ -617,8 +628,7 @@ export default function UsersPage() {
 
                         <td className="px-6 py-5">
                           <span className="text-xs text-zinc-400">
-                            {ROLE_LABEL[user.role] ||
-                              "User"}
+                            {getRoleLabel(user.role)}
                           </span>
                         </td>
 
@@ -896,19 +906,19 @@ export default function UsersPage() {
                     id="user-role"
                     value={selectedUser.role}
                     onChange={(event) => {
-                      const role =
-                        event.target
-                          .value as UserRole;
-
                       setSelectedUser({
                         ...selectedUser,
-                        role,
+                        role: event.target.value,
                       });
                     }}
-                    className="w-full mt-2 h-11 bg-[#080808] border border-[#292929] rounded-xl px-3 text-sm outline-none"
+                    className="w-full mt-2 h-11 bg-[#080808] border border-[#292929] rounded-xl px-3 text-sm outline-none text-white"
                   >
                     <option value="user">
                       User
+                    </option>
+
+                    <option value="admin">
+                      Admin
                     </option>
 
                     <option value="support_admin">
@@ -922,6 +932,14 @@ export default function UsersPage() {
                     <option value="super_admin">
                       Super Admin
                     </option>
+
+                    {!["user", "admin", "support_admin", "content_moderator", "super_admin"].includes(
+                      selectedUser.role.toLowerCase()
+                    ) && (
+                      <option value={selectedUser.role}>
+                        {getRoleLabel(selectedUser.role)}
+                      </option>
+                    )}
                   </select>
 
                   <button

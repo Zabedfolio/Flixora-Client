@@ -43,7 +43,7 @@ const safeUser = (user: UserDocument) => ({
   email: user.email || "",
   image: user.image || user.avatar || "",
   role: user.role || "user",
-  plan: user.plan || "Basic",
+  plan: user.plan || "No Plan",
   planId: user.planId || "",
   status: user.status || "active",
   subscriptionExpiresAt:
@@ -98,16 +98,41 @@ export async function GET(request: NextRequest) {
     }
 
     /* Plan filter */
-    if (plan !== "All") {
+    if (plan === "No Plan") {
+      const planConditions: Filter<UserDocument>[] = [
+        { plan: "No Plan" },
+        { plan: { $exists: false } },
+        { plan: "" },
+      ];
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: planConditions }];
+        delete query.$or;
+      } else {
+        query.$or = planConditions;
+      }
+    } else if (plan !== "All") {
       query.plan = plan;
     }
 
     /* Status filter */
-    if (status !== "All") {
+    if (status === "Active") {
+      const activeConditions: Filter<UserDocument>[] = [
+        { status: "active" },
+        { status: { $exists: false } },
+        { status: "" },
+      ];
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: activeConditions }];
+        delete query.$or;
+      } else {
+        query.$or = activeConditions;
+      }
+    } else if (status !== "All") {
       query.status = status.toLowerCase();
     }
 
-    const [users, total] = await Promise.all([
+    /* Global stats across database for KPI cards */
+    const [users, total, activeCount, suspendedCount, bannedCount] = await Promise.all([
       usersCollection
         .find(query)
         .sort({ createdAt: -1 })
@@ -116,12 +141,24 @@ export async function GET(request: NextRequest) {
         .toArray(),
 
       usersCollection.countDocuments(query),
+      usersCollection.countDocuments({
+        status: { $nin: ["suspended", "banned"] },
+      }),
+      usersCollection.countDocuments({
+        status: "suspended",
+      }),
+      usersCollection.countDocuments({
+        status: "banned",
+      }),
     ]);
 
     return NextResponse.json({
       success: true,
       users: users.map(safeUser),
       total,
+      activeCount,
+      suspendedCount,
+      bannedCount,
       page,
       totalPages: Math.ceil(total / limit),
     });
@@ -215,14 +252,7 @@ export async function PATCH(request: NextRequest) {
       =============================================== */
 
       case "role": {
-        if (
-          ![
-            "user",
-            "support_admin",
-            "content_moderator",
-            "super_admin",
-          ].includes(role || "")
-        ) {
+        if (!role || typeof role !== "string" || !role.trim()) {
           return NextResponse.json(
             {
               success: false,
@@ -232,7 +262,7 @@ export async function PATCH(request: NextRequest) {
           );
         }
 
-        updateData.role = role;
+        updateData.role = role.trim();
 
         break;
       }
