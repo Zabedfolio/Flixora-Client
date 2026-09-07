@@ -30,11 +30,7 @@ type UserStatus =
   | "suspended"
   | "banned";
 
-type UserRole =
-  | "user"
-  | "support_admin"
-  | "content_moderator"
-  | "super_admin";
+type UserRole = string;
 
 type Plan =
   | "No Plan"
@@ -75,6 +71,10 @@ type UpdatePayload =
   | {
       action: "promo";
       promoAccess: boolean;
+    }
+  | {
+      action: "image";
+      image: string;
     };
 
 interface User {
@@ -95,6 +95,9 @@ interface UsersResponse {
   success: boolean;
   users: User[];
   total: number;
+  activeCount?: number;
+  suspendedCount?: number;
+  bannedCount?: number;
   page: number;
   totalPages: number;
   message?: string;
@@ -124,12 +127,64 @@ const STATUS_FILTERS: StatusFilter[] = [
   "Banned",
 ];
 
-const ROLE_LABEL: Record<UserRole, string> = {
+const ROLE_LABEL: Record<string, string> = {
   user: "User",
+  admin: "Admin",
   support_admin: "Support Admin",
   content_moderator: "Content Moderator",
   super_admin: "Super Admin",
 };
+
+function getRoleLabel(role?: string): string {
+  if (!role) return "User";
+  const normalized = role.toLowerCase();
+  if (ROLE_LABEL[normalized]) return ROLE_LABEL[normalized];
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+/* =====================================================
+   USER AVATAR COMPONENT
+===================================================== */
+
+function UserAvatar({
+  user,
+  size = "md",
+}: {
+  user: { name: string; image?: string };
+  size?: "sm" | "md" | "lg";
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [user.image]);
+
+  const dimensionClass =
+    size === "lg"
+      ? "w-12 h-12 text-base"
+      : size === "sm"
+      ? "w-8 h-8 text-xs"
+      : "w-10 h-10 text-sm";
+
+  if (user.image && !imgError) {
+    return (
+      <img
+        src={user.image}
+        alt={user.name || "User avatar"}
+        onError={() => setImgError(true)}
+        className={`${dimensionClass} rounded-full object-cover border border-[#FF4C00]/30 shadow-sm shrink-0`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${dimensionClass} rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center font-black text-[#FF4C00] shrink-0`}
+    >
+      {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+    </div>
+  );
+}
 
 /* =====================================================
    MAIN PAGE
@@ -204,6 +259,24 @@ export default function UsersPage() {
       setTotalUsers(
         typeof data.total === "number"
           ? data.total
+          : 0
+      );
+
+      setDbActiveCount(
+        typeof data.activeCount === "number"
+          ? data.activeCount
+          : 0
+      );
+
+      setDbSuspendedCount(
+        typeof data.suspendedCount === "number"
+          ? data.suspendedCount
+          : 0
+      );
+
+      setDbBannedCount(
+        typeof data.bannedCount === "number"
+          ? data.bannedCount
           : 0
       );
 
@@ -302,23 +375,9 @@ export default function UsersPage() {
      COUNTS
   =================================================== */
 
-  const activeCount = useMemo(() => {
-    return users.filter(
-      (user) => user.status === "active"
-    ).length;
-  }, [users]);
-
-  const suspendedCount = useMemo(() => {
-    return users.filter(
-      (user) => user.status === "suspended"
-    ).length;
-  }, [users]);
-
-  const bannedCount = useMemo(() => {
-    return users.filter(
-      (user) => user.status === "banned"
-    ).length;
-  }, [users]);
+  const [dbActiveCount, setDbActiveCount] = useState(0);
+  const [dbSuspendedCount, setDbSuspendedCount] = useState(0);
+  const [dbBannedCount, setDbBannedCount] = useState(0);
 
   /* ===================================================
      STYLES
@@ -430,7 +489,7 @@ export default function UsersPage() {
 
             <StatCard
               title="Active"
-              value={activeCount}
+              value={dbActiveCount}
               icon={<CheckCircle2 size={19} />}
               iconClass="text-emerald-400"
               bgClass="bg-emerald-500/10"
@@ -438,7 +497,7 @@ export default function UsersPage() {
 
             <StatCard
               title="Suspended"
-              value={suspendedCount}
+              value={dbSuspendedCount}
               icon={<PauseCircle size={19} />}
               iconClass="text-yellow-400"
               bgClass="bg-yellow-500/10"
@@ -446,7 +505,7 @@ export default function UsersPage() {
 
             <StatCard
               title="Banned"
-              value={bannedCount}
+              value={dbBannedCount}
               icon={<Ban size={19} />}
               iconClass="text-red-400"
               bgClass="bg-red-500/10"
@@ -583,11 +642,7 @@ export default function UsersPage() {
 
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-sm font-black text-[#FF4C00]">
-                              {user.name
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
+                            <UserAvatar user={user} size="md" />
 
                             <div>
                               <p className="text-sm font-bold">
@@ -617,8 +672,7 @@ export default function UsersPage() {
 
                         <td className="px-6 py-5">
                           <span className="text-xs text-zinc-400">
-                            {ROLE_LABEL[user.role] ||
-                              "User"}
+                            {getRoleLabel(user.role)}
                           </span>
                         </td>
 
@@ -858,14 +912,17 @@ export default function UsersPage() {
               {/* MODAL HEADER */}
 
               <div className="flex items-center justify-between p-6 border-b border-[#242424]">
-                <div>
-                  <h2 className="text-lg font-black">
-                    Manage User
-                  </h2>
+                <div className="flex items-center gap-3">
+                  <UserAvatar user={selectedUser} size="lg" />
+                  <div>
+                    <h2 className="text-lg font-black">
+                      {selectedUser.name}
+                    </h2>
 
-                  <p className="text-xs text-zinc-500 mt-1">
-                    {selectedUser.email}
-                  </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {selectedUser.email}
+                    </p>
+                  </div>
                 </div>
 
                 <button
@@ -880,6 +937,50 @@ export default function UsersPage() {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* =================================
+                    AVATAR IMAGE URL (OPTIONAL)
+                ================================= */}
+
+                <div>
+                  <label
+                    htmlFor="user-image"
+                    className="text-xs font-bold text-zinc-500 uppercase"
+                  >
+                    Avatar Image URL (Optional)
+                  </label>
+
+                  <input
+                    id="user-image"
+                    type="url"
+                    value={selectedUser.image || ""}
+                    placeholder="https://example.com/avatar.jpg"
+                    onChange={(event) => {
+                      setSelectedUser({
+                        ...selectedUser,
+                        image: event.target.value,
+                      });
+                    }}
+                    className="w-full mt-2 h-11 bg-[#080808] border border-[#292929] rounded-xl px-3 text-sm text-white outline-none focus:border-[#FF4C00]/60 placeholder:text-zinc-600"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() =>
+                      void updateUser(
+                        selectedUser.id,
+                        {
+                          action: "image",
+                          image: selectedUser.image || "",
+                        }
+                      )
+                    }
+                    className="mt-2 px-4 py-2 bg-[#181818] border border-[#292929] rounded-lg text-xs font-bold hover:border-[#FF4C00]/50 disabled:opacity-40"
+                  >
+                    Update Avatar
+                  </button>
+                </div>
+
                 {/* =================================
                     ROLE
                 ================================= */}
@@ -896,19 +997,19 @@ export default function UsersPage() {
                     id="user-role"
                     value={selectedUser.role}
                     onChange={(event) => {
-                      const role =
-                        event.target
-                          .value as UserRole;
-
                       setSelectedUser({
                         ...selectedUser,
-                        role,
+                        role: event.target.value,
                       });
                     }}
-                    className="w-full mt-2 h-11 bg-[#080808] border border-[#292929] rounded-xl px-3 text-sm outline-none"
+                    className="w-full mt-2 h-11 bg-[#080808] border border-[#292929] rounded-xl px-3 text-sm outline-none text-white"
                   >
                     <option value="user">
                       User
+                    </option>
+
+                    <option value="admin">
+                      Admin
                     </option>
 
                     <option value="support_admin">
@@ -922,6 +1023,14 @@ export default function UsersPage() {
                     <option value="super_admin">
                       Super Admin
                     </option>
+
+                    {!["user", "admin", "support_admin", "content_moderator", "super_admin"].includes(
+                      selectedUser.role.toLowerCase()
+                    ) && (
+                      <option value={selectedUser.role}>
+                        {getRoleLabel(selectedUser.role)}
+                      </option>
+                    )}
                   </select>
 
                   <button
