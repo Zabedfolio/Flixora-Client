@@ -56,6 +56,7 @@ export default function HeroBanner() {
   const { data: session } = authClient.useSession();
   const userName = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
 
+  // Load popular widescreen backdrops dynamically from TMDB API
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * CINEMA_TAGLINES.length);
     setTagline(CINEMA_TAGLINES[randomIndex]);
@@ -65,6 +66,7 @@ export default function HeroBanner() {
     fetchFromTMDB<{ results: any[] }>("/movie/popular?language=en-US&page=1")
       .then((data) => {
         if (data.results && data.results.length > 0) {
+          // Take top 5 popular backdrops for widescreen banner slides
           const mapped = data.results.slice(0, 5).map((movie) => ({
             id: movie.id,
             image: getTMDBImageUrl(
