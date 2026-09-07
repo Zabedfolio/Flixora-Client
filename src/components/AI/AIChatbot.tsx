@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  Bot,
   X,
   Send,
   Sparkles,
@@ -13,39 +14,10 @@ import {
   Play,
   Star,
   Film,
-  Zap,
-  Clapperboard
+  Zap
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-// 3D Flix AI Avatar Component
-export function FlixAvatar({ size = 36, className = '' }: { size?: number; className?: string }) {
-  const [imgError, setImgError] = useState(false);
-
-  return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-[#FF4C00]/40 shadow-md shadow-[#FF4C00]/25 shrink-0 bg-gradient-to-br from-[#FF4C00] via-[#FF6A00] to-[#D93B00] ${className}`}
-      style={{ width: size, height: size }}
-    >
-      {!imgError ? (
-        <Image
-          src="/flix_avatar.jpg"
-          alt="Flix AI Avatar"
-          width={size}
-          height={size}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-          onError={() => setImgError(true)}
-          priority
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-white">
-          <Clapperboard size={size * 0.55} />
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface RecommendedMovie {
   id: string;
@@ -164,11 +136,35 @@ export default function AIChatbot() {
   };
 
   const generateAIResponse = (query: string): { text: string; movies?: RecommendedMovie[] } => {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
+
+    if (/^(hi|hello|hey|hy|hola|sup|yo|good\s*(morning|afternoon|evening|night)|howdy|heyy+)\b/i.test(q)) {
+      return {
+        text: "Hey there! 👋 I'm Flix, your AI cinema guide on Flixora. 🎬\n\nWhat kind of movie or mood are you in today? Tell me a genre like Sci-Fi, Action, Horror, or Comedy — or ask me what's trending!"
+      };
+    }
+
+    if (/(who are you|what is your name|what can you do|who made you|help|capabilities|what is flix)\b/i.test(q)) {
+      return {
+        text: "I'm **Flix**, Flixora's AI streaming assistant! 🍿\n\nHere is how I can help you today:\n• 🎬 Discover personalized movie & TV recommendations\n• 🔥 Explore trending blockbusters worldwide\n• 🔍 Search for titles, actors, or genres\n• 🔖 Learn how to manage your Watchlist & account"
+      };
+    }
+
+    if (/(thanks|thank\s*you|thx|awesome|cool|great|sweet|perfect|appreciate)\b/i.test(q)) {
+      return {
+        text: "You're very welcome! 🍿 Let me know whenever you're ready for your next movie night. Enjoy streaming on Flixora!"
+      };
+    }
+
+    if (/(bye|goodbye|cya|see\s*ya|night|gn)\b/i.test(q)) {
+      return {
+        text: "Goodbye! Have an awesome movie night! 🎬✨ Come back anytime you need great recommendations!"
+      };
+    }
 
     if (q.includes('sci-fi') || q.includes('science fiction')) {
       return {
-        text: "🚀 Here are 2 top-tier Sci-Fi recommendations streaming on Flixora:",
+        text: "🚀 Here are top-tier Sci-Fi recommendations streaming on Flixora:",
         movies: [
           {
             id: '157336',
@@ -245,7 +241,7 @@ export default function AIChatbot() {
     }
 
     return {
-      text: `Got it! Searching cinema intelligence for "${query}". You can ask me for genres like Sci-Fi, Action, Horror, or for trending weekly hits!`
+      text: `Got it! Tell me more about what kind of movie or mood you are looking for, or try asking for Sci-Fi, Action, Horror, or Trending hits! 🍿`
     };
   };
 
@@ -277,7 +273,7 @@ export default function AIChatbot() {
         )}
       </AnimatePresence>
 
-      {/* Floating Chat Window (Unique Curved Glass HUD Overlay) */}
+      {/* Floating Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -294,25 +290,22 @@ export default function AIChatbot() {
             {/* Ambient Background Glow inside HUD */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF4C00]/10 blur-[90px] rounded-full pointer-events-none" />
 
-            {/* Unique Header Bar */}
-            <div className="relative z-10 bg-zinc-900/90 border-b border-zinc-800/90 px-4 py-3.5 flex items-center justify-between text-white shrink-0 backdrop-blur-xl">
+            {/* Header Bar */}
+            <div className="relative z-10 bg-gradient-to-r from-[#FF4C00] via-[#FF6A00] to-[#E63900] px-4 py-3.5 flex items-center justify-between text-white shrink-0 shadow-xl">
               <div className="flex items-center gap-3">
-                {/* 3D Flix AI Mascot Avatar */}
-                <div className="relative">
-                  <FlixAvatar size={40} />
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-zinc-950 rounded-full animate-pulse" />
+                {/* Bot Icon */}
+                <div className="relative p-2 bg-black/20 rounded-2xl border border-white/20 shadow-inner">
+                  <Bot className="w-5 h-5 text-white" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-zinc-950 rounded-full animate-pulse" />
                 </div>
 
                 <div>
                   <h3 className="font-black text-base tracking-tight flex items-center gap-1.5">
-                    <span className="bg-gradient-to-r from-white via-orange-100 to-[#FF4C00] bg-clip-text text-transparent">
-                      Flix AI
-                    </span>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    Flix <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
                   </h3>
-                  <p className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    Cinema Companion Active
+                  <p className="text-[11px] text-orange-100 font-semibold opacity-90 flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-amber-200" />
+                    AI Movie Assistant & Guide
                   </p>
                 </div>
               </div>
@@ -322,21 +315,21 @@ export default function AIChatbot() {
                 <button
                   onClick={handleClearChat}
                   title="Clear Chat"
-                  className="p-2 hover:bg-zinc-800 rounded-xl transition text-zinc-400 hover:text-white cursor-pointer"
+                  className="p-2 hover:bg-black/20 active:bg-black/30 rounded-xl transition text-white/90 hover:text-white cursor-pointer"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
                   title={isExpanded ? "Collapse Window" : "Expand Window"}
-                  className="hidden sm:block p-2 hover:bg-zinc-800 rounded-xl transition text-zinc-400 hover:text-white cursor-pointer"
+                  className="hidden sm:block p-2 hover:bg-black/20 active:bg-black/30 rounded-xl transition text-white/90 hover:text-white cursor-pointer"
                 >
                   {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   title="Close Assistant"
-                  className="p-2 hover:bg-zinc-800 rounded-xl transition text-zinc-400 hover:text-white cursor-pointer"
+                  className="p-2 hover:bg-black/20 active:bg-black/30 rounded-xl transition text-white/90 hover:text-white cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -355,7 +348,9 @@ export default function AIChatbot() {
                 >
                   <div className={`flex gap-2.5 text-xs max-w-[86%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                     {msg.sender === 'bot' ? (
-                      <FlixAvatar size={34} className="mt-0.5" />
+                      <div className="w-8 h-8 rounded-2xl bg-[#FF4C00]/15 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] shrink-0 mt-0.5 shadow-md shadow-[#FF4C00]/10">
+                        <Bot className="w-4 h-4 text-[#FF4C00]" />
+                      </div>
                     ) : (
                       <div className="w-8 h-8 rounded-2xl bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-300 shrink-0 mt-0.5 shadow-md">
                         <User className="w-4 h-4" />
@@ -423,7 +418,9 @@ export default function AIChatbot() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-2.5 text-xs items-center"
                 >
-                  <FlixAvatar size={34} />
+                  <div className="w-8 h-8 rounded-2xl bg-[#FF4C00]/15 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] shrink-0 shadow-md">
+                    <Bot className="w-4 h-4 text-[#FF4C00]" />
+                  </div>
                   <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5 shadow-md">
                     <span className="text-[10px] font-mono text-zinc-400 mr-1">Flix thinking</span>
                     <span className="w-1.5 h-3 bg-[#FF4C00] rounded-full animate-bounce [animation-delay:-0.3s]" />
@@ -475,28 +472,20 @@ export default function AIChatbot() {
         )}
       </AnimatePresence>
 
-      {/* Floating Unique Launcher Button with 3D Mascot Avatar */}
+      {/* Floating Launcher Button */}
       <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50">
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => setIsOpen(!isOpen)}
-          className="group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-zinc-950 p-1 text-white shadow-[0_0_35px_rgba(255,76,0,0.55)] hover:shadow-[0_0_50px_rgba(255,76,0,0.8)] transition-all duration-300 cursor-pointer border-2 border-[#FF4C00]"
+          className="group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#FF4C00] via-[#FF6A00] to-[#E63900] text-white shadow-[0_0_30px_rgba(255,76,0,0.45)] hover:shadow-[0_0_45px_rgba(255,76,0,0.65)] transition-all duration-300 cursor-pointer border border-white/20"
           aria-label="Toggle Flix AI Chat Assistant"
         >
           {isOpen ? (
             <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform duration-300" />
           ) : (
             <>
-              <div className="w-full h-full rounded-full overflow-hidden relative">
-                <Image
-                  src="/flix_avatar.jpg"
-                  alt="Flix AI Avatar"
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
-              </div>
+              <Bot className="w-7 h-7 sm:w-8 sm:h-8 transition-transform duration-300 group-hover:scale-110 drop-shadow-md text-white" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF4C00] opacity-75" />
                 <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-400 border-2 border-zinc-950 shadow-md" />
