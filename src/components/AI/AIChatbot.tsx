@@ -162,6 +162,12 @@ export default function AIChatbot() {
       };
     }
 
+    if (/(?:like|similar\s+to|resembling|related\s+to|same\s+as|liked|loved|enjoyed)\b/i.test(q)) {
+      return {
+        text: "🎬 Searching TMDB's cinema tag graph for movies similar to your request! 🍿"
+      };
+    }
+
     if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic/i.test(q)) {
       return {
         text: "🚀 Here are top-tier Sci-Fi recommendations streaming on Flixora:",

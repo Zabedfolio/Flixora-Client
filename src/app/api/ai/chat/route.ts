@@ -158,6 +158,79 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Helper function to extract target movie title for similarity queries ("movies like Inception")
+    const extractTargetMovie = (msg: string): string | null => {
+      const q = msg.toLowerCase().trim();
+
+      // Check for similarity intent keywords
+      const isSimilarIntent = /(?:like|similar\s+to|resembling|related\s+to|same\s+as|liked|loved|enjoyed)\b/i.test(q);
+      if (!isSimilarIntent) return null;
+
+      // Pattern 1: "movies like Inception", "suggest 5 movies like Interstellar", "something like Fight Club"
+      const likeMatch = q.match(/(?:movies|films|shows|something|anything|suggest|recommend|give\s+me|find)?\s*(?:like|similar\s+to|resembling|related\s+to|same\s+as)\s+([^,.?!]+)/i);
+      if (likeMatch && likeMatch[1]) {
+        let candidate = likeMatch[1].split(/\b(what|how|where|suggest|give|show|recommend)\b/i)[0];
+        candidate = candidate.replace(/\b(movies|films|shows|please|suggest|recommend|top|[0-9]+|this|that|like\s+that)\b/gi, '').trim();
+        if (candidate && candidate !== 'this' && candidate !== 'that' && candidate.length >= 2) {
+          return candidate;
+        }
+      }
+
+      // Pattern 2: "i loved Dune, give me movies like that", "if i liked Avengers", "i enjoyed Oppenheimer"
+      const likedMatch = q.match(/(?:if\s+i\s+|i\s+)(?:liked|loved|enjoyed|watched)\s+([^,.?!]+)/i);
+      if (likedMatch && likedMatch[1]) {
+        let candidate = likedMatch[1].split(/\b(what|how|where|suggest|give|show|recommend)\b/i)[0];
+        candidate = candidate.replace(/\b(give|suggest|show|recommend|movies|films|like|that|this|more)\b/gi, '').trim();
+        if (candidate && candidate.length >= 2) {
+          return candidate;
+        }
+      }
+
+      return null;
+    };
+
+    const targetMovieTitle = extractTargetMovie(userMessage);
+
+    // 2. Movie Similarity / Recommendations Intent ("movies like Inception")
+    if (targetMovieTitle) {
+      try {
+        const searchData = await fetchFromTMDB<any>(`/search/movie?query=${encodeURIComponent(targetMovieTitle)}&language=en-US&page=1`).catch(() => null);
+        const targetMovie = searchData?.results?.[0];
+
+        if (targetMovie) {
+          // Fetch algorithmic recommendations tag graph from TMDB
+          let recData = await fetchFromTMDB<any>(`/movie/${targetMovie.id}/recommendations?language=en-US&page=1`).catch(() => null);
+          if (!recData?.results?.length) {
+            recData = await fetchFromTMDB<any>(`/movie/${targetMovie.id}/similar?language=en-US&page=1`).catch(() => null);
+          }
+
+          if (recData?.results?.length > 0) {
+            const movies = extractMovies(recData.results, requestedCount);
+            const yearStr = targetMovie.release_date ? ` (${new Date(targetMovie.release_date).getFullYear()})` : '';
+
+            const lines = [
+              `🎬 **Movies Similar to "${targetMovie.title}"${yearStr}:**\n*Based on genre tags, storyline themes, and recommendations related to ${targetMovie.title}:*\n`
+            ];
+            movies.forEach((m, idx) => {
+              const mYear = m.year ? ` (${m.year})` : '';
+              const mRating = m.rating ? ` ⭐ ${m.rating}` : '';
+              const mDesc = m.overview ? ` — *${m.overview.slice(0, 70)}...*` : '';
+              lines.push(`${idx + 1}. **${m.title}**${mYear}${mRating}${mDesc}`);
+            });
+
+            return NextResponse.json({
+              success: true,
+              reply: lines.join('\n'),
+              movies,
+              source: 'tmdb_similarity',
+            });
+          }
+        }
+      } catch (simErr) {
+        console.warn('Similarity API error, falling back to standard intent:', simErr);
+      }
+    }
+
     // Flexible Genre and Movie Intent handling with TMDB rich cards
     let tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
     let categoryName = 'Popular';
