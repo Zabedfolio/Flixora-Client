@@ -15,17 +15,24 @@ export async function POST(req: NextRequest) {
     const countMatch = qLower.match(/\b([1-9]|10)\b/);
     const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 6) : 4;
 
-    // Helper function to extract TMDB movies array with dynamic count
+    // Helper function to extract TMDB movies array with dynamic count (supports movies, anime & TV shows)
     const extractMovies = (results: any[], count: number = 4) => {
-      return (results || []).slice(0, count).map((m: any) => ({
-        id: m.id.toString(),
-        title: m.title,
-        year: m.release_date ? new Date(m.release_date).getFullYear() : 2026,
-        rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
-        genres: ['Featured'],
-        posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
-        overview: m.overview || '',
-      }));
+      return (results || [])
+        .filter((m: any) => m.media_type !== 'person')
+        .slice(0, count)
+        .map((m: any) => {
+          const itemTitle = m.title || m.name || 'Featured Title';
+          const itemDate = m.release_date || m.first_air_date;
+          return {
+            id: m.id.toString(),
+            title: itemTitle,
+            year: itemDate ? new Date(itemDate).getFullYear() : 2026,
+            rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
+            genres: ['Featured'],
+            posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
+            overview: m.overview || '',
+          };
+        });
     };
 
     // Helper to build rich AI markdown response listing items
@@ -158,6 +165,73 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Helper function to extract target for summary queries ("summary about solo leveling")
+    const extractSummaryTarget = (msg: string): string | null => {
+      const q = msg.toLowerCase().trim();
+      const isSummary = /(?:summary|synopsis|overview|plot|details?|info|explain|tell\s+me\s+about|what\s+is\s+.+\s+about)\b/i.test(q);
+      if (!isSummary) return null;
+
+      const p1 = q.match(/(?:summary|synopsis|overview|plot|details?|info|explain|tell\s+me)\s+(?:about|of|for|on)?\s+([^,.?!]+)/i);
+      if (p1 && p1[1]) {
+        let candidate = p1[1].replace(/\b(please|can\s+you|could\s+you|movie|anime|show|series)\b/gi, '').trim();
+        if (candidate && candidate.length >= 2) return candidate;
+      }
+
+      const p2 = q.match(/what\s+is\s+([^,.?!]+?)\s+about/i);
+      if (p2 && p2[1]) {
+        let candidate = p2[1].replace(/\b(movie|anime|show|series)\b/gi, '').trim();
+        if (candidate && candidate.length >= 2) return candidate;
+      }
+
+      return null;
+    };
+
+    const summaryTarget = extractSummaryTarget(userMessage);
+
+    // 2. Summary & Overview Intent ("can you give me a summary about solo leveling")
+    if (summaryTarget) {
+      try {
+        const multiRes = await fetchFromTMDB<any>(`/search/multi?query=${encodeURIComponent(summaryTarget)}&language=en-US&page=1`).catch(() => null);
+        const target = (multiRes?.results || []).find((r: any) => r.media_type === 'movie' || r.media_type === 'tv');
+
+        if (target) {
+          const title = target.title || target.name;
+          const dateStr = target.release_date || target.first_air_date;
+          const yearStr = dateStr ? ` (${new Date(dateStr).getFullYear()})` : '';
+          const ratingStr = target.vote_average ? `${Number(target.vote_average.toFixed(1))}/10` : '8.0/10';
+          const isAnime = (target.origin_country || []).includes('JP') || (target.genre_ids || []).includes(16);
+          const mediaType = target.media_type === 'tv' ? (isAnime ? 'Anime / TV Series' : 'TV Series') : 'Movie';
+
+          const textLines = [
+            `📖 **Summary & Overview: "${title}"${yearStr}**\n`,
+            `🎬 **Type**: ${mediaType} | ⭐ **Rating**: ${ratingStr}\n`,
+            `**Synopsis**:`,
+            `${target.overview || 'No detailed synopsis available.'}\n`,
+            `🍿 *Would you like recommendations similar to ${title}?*`
+          ];
+
+          const card = [{
+            id: target.id.toString(),
+            title: title,
+            year: dateStr ? new Date(dateStr).getFullYear() : 2026,
+            rating: target.vote_average ? Number(target.vote_average.toFixed(1)) : 8.0,
+            genres: [mediaType],
+            posterUrl: getTMDBImageUrl(target.poster_path, 'w500'),
+            overview: target.overview || '',
+          }];
+
+          return NextResponse.json({
+            success: true,
+            reply: textLines.join('\n'),
+            movies: card,
+            source: 'tmdb_summary',
+          });
+        }
+      } catch (sumErr) {
+        console.warn('Summary API error, falling back to standard intent:', sumErr);
+      }
+    }
+
     // Helper function to extract target movie title for similarity queries ("movies like Inception")
     const extractTargetMovie = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
@@ -281,7 +355,7 @@ export async function POST(req: NextRequest) {
       categoryName = 'Movie Night';
       emojiHeader = '🍿';
     } else if (userMessage) {
-      tmdbEndpoint = `/search/movie?query=${encodeURIComponent(userMessage)}&language=en-US&page=1`;
+      tmdbEndpoint = `/search/multi?query=${encodeURIComponent(userMessage)}&language=en-US&page=1`;
       categoryName = `"${userMessage}" Search`;
       emojiHeader = '🎬';
     }
