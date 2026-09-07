@@ -320,7 +320,7 @@ export default function HeroBanner() {
             </button>
           </form>
 
-          {/* AI response */}
+          {/* AI response - Only cards in Hero Banner */}
           <AnimatePresence mode="wait">
             {(aiLoading || aiResult) && (
               <motion.div
@@ -329,74 +329,41 @@ export default function HeroBanner() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3 rounded-2xl border border-[#FF4C00]/30 bg-zinc-950/90 p-4 backdrop-blur-2xl max-h-[320px] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.9)] z-20 relative font-sans scrollbar-thin scrollbar-thumb-zinc-800"
+                className="mt-3 rounded-2xl border border-[#FF4C00]/30 bg-zinc-950/90 p-3 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] z-20 relative font-sans"
               >
-                <div className="flex items-start gap-2.5">
-                  <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
-
-                  {aiLoading ? (
+                {aiLoading ? (
+                  <div className="flex items-center gap-2.5 px-2 py-1">
+                    <Sparkles size={14} className="flex-shrink-0 text-[#FF4C00] animate-pulse" />
                     <span className="text-xs font-medium text-zinc-400">
-                      Flix is thinking
-                      <span className="animate-pulse">...</span>
+                      Flix AI is discovering movies for you...
                     </span>
-                  ) : (
-                    aiResult?.message && (
-                      <ReactMarkdown
-                        components={{
-                          h3: ({ children }: { children?: React.ReactNode }) => (
-                            <h3 className="mt-3 text-sm font-bold text-white">
-                              {children}
-                            </h3>
-                          ),
-
-                          p: ({ children }: { children?: React.ReactNode }) => (
-                            <p className="mt-1 text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
-                              {children}
-                            </p>
-                          ),
-
-                          strong: ({ children }: { children?: React.ReactNode }) => (
-                            <strong className="font-bold text-white">
-                              {children}
-                            </strong>
-                          ),
-
-                          ul: ({ children }: { children?: React.ReactNode }) => (
-                            <ul className="mt-2 list-disc space-y-1 pl-4">
-                              {children}
-                            </ul>
-                          ),
-                        }}
-                      >
-                        {aiResult.message}
-                      </ReactMarkdown>
-                    )
-                  )}
-                </div>
-
-                {/* Movie results carousel */}
-                {!aiLoading && aiResult && aiResult.movies.length > 0 && (
-                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scrollbar-none">
-                    {aiResult.movies.map((movie, index) => (
-                      <AiMovieResultCard
-                        key={movie.id}
-                        movie={movie}
-                        index={index}
-                        onSelect={(m) => router.push(`/movie/${m.id}`)}
-                      />
-                    ))}
                   </div>
+                ) : (
+                  aiResult && (
+                    <>
+                      {/* Movie results carousel - ONLY CARDS */}
+                      {aiResult.movies.length > 0 ? (
+                        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto p-1 scrollbar-none">
+                          {aiResult.movies.map((movie, index) => (
+                            <AiMovieResultCard
+                              key={movie.id}
+                              movie={movie}
+                              index={index}
+                              onSelect={(m) => router.push(`/movie/${m.id}`)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 px-2 py-1">
+                          <Sparkles size={14} className="text-zinc-500" />
+                          <p className="text-xs font-medium text-zinc-400">
+                            No movie matches found for that search — try another genre or title.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )
                 )}
-
-                {!aiLoading &&
-                  aiResult &&
-                  aiResult.movies.length === 0 &&
-                  !aiResult.message && (
-                    <p className="mt-1 text-xs font-medium text-zinc-400">
-                      No matches found for that one — try describing the mood
-                      differently.
-                    </p>
-                  )}
               </motion.div>
             )}
           </AnimatePresence>
