@@ -216,10 +216,15 @@ export default function Footer() {
                   }`}
                 >
                   <ul className="space-y-3 py-4 md:py-5">
+<<<<<<< HEAD
                     {column.links.map((link, index) => (
                       <li
                         key={`${link.href}-${link.label}-${index}`}
                       >
+=======
+                    {column.links.map(link => (
+                      <li key={link.label}>
+>>>>>>> development
                         <Link
                           href={link.href}
                           className="rounded text-[13px] font-medium text-[#B3B3B3] outline-none transition-colors hover:text-[#FF4C00] focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/50"

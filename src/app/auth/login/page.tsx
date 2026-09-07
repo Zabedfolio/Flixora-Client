@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
 
 import { toast } from "react-hot-toast";
 import { authClient } from "@/app/(auth)/lib/auth-client";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -18,7 +18,6 @@ const MAX_ATTEMPTS = 3;
 const LOCKOUT_TIME = 30; // seconds
 
 export const LoginForm: React.FC = () => {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -28,6 +27,7 @@ export const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   // Rate Limiting States
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -99,7 +99,7 @@ export const LoginForm: React.FC = () => {
       ...formData,
       [name]: updatedValue,
     };
-
+    
     setFormData(updatedData);
 
     // Instant validation on input change
@@ -151,7 +151,7 @@ export const LoginForm: React.FC = () => {
       const { data, error } = await authClient.signIn.email({
         email: formData.email,
         password: formData.password,
-        callbackURL: "/dashboard",
+        callbackURL: "/",
         rememberMe: formData.rememberMe,
       });
 
