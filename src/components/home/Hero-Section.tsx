@@ -150,50 +150,43 @@ export default function HeroBanner() {
     setAiResult(null);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: trimmed,
-          }),
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-   
+        body: JSON.stringify({
+          query: trimmed,
+          prompt: trimmed,
+        }),
+      });
+
       if (!response.ok) {
         throw new Error("Failed to get AI recommendation");
       }
 
       const result = await response.json();
-      console.log(result);
-      if (!result.success) {
-        throw new Error(result.message || "AI recommendation failed");
-      }
+      console.log("AI Search Result:", result);
 
-      // Backend can respond with a plain message, a movies list (like the
-      // TMDB-shaped search payload), or both — normalize all shapes here.
       const message: string | null =
-        result.data?.message ?? result.message ?? null;
+        result.reply ?? result.message ?? result.data?.message ?? null;
 
       const rawMovies =
-        result.data?.movies ?? result.movies ?? result.data?.results ?? [];
+        result.movies ?? result.data?.movies ?? result.data?.results ?? [];
 
       const movies: AiMovie[] = Array.isArray(rawMovies)
         ? rawMovies.map((movie: any) => ({
-          id: movie.id,
-          title: movie.title ?? movie.original_title ?? "Untitled",
-          original_title: movie.original_title,
-          overview: movie.overview,
-          poster_path: movie.poster_path ?? null,
-          backdrop_path: movie.backdrop_path ?? null,
-          release_date: movie.release_date,
-          vote_average: movie.vote_average,
-          vote_count: movie.vote_count,
-          media_type: movie.media_type,
-        }))
+            id: Number(movie.id) || Math.floor(Math.random() * 10000),
+            title: movie.title ?? movie.original_title ?? "Untitled",
+            original_title: movie.original_title,
+            overview: movie.overview,
+            poster_path: movie.posterUrl ?? movie.poster_path ?? null,
+            backdrop_path: movie.backdrop_path ?? null,
+            release_date: movie.release_date ?? (movie.year ? String(movie.year) : undefined),
+            vote_average: typeof movie.vote_average === "number" ? movie.vote_average : movie.rating,
+            vote_count: movie.vote_count,
+            media_type: movie.media_type,
+          }))
         : [];
 
       setAiResult({ message, movies });
@@ -336,7 +329,7 @@ export default function HeroBanner() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                className="mt-3 rounded-2xl border border-[#FF4C00]/30 bg-zinc-950/90 p-4 backdrop-blur-2xl max-h-[320px] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.9)] z-20 relative font-sans scrollbar-thin scrollbar-thumb-zinc-800"
               >
                 <div className="flex items-start gap-2.5">
                   <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
@@ -357,7 +350,7 @@ export default function HeroBanner() {
                           ),
 
                           p: ({ children }: { children?: React.ReactNode }) => (
-                            <p className="mt-1 text-xs leading-relaxed text-zinc-300">
+                            <p className="mt-1 text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
                               {children}
                             </p>
                           ),
@@ -383,7 +376,7 @@ export default function HeroBanner() {
 
                 {/* Movie results carousel */}
                 {!aiLoading && aiResult && aiResult.movies.length > 0 && (
-                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scrollbar-none">
                     {aiResult.movies.map((movie, index) => (
                       <AiMovieResultCard
                         key={movie.id}
@@ -431,7 +424,7 @@ export default function HeroBanner() {
       </button>
 
       {/* Indicators */}
-      <div className="absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+      <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-3">
         {slides.map((slide, index) => (
           <button
             key={slide.id}

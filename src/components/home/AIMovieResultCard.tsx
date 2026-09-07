@@ -28,11 +28,25 @@ export default function AiMovieResultCard({
   index = 0,
   onSelect,
 }: AiMovieResultCardProps) {
-  const year = movie.release_date ? movie.release_date.slice(0, 4) : null;
-  const rating =
-    typeof movie.vote_average === "number" ? movie.vote_average.toFixed(1) : null;
+  const rawPoster = movie.poster_path || (movie as any).posterUrl || null;
+  const posterUrl = rawPoster
+    ? rawPoster.startsWith("http")
+      ? rawPoster
+      : getTMDBImageUrl(rawPoster, "w400")
+    : null;
 
-  const posterUrl = getTMDBImageUrl(movie.poster_path, "w400");
+  const year = movie.release_date
+    ? String(movie.release_date).slice(0, 4)
+    : (movie as any).year
+    ? String((movie as any).year)
+    : null;
+
+  const rating =
+    typeof movie.vote_average === "number"
+      ? movie.vote_average.toFixed(1)
+      : (movie as any).rating
+      ? Number((movie as any).rating).toFixed(1)
+      : null;
 
   return (
     <motion.button
@@ -45,7 +59,7 @@ export default function AiMovieResultCard({
     >
       {/* Poster */}
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-900">
-        {movie.poster_path ? (
+        {posterUrl ? (
           <img
             src={posterUrl}
             alt={movie.title}
