@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
 
-const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || 'sk-ugEIwTHItxvA5xEWPDjf89TG5O1Sq9wwv6Rqwzatx21IyTLz';
+const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
 
 export async function POST(req: NextRequest) {
   try {
