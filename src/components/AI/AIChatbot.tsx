@@ -162,7 +162,7 @@ export default function AIChatbot() {
       };
     }
 
-    if (q.includes('sci-fi') || q.includes('science fiction')) {
+    if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic/i.test(q)) {
       return {
         text: "🚀 Here are top-tier Sci-Fi recommendations streaming on Flixora:",
         movies: [
@@ -186,7 +186,7 @@ export default function AIChatbot() {
       };
     }
 
-    if (q.includes('trending') || q.includes('popular') || q.includes('hits')) {
+    if (/trending|popular|hits|top\s*rated|blockbuster/i.test(q)) {
       return {
         text: "🔥 Check out these hot trending blockbusters right now:",
         movies: [
@@ -210,7 +210,7 @@ export default function AIChatbot() {
       };
     }
 
-    if (q.includes('action')) {
+    if (/action|fight|superhero|explosive|martial\s*arts/i.test(q)) {
       return {
         text: "⚡️ High-octane action picks just for you:",
         movies: [
@@ -229,6 +229,30 @@ export default function AIChatbot() {
             rating: 8.7,
             genres: ['Sci-Fi', 'Action'],
             posterUrl: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'
+          }
+        ]
+      };
+    }
+
+    if (/horror|scary|spooky|creepy|ghost|slasher|zombie/i.test(q)) {
+      return {
+        text: "👻 Thrilling Horror picks to give you goosebumps:",
+        movies: [
+          {
+            id: '570',
+            title: 'The Shining',
+            year: 1980,
+            rating: 8.2,
+            genres: ['Horror', 'Thriller'],
+            posterUrl: 'https://image.tmdb.org/t/p/w500/xA23gGz2t40w10vS22a1n3M2n3M.jpg'
+          },
+          {
+            id: '693134',
+            title: 'Dune: Part Two',
+            year: 2024,
+            rating: 8.5,
+            genres: ['Sci-Fi', 'Adventure'],
+            posterUrl: 'https://image.tmdb.org/t/p/w500/1pdfLPoL6VFi8Uox0W2eeOcivqC.jpg'
           }
         ]
       };

@@ -11,6 +11,18 @@ export async function POST(req: NextRequest) {
     const userMessage = (query || (messages.length > 0 ? messages[messages.length - 1].text : '')).trim();
     const qLower = userMessage.toLowerCase();
 
+    // Helper function to extract TMDB movies array
+    const extractMovies = (results: any[]) => {
+      return (results || []).slice(0, 2).map((m: any) => ({
+        id: m.id.toString(),
+        title: m.title,
+        year: m.release_date ? new Date(m.release_date).getFullYear() : 2026,
+        rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
+        genres: ['Featured'],
+        posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
+      }));
+    };
+
     // 1. Try calling Kimi / Moonshot AI API Endpoint if key is available
     if (KIMI_API_KEY) {
       try {
@@ -41,23 +53,28 @@ export async function POST(req: NextRequest) {
           const kimiData = await kimiRes.json();
           const aiText = kimiData.choices?.[0]?.message?.content;
           if (aiText) {
-            // Only fetch movie cards if user is actually asking for recommendations or specific titles
             const isGreeting = /^(hi|hello|hey|hy|hola|sup|yo|good\s*(morning|afternoon|evening|night)|howdy|heyy+)\b/i.test(qLower);
             let movies = undefined;
 
             if (!isGreeting) {
-              const tmdbData = await fetchFromTMDB<any>(`/search/movie?query=${encodeURIComponent(userMessage.slice(0, 30))}&language=en-US&page=1`).catch(() => null);
-              const tmdbResults = (tmdbData?.results || []).slice(0, 2);
-              if (tmdbResults.length > 0) {
-                movies = tmdbResults.map((m: any) => ({
-                  id: m.id.toString(),
-                  title: m.title,
-                  year: m.release_date ? new Date(m.release_date).getFullYear() : 2026,
-                  rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
-                  genres: ['Featured'],
-                  posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
-                }));
+              // Try genre search or popular fallback
+              let searchEndpoint = `/search/movie?query=${encodeURIComponent(userMessage.slice(0, 30))}&language=en-US&page=1`;
+              if (/sci[- ]?fi|science\s*fiction|scifi|space/i.test(qLower)) {
+                searchEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
+              } else if (/action|fight|superhero/i.test(qLower)) {
+                searchEndpoint = '/discover/movie?with_genres=28&sort_by=popularity.desc&language=en-US&page=1';
+              } else if (/horror|scary|spooky/i.test(qLower)) {
+                searchEndpoint = '/discover/movie?with_genres=27&sort_by=popularity.desc&language=en-US&page=1';
+              } else if (/comedy|funny|hilarious/i.test(qLower)) {
+                searchEndpoint = '/discover/movie?with_genres=35&sort_by=popularity.desc&language=en-US&page=1';
               }
+
+              let tmdbData = await fetchFromTMDB<any>(searchEndpoint).catch(() => null);
+              if (!tmdbData?.results?.length) {
+                tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => null);
+              }
+              const extracted = extractMovies(tmdbData?.results);
+              if (extracted.length > 0) movies = extracted;
             }
 
             return NextResponse.json({
@@ -120,45 +137,57 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Genre and Movie Intent handling with TMDB rich cards
-    let tmdbEndpoint = '/movie/popular?language=en-US&page=1';
+    // Flexible Genre and Movie Intent handling with TMDB rich cards
+    let tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
     let replyText = `Here are top recommendations streaming on Flixora:`;
 
-    if (qLower.includes('sci-fi') || qLower.includes('science fiction')) {
+    if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
       replyText = `🚀 Top recommended Sci-Fi picks streaming on Flixora:`;
-    } else if (qLower.includes('action')) {
+    } else if (/action|fight|superhero|explosive|martial\s*arts/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=28&sort_by=popularity.desc&language=en-US&page=1';
       replyText = `⚡️ High-octane Action movies for your movie night:`;
-    } else if (qLower.includes('trending') || qLower.includes('popular')) {
+    } else if (/trending|popular|hits|top\s*rated|blockbuster/i.test(qLower)) {
       tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
       replyText = `🔥 Blockbuster movies trending right now:`;
-    } else if (qLower.includes('horror')) {
+    } else if (/horror|scary|spooky|creepy|ghost|slasher|zombie|vampire/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=27&sort_by=popularity.desc&language=en-US&page=1';
       replyText = `👻 Thrilling Horror picks on Flixora:`;
-    } else if (qLower.includes('comedy')) {
+    } else if (/comedy|funny|hilarious|laugh|humor/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=35&sort_by=popularity.desc&language=en-US&page=1';
       replyText = `🍿 Hilarious Comedy titles to cheer up your evening:`;
-    } else if (qLower.includes('anime') || qLower.includes('animation')) {
+    } else if (/anime|animation|animated|cartoon/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=16&sort_by=popularity.desc&language=en-US&page=1';
       replyText = `✨ Top-rated Animation & Anime masterpieces:`;
-    } else if (qLower.includes('thriller')) {
+    } else if (/thriller|suspense|crime|mystery|detective/i.test(qLower)) {
       tmdbEndpoint = '/discover/movie?with_genres=53&sort_by=popularity.desc&language=en-US&page=1';
       replyText = `🔍 Suspenseful Thrillers to keep you on the edge of your seat:`;
+    } else if (/romance|romantic|love\s*movie|date\s*night/i.test(qLower)) {
+      tmdbEndpoint = '/discover/movie?with_genres=10749&sort_by=popularity.desc&language=en-US&page=1';
+      replyText = `❤️ Romantic movies perfect for date night:`;
+    } else if (/drama|emotional/i.test(qLower)) {
+      tmdbEndpoint = '/discover/movie?with_genres=18&sort_by=popularity.desc&language=en-US&page=1';
+      replyText = `🎭 Powerful Drama films streaming on Flixora:`;
+    } else if (/fantasy|adventure|magic/i.test(qLower)) {
+      tmdbEndpoint = '/discover/movie?with_genres=14&sort_by=popularity.desc&language=en-US&page=1';
+      replyText = `⚔️ Epic Fantasy & Adventure films for you:`;
+    } else if (/recommend|suggest|what\s*(should|to)\s*watch|movie\s*night|good\s*movie/i.test(qLower)) {
+      tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
+      replyText = `🍿 Here are top trending blockbusters recommended for your movie night:`;
     } else if (userMessage) {
       tmdbEndpoint = `/search/movie?query=${encodeURIComponent(userMessage)}&language=en-US&page=1`;
       replyText = `🎬 Found these titles matching "${userMessage}":`;
     }
 
-    const tmdbData = await fetchFromTMDB<any>(tmdbEndpoint).catch(() => ({ results: [] }));
-    const movies = (tmdbData.results || []).slice(0, 2).map((m: any) => ({
-      id: m.id.toString(),
-      title: m.title,
-      year: m.release_date ? new Date(m.release_date).getFullYear() : 2026,
-      rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
-      genres: ['Featured'],
-      posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
-    }));
+    let tmdbData = await fetchFromTMDB<any>(tmdbEndpoint).catch(() => ({ results: [] }));
+
+    // Fallback to trending if search returned no results
+    if (!tmdbData?.results?.length && userMessage) {
+      tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => ({ results: [] }));
+      replyText = `🎬 I couldn't find exact matches for "${userMessage}", but check out these trending blockbusters streaming on Flixora:`;
+    }
+
+    const movies = extractMovies(tmdbData?.results);
 
     return NextResponse.json({
       success: true,
