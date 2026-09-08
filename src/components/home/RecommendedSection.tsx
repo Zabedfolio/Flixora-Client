@@ -30,11 +30,29 @@ interface SecondaryPick {
 export default function RecommendedSection() {
   const [topPick, setTopPick] = useState<TopPick | null>(null);
   const [secondaryPicks, setSecondaryPicks] = useState<SecondaryPick[]>([]);
+  const [isPersonalized, setIsPersonalized] = useState(false);
   const [loading, setLoading] = useState(true);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const loadRecommendations = async () => {
+    try {
+      const res = await fetch("/api/recommendations", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.topPick) {
+          setTopPick(data.topPick);
+          setSecondaryPicks(data.secondaryPicks || []);
+          setIsPersonalized(Boolean(data.personalized));
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching recommendations API:", err);
+    }
+
+    // Direct TMDB fallback if API fails
     fetchFromTMDB<{ results: any[] }>('/movie/popular?language=en-US&page=3')
       .then((data) => {
         if (data.results && data.results.length > 0) {
@@ -63,9 +81,29 @@ export default function RecommendedSection() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error loading recommendations:", err);
+        console.error("Error loading recommendations fallback:", err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadRecommendations();
+
+    const handleUpdates = () => {
+      loadRecommendations();
+    };
+
+    window.addEventListener("history-updated", handleUpdates);
+    window.addEventListener("list-updated", handleUpdates);
+    window.addEventListener("playlist-updated", handleUpdates);
+    window.addEventListener("focus", handleUpdates);
+
+    return () => {
+      window.removeEventListener("history-updated", handleUpdates);
+      window.removeEventListener("list-updated", handleUpdates);
+      window.removeEventListener("playlist-updated", handleUpdates);
+      window.removeEventListener("focus", handleUpdates);
+    };
   }, []);
 
   const scroll = (direction: "left" | "right") => {
@@ -102,7 +140,9 @@ export default function RecommendedSection() {
             </h2>
           </div>
           <p className="text-[11px] sm:text-xs md:text-sm text-zinc-400 font-medium leading-normal">
-            Curated by Flixora AI based on your taste
+            {isPersonalized
+              ? "Curated dynamically by Flixora AI based on your taste & saved activity"
+              : "Curated by Flixora AI based on top blockbusters"}
           </p>
         </div>
       </div>
