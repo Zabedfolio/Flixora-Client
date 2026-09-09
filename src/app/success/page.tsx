@@ -106,38 +106,57 @@ export default async function Success({ searchParams }: SuccessProps) {
     : '$14.99';
 
   // -----------------------------------
-  // Update User Plan & Record Payment in MongoDB
+  // Update User Plan & Record Payment in MongoDB (with metadata fallback)
   // -----------------------------------
-  if (authSession?.user?.id && toPlan) {
+  const targetUserId = authSession?.user?.id || session.metadata?.userId;
+  const targetPlanKey = params.to || session.metadata?.planId || 'premium';
+
+  const resolvedPlan = plans.find(
+    (p: any) =>
+      p.slug === targetPlanKey ||
+      p._id.toString() === targetPlanKey ||
+      p.name.toLowerCase().includes(targetPlanKey.toLowerCase()),
+  ) || toPlan;
+
+  if (targetUserId && resolvedPlan) {
     try {
-      // 1. Update user active planId
-      await db.collection('user').updateOne(
-        { _id: new ObjectId(authSession.user.id) },
-        {
-          $set: {
-            planId: toPlan._id.toString(),
-            plan: toPlan.name,
-            updatedAt: new Date(),
+      let filter: any = {};
+      if (ObjectId.isValid(targetUserId)) {
+        filter = { _id: new ObjectId(targetUserId) };
+      } else if (customerEmail && customerEmail !== 'Your Stripe billing email') {
+        filter = { email: customerEmail };
+      }
+
+      if (filter._id || filter.email) {
+        // 1. Update user active planId
+        await db.collection('user').updateOne(
+          filter,
+          {
+            $set: {
+              planId: resolvedPlan._id.toString(),
+              plan: resolvedPlan.name,
+              updatedAt: new Date(),
+            },
           },
-        },
-      );
+        );
 
-      // 2. Log payment details in payments collection if not already recorded
-      const existingPayment = await db
-        .collection('payments')
-        .findOne({ stripeSessionId: sessionId });
-      if (!existingPayment) {
-        const invoiceNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
+        // 2. Log payment details in payments collection if not already recorded
+        const existingPayment = await db
+          .collection('payments')
+          .findOne({ stripeSessionId: sessionId });
+        if (!existingPayment) {
+          const invoiceNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
 
-        await db.collection('payments').insertOne({
-          userId: authSession.user.id,
-          planId: toPlan._id.toString(),
-          amount: amountPaid,
-          status: 'Paid',
-          stripeSessionId: sessionId,
-          invoiceId: invoiceNum,
-          createdAt: new Date(),
-        });
+          await db.collection('payments').insertOne({
+            userId: targetUserId,
+            planId: resolvedPlan._id.toString(),
+            amount: amountPaid,
+            status: 'Paid',
+            stripeSessionId: sessionId,
+            invoiceId: invoiceNum,
+            createdAt: new Date(),
+          });
+        }
       }
     } catch (dbErr) {
       console.error('Error updating user plan or recording payment:', dbErr);

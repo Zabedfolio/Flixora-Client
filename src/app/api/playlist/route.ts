@@ -86,25 +86,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // Auto-connect pre-created curated playlists for new users
-    try {
-      const userDoc = await db.collection('user').findOne({
-        _id: new ObjectId(authSession.user.id),
-      });
-
-      if (!userDoc?.playlistsInitialized) {
-        await seedUserCuratedPlaylists(db, authSession.user.id);
-
-        await db.collection('user').updateOne(
-          { _id: new ObjectId(authSession.user.id) },
-          { $set: { playlistsInitialized: true } }
-        );
-      }
-    } catch (seedErr) {
-      console.error('Auto-seed playlist error:', seedErr);
-    }
-
-    const playlists = await db
+    // 1. Fetch playlists directly for maximum performance
+    let playlists = await db
       .collection('playlist')
       .find({
         $or: [
@@ -114,6 +97,36 @@ export async function GET(req: Request) {
       })
       .sort({ isPreCreated: -1, createdAt: 1 })
       .toArray();
+
+    // 2. Only check auto-seed if the user currently has zero playlists
+    if (playlists.length === 0) {
+      try {
+        const userDoc = await db.collection('user').findOne({
+          _id: new ObjectId(authSession.user.id),
+        });
+
+        if (!userDoc?.playlistsInitialized) {
+          await seedUserCuratedPlaylists(db, authSession.user.id);
+          await db.collection('user').updateOne(
+            { _id: new ObjectId(authSession.user.id) },
+            { $set: { playlistsInitialized: true } }
+          );
+
+          playlists = await db
+            .collection('playlist')
+            .find({
+              $or: [
+                { userId: authSession.user.id },
+                { userIds: authSession.user.id },
+              ],
+            })
+            .sort({ isPreCreated: -1, createdAt: 1 })
+            .toArray();
+        }
+      } catch (seedErr) {
+        console.error('Auto-seed playlist error:', seedErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -273,7 +286,65 @@ export async function PUT(req: Request) {
       const cleanMovieId = String(movie.movieId || movie.id);
       const cleanTitle = movie.title || '';
 
-      // Check if already in playlist
+      const movieEntry = {
+        movieId: cleanMovieId,
+        title: cleanTitle,
+        unsplash_url: movie.unsplash_url || movie.poster || '',
+        category: movie.category || 'Movie',
+        year: String(movie.year || ''),
+        duration: String(movie.duration || ''),
+        addedAt: new Date(),
+      };
+
+      // Check if this is a shared pre-created playlist
+      const isSharedPreCreated = Boolean(
+        existingPlaylist.isPreCreated ||
+          (Array.isArray(existingPlaylist.userIds) && existingPlaylist.userIds.length > 0)
+      );
+
+      if (isSharedPreCreated) {
+        // FORK FOR THIS USER:
+        // 1. Remove this user from the shared pre-created playlist
+        await db.collection('playlist').updateOne(
+          { _id: existingPlaylist._id },
+          { $pull: { userIds: authSession.user.id } as any }
+        );
+
+        // 2. Clone playlist exclusively for this user with the new movie added
+        const existingMovies = existingPlaylist.movies || [];
+        const alreadyExists = existingMovies.some(
+          (m: any) =>
+            String(m.movieId) === cleanMovieId ||
+            m.title.toLowerCase() === cleanTitle.toLowerCase()
+        );
+
+        const clonedMovies = alreadyExists
+          ? [...existingMovies]
+          : [movieEntry, ...existingMovies];
+
+        const userPlaylistDoc = {
+          userId: authSession.user.id,
+          name: existingPlaylist.name,
+          tag: existingPlaylist.tag || 'Custom',
+          description: existingPlaylist.description || '',
+          isPublic: true,
+          isPreCreated: false,
+          movies: clonedMovies,
+          createdAt: existingPlaylist.createdAt || new Date(),
+          updatedAt: new Date(),
+        };
+
+        const insertRes = await db.collection('playlist').insertOne(userPlaylistDoc);
+        const updated = { ...userPlaylistDoc, _id: insertRes.insertedId.toString() };
+
+        return NextResponse.json({
+          success: true,
+          message: 'Movie added to your personal playlist',
+          playlist: updated,
+        });
+      }
+
+      // Normal personal playlist addition
       const alreadyExists = (existingPlaylist.movies || []).some(
         (m: any) =>
           String(m.movieId) === cleanMovieId ||
@@ -281,18 +352,8 @@ export async function PUT(req: Request) {
       );
 
       if (!alreadyExists) {
-        const movieEntry = {
-          movieId: cleanMovieId,
-          title: cleanTitle,
-          unsplash_url: movie.unsplash_url || movie.poster || '',
-          category: movie.category || 'Movie',
-          year: String(movie.year || ''),
-          duration: String(movie.duration || ''),
-          addedAt: new Date(),
-        };
-
         await db.collection('playlist').updateOne(filter, {
-          $push: { movies: movieEntry } as any,
+          $push: { movies: { $each: [movieEntry], $position: 0 } } as any,
           $set: { updatedAt: new Date() },
         });
       }
@@ -308,6 +369,48 @@ export async function PUT(req: Request) {
     if (action === 'removeMovie') {
       const cleanMovieId = movieId ? String(movieId) : null;
       const cleanTitle = movieTitle ? String(movieTitle).toLowerCase() : null;
+
+      const isSharedPreCreated = Boolean(
+        existingPlaylist.isPreCreated ||
+          (Array.isArray(existingPlaylist.userIds) && existingPlaylist.userIds.length > 0)
+      );
+
+      if (isSharedPreCreated) {
+        // FORK FOR THIS USER:
+        // 1. Remove this user from the shared pre-created playlist
+        await db.collection('playlist').updateOne(
+          { _id: existingPlaylist._id },
+          { $pull: { userIds: authSession.user.id } as any }
+        );
+
+        // 2. Clone playlist for this user with that movie removed
+        const remainingMovies = (existingPlaylist.movies || []).filter((m: any) => {
+          if (cleanMovieId && String(m.movieId) === cleanMovieId) return false;
+          if (cleanTitle && m.title.toLowerCase() === cleanTitle) return false;
+          return true;
+        });
+
+        const userPlaylistDoc = {
+          userId: authSession.user.id,
+          name: existingPlaylist.name,
+          tag: existingPlaylist.tag || 'Custom',
+          description: existingPlaylist.description || '',
+          isPublic: true,
+          isPreCreated: false,
+          movies: remainingMovies,
+          createdAt: existingPlaylist.createdAt || new Date(),
+          updatedAt: new Date(),
+        };
+
+        const insertRes = await db.collection('playlist').insertOne(userPlaylistDoc);
+        const updated = { ...userPlaylistDoc, _id: insertRes.insertedId.toString() };
+
+        return NextResponse.json({
+          success: true,
+          message: 'Movie removed from your personal playlist',
+          playlist: updated,
+        });
+      }
 
       await db.collection('playlist').updateOne(filter, {
         $pull: {

@@ -1,15 +1,22 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Bookmark, Plus, Star, Play, X, Trash2, BookmarkCheck } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Bookmark,
+  Plus,
+  Star,
+  Play,
+  Trash2,
+  BookmarkCheck,
+} from "lucide-react";
+import { toast } from "react-hot-toast";
 import {
   isInWatchlist,
   addToWatchlist,
   removeFromWatchlist,
-} from '@/data/watchlistStore';
-import AddToPlaylistModal from '@/components/playlist/AddToPlaylistModal';
+} from "@/data/watchlistStore";
+import AddToPlaylistModal from "@/components/playlist/AddToPlaylistModal";
 
 interface CardProps {
   id?: string | number;
@@ -22,19 +29,29 @@ interface CardProps {
   isNew?: boolean;
 }
 
+interface PlaylistMovie {
+  movieId?: string | number;
+  title?: string;
+}
+
+interface Playlist {
+  movies?: PlaylistMovie[];
+  [key: string]: unknown;
+}
+
 const getColorFromTitle = (title: string): string => {
   const hash = title
-    .split('')
+    .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const colors = [
-    'rgba(255, 76, 0, 0.35)', // Orange
-    'rgba(168, 85, 247, 0.35)', // Purple
-    'rgba(0, 229, 255, 0.35)', // Cyan
-    'rgba(255, 215, 0, 0.35)', // Gold
-    'rgba(236, 72, 153, 0.35)', // Pink
-    'rgba(59, 130, 246, 0.35)', // Blue
-    'rgba(14, 165, 233, 0.35)', // Light Blue
-    'rgba(244, 63, 94, 0.35)', // Rose
+    "rgba(255, 76, 0, 0.35)", // Orange
+    "rgba(168, 85, 247, 0.35)", // Purple
+    "rgba(0, 229, 255, 0.35)", // Cyan
+    "rgba(255, 215, 0, 0.35)", // Gold
+    "rgba(236, 72, 153, 0.35)", // Pink
+    "rgba(59, 130, 246, 0.35)", // Blue
+    "rgba(14, 165, 233, 0.35)", // Light Blue
+    "rgba(244, 63, 94, 0.35)", // Rose
   ];
   return colors[hash % colors.length];
 };
@@ -43,53 +60,53 @@ export default function MediaCard({
   id,
   title,
   unsplash_url,
-  rating = '9.0',
-  year = '2026',
-  category = 'Adventure',
-  duration = '2H 24M',
+  rating = "9.0",
+  year = "2026",
+  category = "Adventure",
+  duration = "2H 24M",
   isNew = false,
 }: CardProps) {
   const router = useRouter();
   const [inMyList, setInMyList] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   useEffect(() => {
     setInMyList(isInWatchlist(title));
     const handleUpdate = () => {
       setInMyList(isInWatchlist(title));
     };
-    window.addEventListener('watchlist-updated', handleUpdate);
+    window.addEventListener("watchlist-updated", handleUpdate);
     return () => {
-      window.removeEventListener('watchlist-updated', handleUpdate);
+      window.removeEventListener("watchlist-updated", handleUpdate);
     };
   }, [title]);
 
   useEffect(() => {
     const fetchPlaylists = async () => {
       try {
-        const res = await fetch('/api/playlist');
+        const res = await fetch("/api/playlist");
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.playlists)) {
             setPlaylists(data.playlists);
           }
         }
-      } catch (err) {
+      } catch {
         // silent
       }
     };
     fetchPlaylists();
-    window.addEventListener('playlists-updated', fetchPlaylists);
+    window.addEventListener("playlists-updated", fetchPlaylists);
     return () => {
-      window.removeEventListener('playlists-updated', fetchPlaylists);
+      window.removeEventListener("playlists-updated", fetchPlaylists);
     };
   }, []);
 
   const handleMyListToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    const itemKey = title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const itemKey = title.toLowerCase().replace(/[^a-z0-9]/g, "-");
     const exists = isInWatchlist(title);
 
     if (exists) {
@@ -97,9 +114,9 @@ export default function MediaCard({
       toast.success(`Removed "${title}" from My List`, {
         icon: <Trash2 size={16} className="text-[#FF4C00]" />,
         style: {
-          background: '#141414',
-          color: '#fff',
-          border: '1px solid #1A1A1A',
+          background: "#141414",
+          color: "#fff",
+          border: "1px solid #1A1A1A",
         },
       });
     } else {
@@ -114,35 +131,37 @@ export default function MediaCard({
       toast.success(`Added "${title}" to My List`, {
         icon: <BookmarkCheck size={16} className="text-[#FF4C00]" />,
         style: {
-          background: '#141414',
-          color: '#fff',
-          border: '1px solid #1A1A1A',
+          background: "#141414",
+          color: "#fff",
+          border: "1px solid #1A1A1A",
         },
       });
     }
   };
 
-  const handlePlaylistToggle = (e: React.MouseEvent) => {
+  // Opens the real AddToPlaylistModal instead of the broken boolean toggle
+  const handlePlaylistClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsModalOpen(true);
   };
 
   const handleCardClick = () => {
-    if (id) {
-      router.push(`/movie/${id}`);
+    const targetId = id || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
+    if (targetId) {
+      router.push(`/movie/${targetId}`);
     }
   };
 
   const inAnyPlaylist = playlists.some((pl) =>
     (pl.movies || []).some(
-      (m: any) =>
+      (m) =>
         String(m.movieId) === String(id || title) ||
-        m.title.toLowerCase() === title.toLowerCase()
-    )
+        m.title?.toLowerCase() === title.toLowerCase(),
+    ),
   );
 
   return (
-    <div 
+    <div
       onClick={handleCardClick}
       className="group relative flex flex-col gap-3.5 transition-all duration-300 w-full max-w-[280px] select-none rounded-2xl overflow-visible cursor-pointer"
     >
@@ -160,12 +179,12 @@ export default function MediaCard({
         <img
           src={unsplash_url}
           alt={title}
-          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-103 transition-all duration-500 ease-out"
+          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-500 ease-out"
           loading="lazy"
         />
 
         {/* Dark Vignette Overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
 
         {/* Top-Left: "NEW" Badge */}
         {isNew && (
@@ -186,39 +205,39 @@ export default function MediaCard({
 
         {/* Middle: Floating Play Button on Hover */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-          <div className="w-12 h-12 rounded-full bg-[#FF4C00] hover:bg-[#ff6222] hover:scale-108 text-black flex items-center justify-center transition-all shadow-lg shadow-orange-600/35">
+          <div className="w-12 h-12 rounded-full bg-[#FF4C00] hover:bg-[#ff6222] hover:scale-[1.08] text-black flex items-center justify-center transition-all shadow-lg shadow-orange-600/35">
             <Play size={16} fill="currentColor" className="ml-1" />
           </div>
         </div>
 
-        {/* Bottom-Right Actions Stack (Always visible but highlighted on hover) */}
+        {/* Bottom-Right Actions Stack */}
         <div className="absolute bottom-4 right-4 flex items-center gap-2 z-20">
           {/* Add/Remove My List */}
           <button
             onClick={handleMyListToggle}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md backdrop-blur-sm border outline-none cursor-pointer ${
               inMyList
-                ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105'
-                : 'bg-black/60 border-zinc-800 text-zinc-350 hover:text-white hover:border-[#FF4C00]'
+                ? "bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105"
+                : "bg-black/60 border-zinc-800 text-zinc-400 hover:text-white hover:border-[#FF4C00]"
             }`}
-            title={inMyList ? 'Remove from My List' : 'Add to My List'}
+            title={inMyList ? "Remove from My List" : "Add to My List"}
           >
-            <Bookmark size={12} fill={inMyList ? 'currentColor' : 'none'} />
+            <Bookmark size={12} fill={inMyList ? "currentColor" : "none"} />
           </button>
 
-          {/* Add/Remove Playlist */}
+          {/* Open Add to Playlist Modal */}
           <button
-            onClick={handlePlaylistToggle}
+            onClick={handlePlaylistClick}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md backdrop-blur-sm border outline-none cursor-pointer ${
               inAnyPlaylist
-                ? 'bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105'
-                : 'bg-black/60 border-zinc-800 text-zinc-350 hover:text-white hover:border-[#FF4C00]'
+                ? "bg-[#FF4C00] border-[#FF4C00] text-black hover:scale-105"
+                : "bg-black/60 border-zinc-800 text-zinc-400 hover:text-white hover:border-[#FF4C00]"
             }`}
-            title={inAnyPlaylist ? 'Manage Playlists (Added)' : 'Add to Playlist'}
+            title={inAnyPlaylist ? "Manage in Playlists" : "Add to Playlist"}
           >
             <Plus
               size={14}
-              className={inAnyPlaylist ? 'rotate-45 transition-transform' : ''}
+              className={inAnyPlaylist ? "rotate-45 transition-transform" : ""}
             />
           </button>
         </div>
@@ -229,7 +248,7 @@ export default function MediaCard({
         <h4 className="text-sm font-extrabold text-white group-hover:text-[#FF4C00] transition-colors truncate">
           {title}
         </h4>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-zinc-450 font-bold uppercase tracking-wider">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
           <span className="text-zinc-500">{year}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] shrink-0" />
           <span>{category}</span>
