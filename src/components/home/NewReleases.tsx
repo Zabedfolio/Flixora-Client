@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
 import { getNewReleases } from '@/data/home/newReleases';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface Movie {
   id: number;
@@ -20,8 +21,12 @@ export default function NewReleases() {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isKidsMode, isMovieBlocked, syncActiveProfile } = useKidsStore();
 
   useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+    }
     getNewReleases()
       .then(data => {
         setMovies(data);
@@ -31,7 +36,11 @@ export default function NewReleases() {
         console.error('Error fetching new releases:', err);
         setLoading(false);
       });
-  }, []);
+  }, [isKidsMode]);
+
+  const visibleMovies = isKidsMode
+    ? movies.filter(movie => !isMovieBlocked(movie.id, [movie.genre], movie.title))
+    : movies;
 
   const scrollLeft = () => {
     sliderRef.current?.scrollBy({

@@ -5,8 +5,10 @@ import { Sparkles, Play, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import MediaCard from "@/components/ui/card";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName, formatDuration } from "@/data/home/newReleases";
+import { useKidsStore } from "@/lib/store/kidsStore";
 
 interface TopPick {
+  id?: number;
   title: string;
   image: string;
   matchPercentage: number;
@@ -33,6 +35,7 @@ export default function RecommendedSection() {
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [loading, setLoading] = useState(true);
   
+  const { isKidsMode, isMovieBlocked, syncActiveProfile } = useKidsStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadRecommendations = async () => {
@@ -87,6 +90,9 @@ export default function RecommendedSection() {
   };
 
   useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+    }
     loadRecommendations();
 
     const handleUpdates = () => {
@@ -104,7 +110,28 @@ export default function RecommendedSection() {
       window.removeEventListener("playlist-updated", handleUpdates);
       window.removeEventListener("focus", handleUpdates);
     };
-  }, []);
+  }, [isKidsMode]);
+
+  const visibleSecondaryPicks = secondaryPicks.filter(
+    (item) => !isKidsMode || !isMovieBlocked(item.id, item.title, item.category)
+  );
+
+  const isTopPickBlocked = topPick ? (isKidsMode && isMovieBlocked(topPick.id, topPick.title, topPick.category)) : false;
+  const activeTopPick = isTopPickBlocked
+    ? visibleSecondaryPicks.length > 0
+      ? {
+          id: visibleSecondaryPicks[0].id,
+          title: visibleSecondaryPicks[0].title,
+          image: visibleSecondaryPicks[0].image,
+          matchPercentage: 96,
+          category: visibleSecondaryPicks[0].category,
+          reason: visibleSecondaryPicks[0].reasonTag,
+          description: "Top selection curated for Kids",
+          duration: "1H 45M",
+          year: visibleSecondaryPicks[0].year,
+        }
+      : null
+    : topPick;
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -114,7 +141,7 @@ export default function RecommendedSection() {
     }
   };
 
-  if (loading || !topPick) {
+  if (loading || !activeTopPick) {
     return (
       <section className="relative bg-[#000000] py-16 px-4 md:px-8 border-t border-[#121212]">
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center min-h-[350px]">
@@ -154,8 +181,8 @@ export default function RecommendedSection() {
           <div className="group relative w-full rounded-2xl overflow-hidden border border-[#FF4C00]/30 hover:border-[#FF4C00] shadow-[0_0_15px_rgba(255,76,0,0.05)] hover:shadow-[0_0_20px_rgba(255,76,0,0.18)] transition-all duration-500 aspect-[4/5] xs:aspect-video lg:aspect-[2/3] max-h-[460px] lg:max-h-none">
             {/* Poster Image */}
             <img 
-              src={topPick.image} 
-              alt={topPick.title}
+              src={activeTopPick.image} 
+              alt={activeTopPick.title}
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             />
             {/* Dark Scrim overlay */}
@@ -168,27 +195,27 @@ export default function RecommendedSection() {
                 <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] animate-pulse" />
                   <span className="text-[9px] font-black tracking-widest text-[#FF4C00] uppercase">
-                    {topPick.matchPercentage}% AI MATCH
+                    {activeTopPick.matchPercentage}% AI MATCH
                   </span>
                 </div>
                 <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-                  {topPick.reason}
+                  {activeTopPick.reason}
                 </span>
               </div>
 
               <h3 className="text-xl sm:text-2xl font-black text-white leading-tight truncate">
-                {topPick.title}
+                {activeTopPick.title}
               </h3>
               <p className="text-xs text-zinc-350 font-medium leading-relaxed line-clamp-2 hidden sm:block">
-                {topPick.description}
+                {activeTopPick.description}
               </p>
               
               <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-semibold mt-1">
-                <span>{topPick.year}</span>
+                <span>{activeTopPick.year}</span>
                 <span className="w-1 h-1 rounded-full bg-zinc-600" />
-                <span>{topPick.category}</span>
+                <span>{activeTopPick.category}</span>
                 <span className="w-1 h-1 rounded-full bg-zinc-600" />
-                <span>{topPick.duration}</span>
+                <span>{activeTopPick.duration}</span>
               </div>
 
               {/* Action Buttons */}
@@ -227,7 +254,7 @@ export default function RecommendedSection() {
             ref={scrollRef}
             className="flex gap-4 overflow-x-auto overflow-y-hidden pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
           >
-            {secondaryPicks.map((pick) => (
+            {visibleSecondaryPicks.map((pick) => (
               <div
                 key={pick.id}
                 className="group/card flex-none w-[160px] sm:w-[200px] snap-start flex flex-col gap-2.5 animate-in fade-in"

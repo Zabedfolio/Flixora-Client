@@ -6,6 +6,7 @@ import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
 import { getTopRated } from '@/data/home/topRated';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface TopRatedItem {
   id: number;
@@ -21,8 +22,12 @@ export default function TopRated() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<TopRatedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isKidsMode, isMovieBlocked, syncActiveProfile } = useKidsStore();
 
   useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+    }
     getTopRated()
       .then(data => {
         setItems(data);
@@ -32,7 +37,7 @@ export default function TopRated() {
         console.error('Error fetching top rated:', err);
         setLoading(false);
       });
-  }, []);
+  }, [isKidsMode]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -102,7 +107,9 @@ export default function TopRated() {
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto overflow-y-hidden pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
         >
-          {items.map((item, index) => (
+          {items
+            .filter(item => !isKidsMode || !isMovieBlocked(item.id, item.title, item.category))
+            .map((item, index) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 24 }}

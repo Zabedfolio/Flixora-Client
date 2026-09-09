@@ -6,13 +6,18 @@ import { Sparkles, ChevronLeft, ChevronRight, Tv } from 'lucide-react';
 import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
 import { getPopularAnime, AnimeItem } from '@/data/home/popularAnime';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 export default function PopularAnime() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<AnimeItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isKidsMode, isMovieBlocked, syncActiveProfile } = useKidsStore();
 
   useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+    }
     getPopularAnime()
       .then((data) => {
         setItems(data);
@@ -22,7 +27,7 @@ export default function PopularAnime() {
         console.error('Error fetching popular anime:', err);
         setLoading(false);
       });
-  }, []);
+  }, [isKidsMode]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -99,7 +104,9 @@ export default function PopularAnime() {
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto overflow-y-hidden pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
         >
-          {items.map((item, index) => (
+          {items
+            .filter(item => !isKidsMode || !isMovieBlocked(item.id, item.title, "Anime"))
+            .map((item, index) => (
             <motion.div
               key={item.id || index}
               initial={{ opacity: 0, y: 24 }}

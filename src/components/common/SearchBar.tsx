@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X, Loader2, Star, Film } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useKidsStore } from "@/lib/store/kidsStore";
 
 export interface MovieSuggestion {
   id: string;
@@ -84,7 +85,11 @@ export default function SearchBar({ onExpandChange }: SearchBarProps) {
 
       if (res.ok) {
         const data = await res.json();
-        const results: MovieSuggestion[] = data.movies || [];
+        const rawResults: MovieSuggestion[] = data.movies || [];
+        const { isKidsMode, isMovieBlocked } = useKidsStore.getState();
+        const results = isKidsMode
+          ? rawResults.filter((m) => !isMovieBlocked(m.id || m._id || '', [m.category], m.title))
+          : rawResults;
 
         // Save to cache map
         searchCacheRef.current.set(cleanKey, results);

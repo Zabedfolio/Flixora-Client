@@ -12,7 +12,8 @@ export async function GET(req: Request) {
     const limit = limitParam ? parseInt(limitParam, 10) : 20;
 
     const { db } = await connectToDatabase();
-    const query = movieId ? { movieId: String(movieId) } : {};
+    const approvedFilter = { status: 'Approved' };
+    const query = movieId ? { movieId: String(movieId), ...approvedFilter } : approvedFilter;
 
     const reviews = await db
       .collection('review')
@@ -138,6 +139,7 @@ export async function POST(req: Request) {
         userAvatar: currentUserAvatar,
         rating: Math.round(numRating),
         review: review.trim(),
+        status: 'Pending',
         updatedAt: now,
       },
       $setOnInsert: {
@@ -151,7 +153,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Your review has been published!',
+      message: 'Your review has been submitted and is pending admin approval!',
       review: {
         ...saved,
         _id: saved?._id.toString(),

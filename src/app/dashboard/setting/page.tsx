@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { authClient } from "@/app/(auth)/lib/auth-client";
+import Link from "next/link";
 
 interface Profile {
   _id: string;
@@ -907,6 +908,29 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </form>
+
+                {/* Kids & Parental Controls Quick Card */}
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00] shrink-0">
+                      <Shield size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                        Kids Mode & Parental Controls
+                      </h4>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        Manage Kids Profiles, 4-digit PINs, and content restrictions based on subscription plan.
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/dashboard/kids-control"
+                    className="px-4 py-2.5 rounded-xl bg-[#FF4C00]/10 hover:bg-[#FF4C00] text-[#FF4C00] hover:text-black border border-[#FF4C00]/30 text-xs font-black uppercase tracking-wider transition-all text-center shrink-0"
+                  >
+                    Manage Kids Control
+                  </Link>
+                </div>
               </div>
             )}
 
