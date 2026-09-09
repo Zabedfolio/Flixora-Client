@@ -151,3 +151,58 @@ export async function DELETE(req: Request) {
     );
   }
 }
+
+// PATCH: Admin update any Kids Profile (name, pin, username, avatar, restrictions)
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, name, pin, username, avatar, blockedGenres, blockedMovieIds, blockedMovieTitles } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: 'Kids Profile ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const { db } = await connectToDatabase();
+    let query: any = {};
+    if (ObjectId.isValid(id)) {
+      query = { _id: new ObjectId(id) };
+    } else {
+      query = { _id: id };
+    }
+
+    const updateFields: any = { updatedAt: new Date() };
+    if (name !== undefined && name.trim()) updateFields.name = name.trim();
+    if (pin !== undefined && pin.trim()) updateFields.pin = String(pin).trim();
+    if (username !== undefined && username.trim()) {
+      const cleanUser = username.trim().startsWith('@') ? username.trim() : `@${username.trim()}`;
+      updateFields.username = cleanUser;
+    }
+    if (avatar !== undefined) updateFields.avatar = avatar;
+    if (Array.isArray(blockedGenres)) updateFields.blockedGenres = blockedGenres;
+    if (Array.isArray(blockedMovieIds)) updateFields.blockedMovieIds = blockedMovieIds;
+    if (Array.isArray(blockedMovieTitles)) updateFields.blockedMovieTitles = blockedMovieTitles;
+
+    const result = await db.collection('kids_profiles').updateOne(query, { $set: updateFields });
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Kids Profile not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Kids Profile updated successfully by Admin!',
+    });
+  } catch (error: any) {
+    console.error('PATCH /api/admin/kids error:', error);
+    return NextResponse.json(
+      { success: false, message: error.message || 'Failed to update kids profile' },
+      { status: 500 }
+    );
+  }
+}

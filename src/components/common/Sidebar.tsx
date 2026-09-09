@@ -260,7 +260,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
         </nav>
       ) : (
         /* CONDITIONAL ROLE NAVIGATION */
-        <nav className={`flex-grow px-4 py-6 space-y-2.5 overflow-visible ${isCollapsed ? 'px-2' : ''}`}>
+        <nav className={`flex-grow px-4 py-6 space-y-2.5 overflow-y-auto scrollbar-none ${isCollapsed ? 'px-2' : ''}`}>
           {filteredItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeId === item.id;

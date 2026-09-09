@@ -339,7 +339,7 @@ export default function KidsControlPage() {
         </div>
 
         {/* ================= PLAN LIMIT BANNER ================= */}
-        <div className="rounded-3xl border border-zinc-850 bg-gradient-to-r from-zinc-950 via-[#101010] to-zinc-950 p-6 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="rounded-3xl border border-zinc-900 bg-gradient-to-r from-zinc-950 via-[#101010] to-zinc-950 p-6 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00] shrink-0">
               <Crown size={24} />
@@ -423,7 +423,7 @@ export default function KidsControlPage() {
                     className={`relative rounded-3xl border p-6 transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? "border-[#FF4C00] bg-[#0E0E0E] shadow-[0_0_20px_rgba(255,76,0,0.15)]"
-                        : "border-zinc-850 bg-[#0A0A0A] hover:border-zinc-700"
+                        : "border-zinc-900 bg-[#0A0A0A] hover:border-zinc-700"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4 mb-4">
@@ -515,7 +515,7 @@ export default function KidsControlPage() {
           <div className="space-y-8 pt-4">
             
             {/* Category Toggles */}
-            <div className="rounded-3xl border border-zinc-850 bg-[#0C0C0C] p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="rounded-3xl border border-zinc-900 bg-[#0C0C0C] p-6 sm:p-8 shadow-2xl space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
                 <div>
                   <h2 className="text-lg font-black uppercase tracking-wide text-white flex items-center gap-2">
@@ -539,7 +539,7 @@ export default function KidsControlPage() {
                       className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                         isBlocked
                           ? "bg-red-500/10 border-red-500/40 text-red-400"
-                          : "bg-[#121212] border-zinc-850 hover:border-zinc-700 text-zinc-300"
+                          : "bg-[#121212] border-zinc-900 hover:border-zinc-700 text-zinc-300"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -574,7 +574,7 @@ export default function KidsControlPage() {
             </div>
 
             {/* Specific Movie Block Search */}
-            <div className="rounded-3xl border border-zinc-850 bg-[#0C0C0C] p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="rounded-3xl border border-zinc-900 bg-[#0C0C0C] p-6 sm:p-8 shadow-2xl space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
                 <div>
                   <h2 className="text-lg font-black uppercase tracking-wide text-white flex items-center gap-2">
@@ -609,7 +609,7 @@ export default function KidsControlPage() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-[#121212] border border-zinc-850 rounded-2xl p-3 flex items-center justify-between gap-3"
+                        className="bg-[#121212] border border-zinc-900 rounded-2xl p-3 flex items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {item.poster_path ? (
@@ -698,7 +698,7 @@ export default function KidsControlPage() {
           />
 
           <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-zinc-800 bg-[#0E0E0E] shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-zinc-850 p-6 bg-zinc-950/60">
+            <div className="flex items-center justify-between border-b border-zinc-900 p-6 bg-zinc-950/60">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00]">
                   <Shield size={18} />
@@ -796,7 +796,7 @@ export default function KidsControlPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-850">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-900">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}

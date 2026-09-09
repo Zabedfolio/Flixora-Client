@@ -265,7 +265,7 @@ export default function HistoryPage() {
           ) : history.length === 0 ? (
             /* Empty State */
             <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
+              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-900">
                 <Clock size={20} />
               </div>
               <h3 className="text-base font-bold text-white mb-1">No watch history yet</h3>
@@ -283,7 +283,7 @@ export default function HistoryPage() {
           ) : displayedItems.length === 0 ? (
             /* Matches Empty State */
             <div className="flex flex-col items-center justify-center text-center p-16 bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl max-w-md mx-auto my-16 w-full">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-850">
+              <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500 mb-4 border border-zinc-900">
                 <Info size={20} />
               </div>
               <h3 className="text-base font-bold text-white mb-1">No matches found</h3>
@@ -318,7 +318,7 @@ export default function HistoryPage() {
                       {/* Remove Button (visible on hover) */}
                       <button
                         onClick={() => handleRemoveItem(item.id)}
-                        className="absolute top-2.5 right-2.5 z-20 w-7 h-7 bg-black/75 hover:bg-red-600 border border-zinc-850 hover:border-red-500 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-all scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 cursor-pointer shadow-md"
+                        className="absolute top-2.5 right-2.5 z-20 w-7 h-7 bg-black/75 hover:bg-red-600 border border-zinc-900 hover:border-red-500 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-all scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 cursor-pointer shadow-md"
                         title="Remove from history"
                       >
                         <X size={13} />
