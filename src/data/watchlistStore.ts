@@ -26,6 +26,7 @@ function cleanKey(val: string): string {
 function triggerUpdate() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('watchlist-updated'));
+    window.dispatchEvent(new Event('list-updated'));
   }
 }
 

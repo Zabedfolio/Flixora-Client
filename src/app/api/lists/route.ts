@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { movieId, id, title, year, duration, category, unsplash_url } = body;
+    const { movieId, id, title, year, duration, category, unsplash_url, genreIds, genres } = body;
 
     if (!title) {
       return NextResponse.json(
@@ -84,10 +84,13 @@ export async function POST(req: Request) {
       $set: {
         userId: authSession.user.id,
         movieId: cleanMovieId,
+        rawId: String(movieId || id || ''),
         title: title.trim(),
         year: String(year || ''),
         duration: String(duration || ''),
         category: String(category || 'Movie'),
+        genres: Array.isArray(genres) ? genres : [category || 'Movie'],
+        genreIds: Array.isArray(genreIds) ? genreIds : [],
         unsplash_url: String(unsplash_url || ''),
         updatedAt: now,
       },
