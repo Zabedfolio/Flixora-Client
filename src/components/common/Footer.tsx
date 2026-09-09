@@ -242,20 +242,11 @@ export default function Footer() {
                         <Link
                           href={link.href}
                           className="rounded text-[13px] font-medium text-[#B3B3B3] outline-none transition-colors hover:text-[#FF4C00] focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/50"
-                    {column.links.map(
-                      (link, linkIndex) => (
-                        <li
-                          key={`${link.label}-${linkIndex}`}
                         >
-                          <Link
-                            href={link.href}
-                            className="rounded text-[13px] font-medium text-[#B3B3B3] outline-none transition-colors hover:text-[#FF4C00] focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/50"
-                          >
-                            {link.label}
-                          </Link>
-                        </li>
-                      )
-                    )}
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
