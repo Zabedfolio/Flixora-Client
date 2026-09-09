@@ -47,7 +47,7 @@ export default function ReviewSection() {
   }, []);
 
   return (
-    <section className="relative overflow-hidden bg-black py-20 sm:py-24">
+    <section className="relative overflow-hidden bg-black py-5 sm:py-15">
       {/* Background Glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-20 h-[350px] w-[500px] -translate-x-1/2 rounded-full bg-[#FF4C00]/[0.04] blur-[120px]" />
