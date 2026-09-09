@@ -137,6 +137,14 @@ export default async function MovieDetailsPage({ params }: PageProps) {
   // Record Watch History in MongoDB
   try {
     const { db } = await connectToDatabase();
+    const genreIds = Array.isArray(movieData.genres)
+      ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.id : null)).filter(Boolean)
+      : (Array.isArray(movieData.genre_ids) ? movieData.genre_ids : []);
+
+    const genreNames = Array.isArray(movieData.genres)
+      ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.name : g)).filter(Boolean)
+      : [];
+
     await db.collection("history").updateOne(
       { userId: authSession.user.id, movieId: resolvedId },
       { 
@@ -146,6 +154,9 @@ export default async function MovieDetailsPage({ params }: PageProps) {
           year: movie.releaseDate,
           duration: movie.runtime,
           category: movie.genres[0] || 'Movie',
+          genres: genreNames.length > 0 ? genreNames : [movie.genres[0] || 'Movie'],
+          genreIds: genreIds,
+          tmdbId: resolvedId,
           watchedDate: new Date()
         } 
       },
