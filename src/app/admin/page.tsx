@@ -375,13 +375,23 @@ export default function AdminDashboardPage() {
           <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Registered Users</span>
-              <div className="w-8 h-8 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/20 flex items-center justify-center text-[#FF4C00]">
-                <Users size={16} />
+              <div className="h-7 w-16 flex items-center justify-end">
+                <svg className="w-16 h-7 overflow-visible" viewBox="0 0 60 28" fill="none">
+                  <defs>
+                    <linearGradient id="sparkGradUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FF4C00" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#FF4C00" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0 22 Q 10 18, 20 20 T 40 10 T 60 4 L 60 28 L 0 28 Z" fill="url(#sparkGradUsers)" />
+                  <path d="M 0 22 Q 10 18, 20 20 T 40 10 T 60 4" stroke="#FF4C00" strokeWidth="2" strokeLinecap="round" fill="none" />
+                  <circle cx="60" cy="4" r="3" fill="#FF4C00" />
+                </svg>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
               <span className="text-2xl font-black text-white">{totalUsers}</span>
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              <span className="text-[10px] font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2 py-0.5 rounded border border-[#FF4C00]/20">
                 Live DB
               </span>
             </div>
@@ -392,13 +402,23 @@ export default function AdminDashboardPage() {
           <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Monthly Revenue</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-                <DollarSign size={16} />
+              <div className="h-7 w-16 flex items-center justify-end">
+                <svg className="w-16 h-7 overflow-visible" viewBox="0 0 60 28" fill="none">
+                  <defs>
+                    <linearGradient id="sparkGradRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FF4C00" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#FF4C00" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0 25 L 12 20 L 25 22 L 38 12 L 50 14 L 60 3 L 60 28 L 0 28 Z" fill="url(#sparkGradRev)" />
+                  <path d="M 0 25 L 12 20 L 25 22 L 38 12 L 50 14 L 60 3" stroke="#FF4C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <circle cx="60" cy="3" r="3" fill="#FF4C00" />
+                </svg>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
               <span className="text-2xl font-black text-white">${monthlyRev.toFixed(2)}</span>
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+              <span className="text-[10px] font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2 py-0.5 rounded border border-[#FF4C00]/20">
                 Monthly EST
               </span>
             </div>
@@ -409,13 +429,23 @@ export default function AdminDashboardPage() {
           <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Paid Plan Subscribers</span>
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                <Zap size={16} />
+              <div className="h-7 w-16 flex items-center justify-end">
+                <svg className="w-16 h-7 overflow-visible" viewBox="0 0 60 28" fill="none">
+                  <defs>
+                    <linearGradient id="sparkGradSubs" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FF4C00" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#FF4C00" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0 20 C 15 28, 20 5, 35 15 C 45 22, 52 2, 60 6 L 60 28 L 0 28 Z" fill="url(#sparkGradSubs)" />
+                  <path d="M 0 20 C 15 28, 20 5, 35 15 C 45 22, 52 2, 60 6" stroke="#FF4C00" strokeWidth="2" strokeLinecap="round" fill="none" />
+                  <circle cx="60" cy="6" r="3" fill="#FF4C00" />
+                </svg>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
               <span className="text-2xl font-black text-white">{totalSubs}</span>
-              <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+              <span className="text-[10px] font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2 py-0.5 rounded border border-[#FF4C00]/20">
                 Active Subs
               </span>
             </div>
@@ -426,13 +456,23 @@ export default function AdminDashboardPage() {
           <div className="rounded-2xl border border-[#1A1A1A] bg-[#0C0C0C] p-4 shadow-xl hover:border-[#FF4C00]/40 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Superhero Tagged Users</span>
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                <Tags size={16} />
+              <div className="h-7 w-16 flex items-center justify-end">
+                <svg className="w-16 h-7 overflow-visible" viewBox="0 0 60 28" fill="none">
+                  <defs>
+                    <linearGradient id="sparkGradTags" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FF4C00" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#FF4C00" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0 24 L 15 16 L 30 20 L 45 8 L 60 2 L 60 28 L 0 28 Z" fill="url(#sparkGradTags)" />
+                  <path d="M 0 24 L 15 16 L 30 20 L 45 8 L 60 2" stroke="#FF4C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <circle cx="60" cy="2" r="3" fill="#FF4C00" />
+                </svg>
               </div>
             </div>
             <div className="flex items-baseline gap-3">
               <span className="text-2xl font-black text-white">{stats?.superAdminsCount || 0}</span>
-              <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+              <span className="text-[10px] font-bold text-[#FF4C00] bg-[#FF4C00]/10 px-2 py-0.5 rounded border border-[#FF4C00]/20">
                 Custom Tags
               </span>
             </div>
