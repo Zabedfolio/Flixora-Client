@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film, Ban, Lock } from 'lucide-react';
 import MovieActions from '@/components/movie/MovieActions';
@@ -54,11 +54,34 @@ export default function MovieDetailsView({
   cast = [],
   trailerEmbedUrl,
 }: MovieDetailsProps) {
-  const { isKidsMode, isMovieBlocked, activeKidsProfile, exitKidsMode } = useKidsStore();
+  const { isKidsMode, isMovieBlocked, activeKidsProfile, exitKidsMode, syncActiveProfile } = useKidsStore();
   const [unlockPin, setUnlockPin] = useState('');
   const [showPinInput, setShowPinInput] = useState(false);
+  const [serverBlocked, setServerBlocked] = useState<boolean | null>(null);
 
-  const isBlocked = isKidsMode && isMovieBlocked(id, movie.genres, movie.title);
+  useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+
+      // Query real-time backend MongoDB block endpoint
+      const queryId = encodeURIComponent(String(id));
+      const queryTitle = encodeURIComponent(movie.title);
+      fetch(`/api/kids/check-block?id=${queryId}&title=${queryTitle}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && typeof data.isBlocked === 'boolean') {
+            setServerBlocked(data.isBlocked);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isKidsMode, id, movie.title, syncActiveProfile]);
+
+  const isBlocked =
+    isKidsMode &&
+    (serverBlocked === true ||
+      isMovieBlocked(id, movie.title, movie.genres) ||
+      isMovieBlocked(id, movie.genres, movie.title));
 
   if (isBlocked) {
     return (

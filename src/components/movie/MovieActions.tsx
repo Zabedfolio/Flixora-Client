@@ -10,6 +10,7 @@ import {
 } from '@/data/watchlistStore';
 import { PlaylistItem } from '@/components/playlist/PlaylistCard';
 import AddToPlaylistModal from '@/components/playlist/AddToPlaylistModal';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface MovieActionsProps {
   movie: {
@@ -140,6 +141,8 @@ export default function MovieActions({ movie }: MovieActionsProps) {
       const data = await res.json();
       if (res.ok && data.success) {
         setIsBlockedForKids(data.isBlocked);
+        useKidsStore.getState().syncActiveProfile();
+        window.dispatchEvent(new Event('kids-profile-updated'));
         toast.success(data.message, {
           icon: <Shield size={16} className="text-[#FF4C00]" />,
           style: {

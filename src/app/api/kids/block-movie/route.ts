@@ -59,12 +59,15 @@ export async function POST(req: Request) {
       }
     }
 
+    const cleanSlug = strMovieId.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const lowerTitle = cleanTitle.toLowerCase();
+
     if (isUnblock) {
       // Pull from arrays
       await db.collection('kids_profiles').updateMany(query, {
         $pull: {
-          blockedMovieIds: strMovieId,
-          blockedMovieTitles: cleanTitle,
+          blockedMovieIds: { $in: [strMovieId, cleanSlug] },
+          blockedMovieTitles: { $in: [cleanTitle, lowerTitle] },
         } as any,
         $set: { updatedAt: new Date() },
       });
@@ -72,8 +75,8 @@ export async function POST(req: Request) {
       // Add to set (avoid duplicates)
       await db.collection('kids_profiles').updateMany(query, {
         $addToSet: {
-          blockedMovieIds: strMovieId,
-          blockedMovieTitles: cleanTitle,
+          blockedMovieIds: { $each: [strMovieId, cleanSlug] },
+          blockedMovieTitles: { $each: [cleanTitle, lowerTitle] },
         } as any,
         $set: { updatedAt: new Date() },
       });
