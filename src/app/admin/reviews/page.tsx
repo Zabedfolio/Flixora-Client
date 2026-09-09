@@ -63,8 +63,26 @@ export default function ReviewsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [openMenu, setOpenMenu] = useState<string | number | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
   const REVIEWS_PER_PAGE = 6;
+
+  // Auto dismiss dropdown menu on window scroll or outside click
+  useEffect(() => {
+    const handleDismissMenu = () => {
+      if (openMenu !== null) {
+        setOpenMenu(null);
+        setMenuPosition(null);
+      }
+    };
+
+    window.addEventListener("scroll", handleDismissMenu, true);
+    window.addEventListener("click", handleDismissMenu);
+    return () => {
+      window.removeEventListener("scroll", handleDismissMenu, true);
+      window.removeEventListener("click", handleDismissMenu);
+    };
+  }, [openMenu]);
 
   /* ===================================================
      FETCH LIVE REVIEWS FROM MONGODB
@@ -576,19 +594,39 @@ export default function ReviewsPage() {
                             <div className="relative">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setOpenMenu(
-                                    openMenu === review.id ? null : review.id
-                                  )
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (openMenu === review.id) {
+                                    setOpenMenu(null);
+                                    setMenuPosition(null);
+                                  } else {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    const popUp = spaceBelow < 160;
+                                    setOpenMenu(review.id);
+                                    setMenuPosition({
+                                      top: popUp ? rect.top - 130 : rect.bottom + 6,
+                                      left: Math.max(10, rect.right - 144),
+                                    });
+                                  }
+                                }}
                                 title="More actions"
                                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#252525] bg-[#1A1A1A] text-zinc-400 transition-all hover:text-white"
                               >
                                 <MoreVertical size={16} />
                               </button>
 
-                              {openMenu === review.id && (
-                                <div className="absolute right-0 bottom-full mb-2 z-[999] w-36 rounded-xl border border-[#2A2A2A] bg-[#151515] p-1.5 shadow-2xl">
+                              {openMenu === review.id && menuPosition && (
+                                <div
+                                  style={{
+                                    position: 'fixed',
+                                    top: `${menuPosition.top}px`,
+                                    left: `${menuPosition.left}px`,
+                                    zIndex: 99999
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-36 rounded-xl border border-[#2A2A2A] bg-[#151515] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100"
+                                >
                                   {/* Approve */}
                                   <button
                                     type="button"
