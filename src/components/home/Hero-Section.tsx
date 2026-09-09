@@ -6,15 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
-import ReactMarkdown from "react-markdown";
-
-
-
-
 import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
-
-
-
 
 import { authClient } from "@/app/(auth)/lib/auth-client";
 import { Bebas_Neue, Plus_Jakarta_Sans, Caveat } from "next/font/google";
@@ -33,7 +25,6 @@ interface Slide {
 }
 
 interface AiChatResult {
-  message: string | null;
   movies: AiMovie[];
 }
 
@@ -147,69 +138,54 @@ export default function HeroBanner() {
   };
 
   const runAiSearch = async (query: string) => {
-    const trimmed = query.trim();
+  const trimmed = query.trim();
 
-    if (!trimmed) {
-      return;
+  if (!trimmed) {
+    return;
+  }
+
+  pauseAutoPlay();
+  setAiLoading(true);
+  setAiResult(null);
+
+  try {
+    const response = await fetch("http://localhost:5000/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: trimmed,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get AI recommendation");
     }
 
-    pauseAutoPlay();
-    setAiLoading(true);
-    setAiResult(null);
+    const result = await response.json();
+    console.log("AI Search Result:", result);
 
-    try {
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: trimmed,
-          prompt: trimmed,
-        }),
-      });
+    // Safe extraction & state update matching AiChatResult interface
+    const extractedMovies = Array.isArray(result.data?.movies)
+      ? result.data.movies
+      : Array.isArray(result.movies)
+      ? result.movies
+      : [];
 
-      if (!response.ok) {
-        throw new Error("Failed to get AI recommendation");
-      }
+    setAiResult({
+      movies: extractedMovies,
+    });
+  } catch (error) {
+    console.error("AI recommendation error:", error);
 
-      const result = await response.json();
-      console.log("AI Search Result:", result);
-
-      const message: string | null =
-        result.reply ?? result.message ?? result.data?.message ?? null;
-
-      const rawMovies =
-        result.movies ?? result.data?.movies ?? result.data?.results ?? [];
-
-      const movies: AiMovie[] = Array.isArray(rawMovies)
-        ? rawMovies.map((movie: any) => ({
-            id: Number(movie.id) || Math.floor(Math.random() * 10000),
-            title: movie.title ?? movie.original_title ?? "Untitled",
-            original_title: movie.original_title,
-            overview: movie.overview,
-            poster_path: movie.posterUrl ?? movie.poster_path ?? null,
-            backdrop_path: movie.backdrop_path ?? null,
-            release_date: movie.release_date ?? (movie.year ? String(movie.year) : undefined),
-            vote_average: typeof movie.vote_average === "number" ? movie.vote_average : movie.rating,
-            vote_count: movie.vote_count,
-            media_type: movie.media_type,
-          }))
-        : [];
-
-      setAiResult({ message, movies });
-    } catch (error) {
-      console.error("AI recommendation error:", error);
-
-      setAiResult({
-        message:
-          "Sorry, I could not get movie recommendations right now. Please try again.",
-        movies: [],
-      });
-    } finally {
-      setAiLoading(false);
-    }
-  };
+    setAiResult({
+      movies: [],
+    });
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
