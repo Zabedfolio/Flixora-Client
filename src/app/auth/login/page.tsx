@@ -236,7 +236,7 @@ export const LoginForm: React.FC = () => {
       useKidsStore.getState().enterKidsMode(data.profile);
 
       toast.success(data.message || `Welcome, ${data.profile.name}! Kids Mode Activated.`);
-      window.location.href = "/";
+      window.location.replace("/");
     } catch (err) {
       console.error("Kids login error:", err);
       toast.error("Network error during Kids login. Please try again.");
