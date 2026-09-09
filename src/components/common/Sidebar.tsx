@@ -23,7 +23,8 @@ import {
   PanelLeftOpen,
   Shield,
   Zap,
-  Flame
+  Flame,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -60,6 +61,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users', roles: ['admin'] },
   { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews', roles: ['admin'] },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics', roles: ['admin'] },
+  { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions', roles: ['admin'] },
   { id: 'settings_admin', label: 'Settings', icon: Settings, href: '/admin/settings', roles: ['admin'] },
   { id: 'home_admin', label: 'Home Page', icon: Home, href: '/', roles: ['admin'] },
 ];
