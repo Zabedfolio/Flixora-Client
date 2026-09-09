@@ -473,7 +473,9 @@ export default function ReviewsPage() {
                     {currentReviews.map((review) => (
                       <tr
                         key={review.id}
-                        className="border-b border-[#181818] transition-colors hover:bg-[#141414]"
+                        className={`border-b border-[#181818] transition-colors hover:bg-[#141414] ${
+                          openMenu === review.id ? "relative z-50" : "relative z-0"
+                        }`}
                       >
                         {/* USER */}
                         <td className="px-6 py-5">
@@ -548,7 +550,7 @@ export default function ReviewsPage() {
                         </td>
 
                         {/* ACTION */}
-                        <td className="px-6 py-5">
+                        <td className="px-6 py-5 relative z-50">
                           <div className="flex items-center justify-end gap-2">
                             {/* Approve */}
                             <button
@@ -586,7 +588,7 @@ export default function ReviewsPage() {
                               </button>
 
                               {openMenu === review.id && (
-                                <div className="absolute right-0 top-11 z-30 w-36 rounded-xl border border-[#2A2A2A] bg-[#151515] p-1.5 shadow-2xl">
+                                <div className="absolute right-0 bottom-full mb-2 z-[999] w-36 rounded-xl border border-[#2A2A2A] bg-[#151515] p-1.5 shadow-2xl">
                                   {/* Approve */}
                                   <button
                                     type="button"
