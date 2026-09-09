@@ -46,12 +46,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // User Navigation (7 items)
+  // User Navigation
   { id: 'dashboard_user', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['user'] },
   { id: 'mylist', label: 'My List', icon: Bookmark, href: '/dashboard/my-list', roles: ['user'] },
   { id: 'playlists', label: 'Mood Playlists', icon: Sparkles, href: '/dashboard/my-playlist', roles: ['user'] },
   { id: 'history_user', label: 'History', icon: Clock, href: '/dashboard/history', roles: ['user'] },
   { id: 'subscription', label: 'Subscription', icon: Crown, href: '/dashboard/subscription', roles: ['user'] },
+  { id: 'kids_control', label: 'Kids & Parental Control', icon: Shield, href: '/dashboard/kids-control', roles: ['user'] },
   { id: 'settings_user', label: 'Settings', icon: Settings, href: '/dashboard/setting', roles: ['user'] },
   { id: 'home_user', label: 'Home Page', icon: Home, href: '/', roles: ['user'] },
 

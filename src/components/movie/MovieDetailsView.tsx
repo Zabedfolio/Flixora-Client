@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film } from 'lucide-react';
+import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film, Ban, Lock } from 'lucide-react';
 import MovieActions from '@/components/movie/MovieActions';
 import MovieReviewsSection from '@/components/movie/MovieReviewsSection';
+import { useKidsStore } from '@/lib/store/kidsStore';
+import { toast } from 'react-hot-toast';
 
 export interface MovieDetailsProps {
   id: string | number;
@@ -52,6 +54,81 @@ export default function MovieDetailsView({
   cast = [],
   trailerEmbedUrl,
 }: MovieDetailsProps) {
+  const { isKidsMode, isMovieBlocked, activeKidsProfile, exitKidsMode } = useKidsStore();
+  const [unlockPin, setUnlockPin] = useState('');
+  const [showPinInput, setShowPinInput] = useState(false);
+
+  const isBlocked = isKidsMode && isMovieBlocked(id, movie.genres);
+
+  if (isBlocked) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 text-center text-white font-sans">
+        <div className="max-w-md w-full bg-[#0E0E0E] border border-red-500/30 rounded-3xl p-8 shadow-2xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mx-auto">
+            <Ban size={36} />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-black uppercase tracking-wider text-white">
+              Content Restricted
+            </h2>
+            <p className="text-xs text-zinc-400 font-medium">
+              "{movie.title}" is restricted under Kids Mode for <strong className="text-[#FF4C00]">{activeKidsProfile?.name || "Kids"} Profile</strong>.
+            </p>
+          </div>
+
+          {showPinInput ? (
+            <div className="space-y-3 pt-2">
+              <input
+                type="password"
+                maxLength={4}
+                value={unlockPin}
+                onChange={(e) => setUnlockPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter 4-Digit Parent PIN"
+                className="w-full h-11 rounded-xl bg-zinc-950 border border-zinc-800 text-center font-mono tracking-widest text-sm text-white focus:border-[#FF4C00] focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowPinInput(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const success = exitKidsMode(unlockPin);
+                    if (success) {
+                      toast.success("Parent PIN verified! Exited Kids Mode.");
+                    } else {
+                      toast.error("Incorrect Parent PIN code");
+                    }
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider"
+                >
+                  Unlock
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 pt-2">
+              <Link
+                href="/"
+                className="w-full py-3 rounded-xl bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider transition-all hover:scale-[1.02] shadow-lg shadow-[#FF4C00]/20 text-center"
+              >
+                Back to Safe Home Page
+              </Link>
+              <button
+                onClick={() => setShowPinInput(true)}
+                className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                Parent Unlock PIN
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-black text-white selection:bg-[#FF4C00] selection:text-black">
       {/* 1. HERO BANNER SECTION */}
