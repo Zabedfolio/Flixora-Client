@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '@/lib/mongodb';
-import crypto from 'crypto';
+import { auth } from '@/app/(auth)/lib/auth';
+import { createHMAC } from '@better-auth/utils/hmac';
 
 export async function POST(req: Request) {
   try {
@@ -72,23 +73,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create session for parent user to ensure full app API & page access in Kids Mode
-    const sessionToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 Days
-    const now = new Date();
+    // Create session via Better Auth internal adapter for full server-side session validity
+    const ctx = await auth.$context;
     const userIdStr = parentUser._id ? parentUser._id.toString() : parentUser.id;
-    const sessionId = new ObjectId().toString();
+    const session = await ctx.internalAdapter.createSession(userIdStr);
 
-    await db.collection('session').insertOne({
-      _id: sessionId,
-      token: sessionToken,
-      userId: userIdStr,
-      expiresAt: expiresAt,
-      createdAt: now,
-      updatedAt: now,
-      ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1',
-      userAgent: req.headers.get('user-agent') || 'Flixora Client',
-    });
+    // Sign the session token using Better Auth secret and HMAC SHA-256 base64 format
+    const signature = await createHMAC('SHA-256', 'base64').sign(ctx.secret, session.token);
+    const signedCookieValue = `${session.token}.${signature}`;
 
     const formattedProfile = {
       _id: profile._id.toString(),
@@ -119,13 +111,13 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
-      expires: expiresAt,
+      expires: new Date(session.expiresAt),
     };
 
-    // Set Better Auth session cookies for both HTTP & HTTPS
-    response.cookies.set('better-auth.session_token', sessionToken, cookieOptions);
+    // Set signed cookies matching Better Auth session cookie names
+    response.cookies.set('better-auth.session_token', signedCookieValue, cookieOptions);
     if (process.env.NODE_ENV === 'production') {
-      response.cookies.set('__Secure-better-auth.session_token', sessionToken, cookieOptions);
+      response.cookies.set('__Secure-better-auth.session_token', signedCookieValue, cookieOptions);
     }
 
     return response;

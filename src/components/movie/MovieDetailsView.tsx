@@ -58,7 +58,7 @@ export default function MovieDetailsView({
   const [unlockPin, setUnlockPin] = useState('');
   const [showPinInput, setShowPinInput] = useState(false);
 
-  const isBlocked = isKidsMode && isMovieBlocked(id, movie.genres);
+  const isBlocked = isKidsMode && isMovieBlocked(id, movie.genres, movie.title);
 
   if (isBlocked) {
     return (

@@ -20,13 +20,19 @@ interface KidsStore {
   activeKidsProfile: KidsProfile | null;
   blockedMovieIds: string[];
   blockedGenres: string[];
+  blockedMovieTitles: string[];
 
   // Actions
   enterKidsMode: (profile: KidsProfile) => void;
   exitKidsMode: (enteredPin: string) => boolean;
   setActiveKidsProfile: (profile: KidsProfile | null) => void;
-  updateBlockedContent: (blockedMovieIds: string[], blockedGenres: string[]) => void;
-  isMovieBlocked: (movieId: string | number, genres?: string[]) => boolean;
+  updateBlockedContent: (blockedMovieIds: string[], blockedGenres: string[], blockedMovieTitles?: string[]) => void;
+  isMovieBlocked: (
+    movieId?: string | number,
+    arg2?: string | string[],
+    arg3?: string | string[]
+  ) => boolean;
+  syncActiveProfile: () => Promise<void>;
 }
 
 export const useKidsStore = create<KidsStore>()(
@@ -36,6 +42,7 @@ export const useKidsStore = create<KidsStore>()(
       activeKidsProfile: null,
       blockedMovieIds: [],
       blockedGenres: [],
+      blockedMovieTitles: [],
 
       enterKidsMode: (profile: KidsProfile) => {
         set({
@@ -43,6 +50,7 @@ export const useKidsStore = create<KidsStore>()(
           activeKidsProfile: profile,
           blockedMovieIds: profile.blockedMovieIds || [],
           blockedGenres: profile.blockedGenres || [],
+          blockedMovieTitles: profile.blockedMovieTitles || [],
         });
       },
 
@@ -54,6 +62,7 @@ export const useKidsStore = create<KidsStore>()(
             activeKidsProfile: null,
             blockedMovieIds: [],
             blockedGenres: [],
+            blockedMovieTitles: [],
           });
           return true;
         }
@@ -67,6 +76,7 @@ export const useKidsStore = create<KidsStore>()(
             activeKidsProfile: null,
             blockedMovieIds: [],
             blockedGenres: [],
+            blockedMovieTitles: [],
           });
         } else {
           set({
@@ -74,37 +84,136 @@ export const useKidsStore = create<KidsStore>()(
             activeKidsProfile: profile,
             blockedMovieIds: profile.blockedMovieIds || [],
             blockedGenres: profile.blockedGenres || [],
+            blockedMovieTitles: profile.blockedMovieTitles || [],
           });
         }
       },
 
-      updateBlockedContent: (blockedMovieIds: string[], blockedGenres: string[]) => {
-        set({
-          blockedMovieIds,
-          blockedGenres,
-        });
+      updateBlockedContent: (blockedMovieIds: string[], blockedGenres: string[], blockedMovieTitles: string[] = []) => {
+        const currentProfile = get().activeKidsProfile;
+        if (currentProfile) {
+          set({
+            activeKidsProfile: {
+              ...currentProfile,
+              blockedMovieIds,
+              blockedGenres,
+              blockedMovieTitles,
+            },
+            blockedMovieIds,
+            blockedGenres,
+            blockedMovieTitles,
+          });
+        } else {
+          set({
+            blockedMovieIds,
+            blockedGenres,
+            blockedMovieTitles,
+          });
+        }
       },
 
-      isMovieBlocked: (movieId: string | number, genres: string[] = []) => {
-        const { isKidsMode, blockedMovieIds, blockedGenres } = get();
+      isMovieBlocked: (
+        movieId?: string | number,
+        arg2?: string | string[],
+        arg3?: string | string[]
+      ) => {
+        const { isKidsMode, activeKidsProfile, blockedMovieIds, blockedGenres, blockedMovieTitles } = get();
         if (!isKidsMode) return false;
 
-        const strId = String(movieId);
-        if (blockedMovieIds.includes(strId)) return true;
+        const rawBlockedTitles = activeKidsProfile?.blockedMovieTitles || blockedMovieTitles || [];
+        const rawBlockedIds = activeKidsProfile?.blockedMovieIds || blockedMovieIds || [];
+        const rawBlockedGenres = activeKidsProfile?.blockedGenres || blockedGenres || [];
 
-        // Check if all movies or all anime are blocked
-        if (blockedGenres.includes('all_movies') && !genres.includes('Anime')) return true;
-        if (blockedGenres.includes('all_anime') && (genres.includes('Anime') || genres.includes('Animation'))) return true;
+        let titleStr = '';
+        let genresArr: string[] = [];
 
-        // Check matching genre
-        if (genres && genres.length > 0) {
-          const isGenreBlocked = genres.some((g) =>
-            blockedGenres.some((bg) => bg.toLowerCase() === g.toLowerCase())
-          );
-          if (isGenreBlocked) return true;
+        if (typeof arg2 === 'string') {
+          titleStr = arg2;
+        } else if (Array.isArray(arg2)) {
+          genresArr = arg2;
+        }
+
+        if (typeof arg3 === 'string') {
+          if (!titleStr) titleStr = arg3;
+          else genresArr.push(arg3);
+        } else if (Array.isArray(arg3)) {
+          genresArr = [...genresArr, ...arg3];
+        }
+
+        const strId = movieId !== undefined && movieId !== null ? String(movieId).trim().toLowerCase() : '';
+        const strTitle = titleStr.trim().toLowerCase();
+
+        // 1. Check ID match
+        if (strId && rawBlockedIds.some(bId => String(bId).trim().toLowerCase() === strId)) {
+          return true;
+        }
+
+        // 2. Check Title match
+        if (strTitle) {
+          const formatTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const formattedInputTitle = formatTitle(strTitle);
+          if (
+            rawBlockedTitles.some(bTitle => {
+              const b = String(bTitle).trim().toLowerCase();
+              if (!b) return false;
+              const formattedB = formatTitle(b);
+              return (
+                b === strTitle ||
+                formattedB === formattedInputTitle ||
+                (formattedInputTitle.length > 3 && (formattedInputTitle.includes(formattedB) || formattedB.includes(formattedInputTitle)))
+              );
+            })
+          ) {
+            return true;
+          }
+        }
+
+        // 3. Check All Movies / All Anime
+        const isAnimeMovie = genresArr.some(g => g.toLowerCase() === 'anime' || g.toLowerCase() === 'animation');
+        if (rawBlockedGenres.includes('all_movies') && !isAnimeMovie) return true;
+        if (rawBlockedGenres.includes('all_anime') && isAnimeMovie) return true;
+
+        // 4. Check Genre match
+        if (genresArr.length > 0) {
+          const lowerGenres = genresArr.map(g => g.toLowerCase());
+          if (
+            rawBlockedGenres.some(bGenre => {
+              const bg = bGenre.toLowerCase();
+              return lowerGenres.some(lg => lg === bg || lg.includes(bg) || bg.includes(lg));
+            })
+          ) {
+            return true;
+          }
         }
 
         return false;
+      },
+
+      syncActiveProfile: async () => {
+        const { isKidsMode, activeKidsProfile } = get();
+        if (!isKidsMode || !activeKidsProfile?._id) return;
+
+        try {
+          const res = await fetch('/api/kids');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.profiles)) {
+              const fresh = data.profiles.find(
+                (p: KidsProfile) => p._id === activeKidsProfile._id || p.id === activeKidsProfile._id
+              );
+              if (fresh) {
+                set({
+                  activeKidsProfile: fresh,
+                  blockedMovieIds: fresh.blockedMovieIds || [],
+                  blockedGenres: fresh.blockedGenres || [],
+                  blockedMovieTitles: fresh.blockedMovieTitles || [],
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to sync active kids profile:', err);
+        }
       },
     }),
     {

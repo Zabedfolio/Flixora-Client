@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
 import { getBrowseByGenre, GenreRowData } from '@/data/home/browseByGenre';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface MovieRowProps {
   genre: GenreRowData;
@@ -13,6 +14,13 @@ interface MovieRowProps {
 
 const MovieRow = ({ genre }: MovieRowProps) => {
   const sliderRef = useRef<HTMLDivElement | null>(null);
+  const { isKidsMode, isMovieBlocked } = useKidsStore();
+
+  const visibleMovies = genre.movies.filter(
+    (movie) => !isKidsMode || !isMovieBlocked(movie.id, movie.title, genre.title)
+  );
+
+  if (visibleMovies.length === 0) return null;
 
   const scroll = (direction: 'left' | 'right') => {
     if (!sliderRef.current) return;
@@ -68,7 +76,7 @@ const MovieRow = ({ genre }: MovieRowProps) => {
           ref={sliderRef}
           className="flex gap-4 overflow-x-auto overflow-y-hidden scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {genre.movies.map((movie, index) => (
+          {visibleMovies.map((movie, index) => (
             <motion.div
               key={movie.id}
               initial={{
@@ -119,8 +127,12 @@ const MovieRow = ({ genre }: MovieRowProps) => {
 const GenreRows = () => {
   const [genres, setGenres] = useState<GenreRowData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isKidsMode, syncActiveProfile } = useKidsStore();
 
   useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+    }
     getBrowseByGenre()
       .then((data) => {
         setGenres(data);
@@ -130,7 +142,7 @@ const GenreRows = () => {
         console.error('Error fetching genre rows:', err);
         setLoading(false);
       });
-  }, []);
+  }, [isKidsMode]);
 
   if (loading) {
     return (
