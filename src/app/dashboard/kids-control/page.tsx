@@ -23,6 +23,10 @@ import {
   UserCheck,
   RefreshCw,
   Zap,
+  Clapperboard,
+  Ghost,
+  ShieldAlert,
+  Heart,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
@@ -40,12 +44,12 @@ const PRESET_KIDS_AVATARS = [
 ];
 
 const GENRE_CATEGORIES = [
-  { id: "all_movies", label: "Block All Movies", icon: "🎬", desc: "Restrict all feature films" },
-  { id: "all_anime", label: "Block All Anime", icon: "⛩️", desc: "Restrict all anime shows & films" },
-  { id: "Horror", label: "Horror & Gore", icon: "👻", desc: "Block scary or horror titles" },
-  { id: "Thriller", label: "Thriller & Crime", icon: "🔪", desc: "Block intense psychological or crime thrillers" },
-  { id: "Action", label: "Action & Violence", icon: "💥", desc: "Block heavy combat action movies" },
-  { id: "Romance", label: "Romance & Mature", icon: "❤️", desc: "Block romantic and mature themes" },
+  { id: "all_movies", label: "Block All Movies", icon: Clapperboard, desc: "Restrict all feature films" },
+  { id: "all_anime", label: "Block All Anime", icon: Tv, desc: "Restrict all anime shows & films" },
+  { id: "Horror", label: "Horror & Gore", icon: Ghost, desc: "Block scary or horror titles" },
+  { id: "Thriller", label: "Thriller & Crime", icon: ShieldAlert, desc: "Block intense psychological or crime thrillers" },
+  { id: "Action", label: "Action & Violence", icon: Zap, desc: "Block heavy combat action movies" },
+  { id: "Romance", label: "Romance & Mature", icon: Heart, desc: "Block romantic and mature themes" },
 ];
 
 export default function KidsControlPage() {
@@ -539,7 +543,15 @@ export default function KidsControlPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{cat.icon}</span>
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                            isBlocked
+                              ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                              : "bg-zinc-900 text-zinc-400 border border-zinc-800"
+                          }`}
+                        >
+                          <cat.icon size={18} />
+                        </div>
                         <div>
                           <h4 className="text-xs font-black uppercase tracking-wider text-white">
                             {cat.label}
