@@ -62,8 +62,21 @@ export async function POST(req: Request) {
     const cleanSlug = strMovieId.toLowerCase().replace(/[^a-z0-9]/g, '-');
     const lowerTitle = cleanTitle.toLowerCase();
 
+    const targetProfiles = kidsProfiles.filter((p: any) => !kidsProfileId || p._id.toString() === kidsProfileId || p.id === kidsProfileId);
+
     if (isUnblock) {
-      // Pull from arrays
+      // 1. Delete from "blocked_movies" collection in MongoDB
+      await db.collection('blocked_movies').deleteMany({
+        userId,
+        $or: [
+          { movieId: strMovieId },
+          { movieSlug: cleanSlug },
+          { movieTitle: cleanTitle },
+          { movieTitle: lowerTitle },
+        ],
+      });
+
+      // 2. Pull from arrays in "kids_profiles" collection
       await db.collection('kids_profiles').updateMany(query, {
         $pull: {
           blockedMovieIds: { $in: [strMovieId, cleanSlug] },
@@ -72,7 +85,37 @@ export async function POST(req: Request) {
         $set: { updatedAt: new Date() },
       });
     } else {
-      // Add to set (avoid duplicates)
+      // 1. Insert/Upsert into "blocked_movies" collection in MongoDB
+      for (const p of targetProfiles) {
+        const kidIdStr = p._id ? p._id.toString() : p.id;
+        await db.collection('blocked_movies').updateOne(
+          {
+            userId,
+            kidsId: kidIdStr,
+            $or: [
+              { movieId: strMovieId },
+              { movieSlug: cleanSlug },
+              { movieTitle: cleanTitle },
+            ],
+          },
+          {
+            $set: {
+              userId,
+              kidsId: kidIdStr,
+              movieId: strMovieId,
+              movieSlug: cleanSlug,
+              movieTitle: cleanTitle,
+              updatedAt: new Date(),
+            },
+            $setOnInsert: {
+              createdAt: new Date(),
+            },
+          },
+          { upsert: true }
+        );
+      }
+
+      // 2. Add to set in "kids_profiles" collection
       await db.collection('kids_profiles').updateMany(query, {
         $addToSet: {
           blockedMovieIds: { $each: [strMovieId, cleanSlug] },

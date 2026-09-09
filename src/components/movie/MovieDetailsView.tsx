@@ -66,7 +66,8 @@ export default function MovieDetailsView({
       // Query real-time backend MongoDB block endpoint
       const queryId = encodeURIComponent(String(id));
       const queryTitle = encodeURIComponent(movie.title);
-      fetch(`/api/kids/check-block?id=${queryId}&title=${queryTitle}`)
+      const queryKidsId = encodeURIComponent(activeKidsProfile?._id || activeKidsProfile?.id || '');
+      fetch(`/api/kids/check-block?id=${queryId}&title=${queryTitle}&kidsId=${queryKidsId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.success && typeof data.isBlocked === 'boolean') {
@@ -75,7 +76,7 @@ export default function MovieDetailsView({
         })
         .catch(() => {});
     }
-  }, [isKidsMode, id, movie.title, syncActiveProfile]);
+  }, [isKidsMode, id, movie.title, activeKidsProfile, syncActiveProfile]);
 
   const isBlocked =
     isKidsMode &&

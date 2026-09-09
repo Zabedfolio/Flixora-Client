@@ -144,7 +144,14 @@ export const useKidsStore = create<KidsStore>()(
         const strTitle = titleStr.trim().toLowerCase();
 
         // 1. Check ID match
-        if (strId && rawBlockedIds.some(bId => String(bId).trim().toLowerCase() === strId)) {
+        if (
+          strId &&
+          rawBlockedIds.some(
+            (bId) =>
+              String(bId).trim().toLowerCase() === strId ||
+              String(bId).trim().toLowerCase().replace(/[^a-z0-9]/g, '') === strId.replace(/[^a-z0-9]/g, '')
+          )
+        ) {
           return true;
         }
 
@@ -191,16 +198,23 @@ export const useKidsStore = create<KidsStore>()(
 
       syncActiveProfile: async () => {
         const { isKidsMode, activeKidsProfile } = get();
-        if (!isKidsMode || !activeKidsProfile?._id) return;
+        if (!isKidsMode) return;
 
         try {
           const res = await fetch('/api/kids');
           if (res.ok) {
             const data = await res.json();
-            if (data.success && Array.isArray(data.profiles)) {
-              const fresh = data.profiles.find(
-                (p: KidsProfile) => p._id === activeKidsProfile._id || p.id === activeKidsProfile._id
-              );
+            if (data.success && Array.isArray(data.profiles) && data.profiles.length > 0) {
+              const fresh = activeKidsProfile?._id || activeKidsProfile?.id
+                ? data.profiles.find(
+                    (p: KidsProfile) =>
+                      p._id === activeKidsProfile._id ||
+                      p.id === activeKidsProfile._id ||
+                      p._id === activeKidsProfile.id ||
+                      p.id === activeKidsProfile.id
+                  ) || data.profiles[0]
+                : data.profiles[0];
+
               if (fresh) {
                 set({
                   activeKidsProfile: fresh,
