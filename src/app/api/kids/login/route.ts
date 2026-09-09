@@ -72,18 +72,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create session for parent user to ensure full app API access in Kids Mode
-    const sessionToken = crypto.randomUUID();
+    // Create session for parent user to ensure full app API & page access in Kids Mode
+    const sessionToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 Days
     const now = new Date();
     const userIdStr = parentUser._id ? parentUser._id.toString() : parentUser.id;
+    const sessionId = new ObjectId().toString();
 
     await db.collection('session').insertOne({
+      _id: sessionId,
       token: sessionToken,
       userId: userIdStr,
-      expiresAt,
+      expiresAt: expiresAt,
       createdAt: now,
       updatedAt: now,
+      ipAddress: req.headers.get('x-forwarded-for') || '127.0.0.1',
+      userAgent: req.headers.get('user-agent') || 'Flixora Client',
     });
 
     const formattedProfile = {
@@ -110,14 +114,19 @@ export async function POST(req: Request) {
       },
     });
 
-    // Set Better Auth session cookie
-    response.cookies.set('better-auth.session_token', sessionToken, {
+    const cookieOptions = {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       expires: expiresAt,
-    });
+    };
+
+    // Set Better Auth session cookies for both HTTP & HTTPS
+    response.cookies.set('better-auth.session_token', sessionToken, cookieOptions);
+    if (process.env.NODE_ENV === 'production') {
+      response.cookies.set('__Secure-better-auth.session_token', sessionToken, cookieOptions);
+    }
 
     return response;
   } catch (error: any) {
