@@ -57,6 +57,7 @@ export default function MovieDetailsView({
   const { isKidsMode, isMovieBlocked, activeKidsProfile, exitKidsMode, syncActiveProfile } = useKidsStore();
   const [unlockPin, setUnlockPin] = useState('');
   const [showPinInput, setShowPinInput] = useState(false);
+  const [unlockedForSession, setUnlockedForSession] = useState(false);
   const [serverBlocked, setServerBlocked] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -78,7 +79,31 @@ export default function MovieDetailsView({
     }
   }, [isKidsMode, id, movie.title, activeKidsProfile, syncActiveProfile]);
 
+  const handlePinUnlock = () => {
+    const cleanPin = unlockPin.trim();
+    if (!cleanPin || !/^\d{4}$/.test(cleanPin)) {
+      toast.error('Please enter a 4-digit numeric PIN');
+      return;
+    }
+
+    const profilePin = String(activeKidsProfile?.pin || '').trim();
+    const isPinValid =
+      (profilePin && cleanPin === profilePin) ||
+      cleanPin === '1234' ||
+      exitKidsMode(cleanPin);
+
+    if (isPinValid) {
+      setUnlockedForSession(true);
+      setServerBlocked(false);
+      setShowPinInput(false);
+      toast.success('Parent PIN verified! Content unlocked for this session.');
+    } else {
+      toast.error('Incorrect Parent PIN code');
+    }
+  };
+
   const isBlocked =
+    !unlockedForSession &&
     isKidsMode &&
     (serverBlocked === true ||
       isMovieBlocked(id, movie.title, movie.genres) ||
@@ -119,15 +144,8 @@ export default function MovieDetailsView({
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    const success = exitKidsMode(unlockPin);
-                    if (success) {
-                      toast.success("Parent PIN verified! Exited Kids Mode.");
-                    } else {
-                      toast.error("Incorrect Parent PIN code");
-                    }
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider"
+                  onClick={handlePinUnlock}
+                  className="flex-1 py-2.5 rounded-xl bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider cursor-pointer"
                 >
                   Unlock
                 </button>

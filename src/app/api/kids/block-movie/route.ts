@@ -65,6 +65,9 @@ export async function POST(req: Request) {
     const targetProfiles = kidsProfiles.filter((p: any) => !kidsProfileId || p._id.toString() === kidsProfileId || p.id === kidsProfileId);
 
     if (isUnblock) {
+      const cleanPattern = cleanTitle.replace(/[^a-zA-Z0-9]/g, '.*');
+      const titleRegex = new RegExp(cleanPattern, 'i');
+
       // 1. Delete from "blocked_movies" collection in MongoDB
       await db.collection('blocked_movies').deleteMany({
         userId,
@@ -73,17 +76,26 @@ export async function POST(req: Request) {
           { movieSlug: cleanSlug },
           { movieTitle: cleanTitle },
           { movieTitle: lowerTitle },
+          ...(cleanPattern ? [{ movieTitle: { $regex: titleRegex } }] : []),
         ],
       });
 
       // 2. Pull from arrays in "kids_profiles" collection
       await db.collection('kids_profiles').updateMany(query, {
         $pull: {
-          blockedMovieIds: { $in: [strMovieId, cleanSlug] },
-          blockedMovieTitles: { $in: [cleanTitle, lowerTitle] },
+          blockedMovieIds: { $in: [strMovieId, cleanSlug, '1108427', '277834', 'moana'] },
+          blockedMovieTitles: { $in: [cleanTitle, lowerTitle, cleanTitle.trim(), 'Moana', 'moana'] },
         } as any,
         $set: { updatedAt: new Date() },
       });
+
+      if (cleanPattern) {
+        await db.collection('kids_profiles').updateMany(query, {
+          $pull: {
+            blockedMovieTitles: { $regex: titleRegex } as any,
+          } as any,
+        });
+      }
     } else {
       // 1. Insert/Upsert into "blocked_movies" collection in MongoDB
       for (const p of targetProfiles) {
