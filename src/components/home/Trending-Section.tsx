@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Flame, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import MediaCard from '@/components/ui/card';
+import { useKidsStore } from '@/lib/store/kidsStore';
 import { getTrendingNow } from '@/data/home/trendingNow';
 
 interface TrendingItem {
@@ -21,8 +22,12 @@ export default function TrendingNow() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<TrendingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isKidsMode, isMovieBlocked, syncActiveProfile } = useKidsStore();
 
   useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+    }
     getTrendingNow()
       .then(data => {
         setItems(data);
@@ -32,7 +37,11 @@ export default function TrendingNow() {
         console.error('Error loading trending:', err);
         setLoading(false);
       });
-  }, []);
+  }, [isKidsMode]);
+
+  const visibleItems = isKidsMode
+    ? items.filter(item => !isMovieBlocked(item.id, [item.category], item.title))
+    : items;
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -103,7 +112,7 @@ export default function TrendingNow() {
           ref={scrollRef}
           className="flex gap-6 overflow-x-auto overflow-y-hidden pt-6 pb-6 px-3 scroll-smooth scrollbar-none snap-x snap-mandatory -mt-6 -mb-6"
         >
-          {items.map((item, index) => (
+          {visibleItems.map((item, index) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 24 }}

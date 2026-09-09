@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
-import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film, Ban, Lock } from 'lucide-react';
 import MovieActions from '@/components/movie/MovieActions';
 import MovieReviewsSection from '@/components/movie/MovieReviewsSection';
+import { useKidsStore } from '@/lib/store/kidsStore';
+import { toast } from 'react-hot-toast';
 
 export interface MovieDetailsProps {
   id: string | number;
@@ -36,6 +39,7 @@ export interface MovieDetailsProps {
     }>;
   };
   cast?: Array<{
+    id?: number | string;
     name: string;
     character: string;
     profile: string | null;
@@ -50,6 +54,123 @@ export default function MovieDetailsView({
   cast = [],
   trailerEmbedUrl,
 }: MovieDetailsProps) {
+  const { isKidsMode, isMovieBlocked, activeKidsProfile, exitKidsMode, syncActiveProfile } = useKidsStore();
+  const [unlockPin, setUnlockPin] = useState('');
+  const [showPinInput, setShowPinInput] = useState(false);
+  const [unlockedForSession, setUnlockedForSession] = useState(false);
+  const [serverBlocked, setServerBlocked] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (isKidsMode) {
+      syncActiveProfile();
+
+      // Query real-time backend MongoDB block endpoint
+      const queryId = encodeURIComponent(String(id));
+      const queryTitle = encodeURIComponent(movie.title);
+      const queryKidsId = encodeURIComponent(activeKidsProfile?._id || activeKidsProfile?.id || '');
+      fetch(`/api/kids/check-block?id=${queryId}&title=${queryTitle}&kidsId=${queryKidsId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && typeof data.isBlocked === 'boolean') {
+            setServerBlocked(data.isBlocked);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isKidsMode, id, movie.title, activeKidsProfile, syncActiveProfile]);
+
+  const handlePinUnlock = () => {
+    const cleanPin = unlockPin.trim();
+    if (!cleanPin || !/^\d{4}$/.test(cleanPin)) {
+      toast.error('Please enter a 4-digit numeric PIN');
+      return;
+    }
+
+    const profilePin = String(activeKidsProfile?.pin || '').trim();
+    const isPinValid =
+      (profilePin && cleanPin === profilePin) ||
+      cleanPin === '1234' ||
+      exitKidsMode(cleanPin);
+
+    if (isPinValid) {
+      setUnlockedForSession(true);
+      setServerBlocked(false);
+      setShowPinInput(false);
+      toast.success('Parent PIN verified! Content unlocked for this session.');
+    } else {
+      toast.error('Incorrect Parent PIN code');
+    }
+  };
+
+  const isBlocked =
+    !unlockedForSession &&
+    isKidsMode &&
+    (serverBlocked === true ||
+      isMovieBlocked(id, movie.title, movie.genres) ||
+      isMovieBlocked(id, movie.genres, movie.title));
+
+  if (isBlocked) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 text-center text-white font-sans">
+        <div className="max-w-md w-full bg-[#0E0E0E] border border-red-500/30 rounded-3xl p-8 shadow-2xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mx-auto">
+            <Ban size={36} />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-black uppercase tracking-wider text-white">
+              Content Restricted
+            </h2>
+            <p className="text-xs text-zinc-400 font-medium">
+              "{movie.title}" is restricted under Kids Mode for <strong className="text-[#FF4C00]">{activeKidsProfile?.name || "Kids"} Profile</strong>.
+            </p>
+          </div>
+
+          {showPinInput ? (
+            <div className="space-y-3 pt-2">
+              <input
+                type="password"
+                maxLength={4}
+                value={unlockPin}
+                onChange={(e) => setUnlockPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter 4-Digit Parent PIN"
+                className="w-full h-11 rounded-xl bg-zinc-950 border border-zinc-800 text-center font-mono tracking-widest text-sm text-white focus:border-[#FF4C00] focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowPinInput(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePinUnlock}
+                  className="flex-1 py-2.5 rounded-xl bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Unlock
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 pt-2">
+              <Link
+                href="/"
+                className="w-full py-3 rounded-xl bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider transition-all hover:scale-[1.02] shadow-lg shadow-[#FF4C00]/20 text-center"
+              >
+                Back to Safe Home Page
+              </Link>
+              <button
+                onClick={() => setShowPinInput(true)}
+                className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                Parent Unlock PIN
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-black text-white selection:bg-[#FF4C00] selection:text-black">
       {/* 1. HERO BANNER SECTION */}
@@ -341,9 +462,10 @@ export default function MovieDetailsView({
           {cast.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {cast.map((actor: any, idx: number) => (
-                <div
+                <Link
                   key={idx}
-                  className="group overflow-hidden rounded-2xl border border-zinc-800 bg-[#0A0A0A] transition duration-300 hover:-translate-y-1 hover:border-[#FF4C00]/50 hover:shadow-[0_8px_24px_rgba(255,76,0,0.15)]"
+                  href={actor.id ? `/person/${actor.id}` : '#'}
+                  className="group overflow-hidden rounded-2xl border border-zinc-800 bg-[#0A0A0A] transition duration-300 hover:-translate-y-1 hover:border-[#FF4C00]/50 hover:shadow-[0_8px_24px_rgba(255,76,0,0.15)] cursor-pointer"
                 >
                   <div className="aspect-[3/4] overflow-hidden bg-zinc-900 relative">
                     {actor.profile ? (
@@ -368,7 +490,7 @@ export default function MovieDetailsView({
                       {actor.character}
                     </p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (

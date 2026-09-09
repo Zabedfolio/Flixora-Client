@@ -4,11 +4,11 @@ import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import nodemailer from 'nodemailer';
 import { emailOTP } from 'better-auth/plugins';
 
-const mongoUri = process.env.MONGODB_URI;
-if (!mongoUri) {
-  console.warn("Warning: MONGODB_URI is not set in environment variables.");
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Flixora';
+if (!process.env.MONGODB_URI) {
+  console.warn('Warning: MONGODB_URI is not set in environment variables. Falling back to localhost.');
 }
-const client = new MongoClient(mongoUri || 'mongodb://localhost:27017/Flixora');
+const client = new MongoClient(mongoUri);
 
 const db = client.db('Flixora');
 
@@ -223,7 +223,7 @@ export const auth = betterAuth({
       plan: {
         type: 'string',
         required: false,
-        defaultValue: 'Basic'
+        defaultValue: ''
       },
       role: {
         type: 'string',
@@ -236,32 +236,45 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          return {
+            data: {
+              ...user,
+              planId: '',
+              plan: '',
+              role: 'user',
+            },
+          };
+        },
         after: async (user) => {
           try {
-            const basicPlan = await db.collection('plans').findOne({ name: 'Basic' });
-            if (basicPlan) {
-              await db.collection('user').updateOne(
-                { _id: new ObjectId((user as any).id) },
-                { 
-                  $set: { 
-                    planId: basicPlan._id.toString(),
-                    plan: 'Basic',
-                    role: 'user'
-                  } 
-                }
-              );
-            }
+            const rawId = (user as any)._id || (user as any).id;
+            const filter = ObjectId.isValid(rawId)
+              ? { _id: new ObjectId(rawId) }
+              : { _id: rawId };
+
+            await db.collection('user').updateOne(
+              filter,
+              { 
+                $set: { 
+                  planId: '',
+                  plan: '',
+                  role: 'user'
+                } 
+              }
+            );
           } catch (err) {
-            console.error('Error assigning default plan in database hook:', err);
+            console.error('Error in user creation after hook:', err);
           }
         }
       }
     }
   },
-
   database: mongodbAdapter(db, {
-    transaction: false,
+    // Optional: if you don't provide a client, database transactions won't be enabled.
+    client,
   }),
+  transaction: false,
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || '',

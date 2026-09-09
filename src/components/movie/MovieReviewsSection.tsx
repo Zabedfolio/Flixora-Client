@@ -110,7 +110,7 @@ export default function MovieReviewsSection({
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success('Your review has been published!', {
+        toast.success('Your review has been submitted and is pending admin approval!', {
           icon: <Sparkles size={16} className="text-[#FF4C00]" />,
           style: {
             background: '#0E0E0E',

@@ -6,9 +6,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
 import { getGenreName } from "@/data/home/newReleases";
-import ReactMarkdown from "react-markdown";
 import AiMovieResultCard, { AiMovie } from "./AIMovieResultCard";
+
 import { authClient } from "@/app/(auth)/lib/auth-client";
+import { Bebas_Neue, Plus_Jakarta_Sans, Caveat } from "next/font/google";
+
+const bebas = Bebas_Neue({ weight: "400", subsets: ["latin"] });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "600", "700", "800"] });
+const caveat = Caveat({ weight: ["600", "700"], subsets: ["latin"] });
 
 interface Slide {
   id: number;
@@ -20,12 +25,20 @@ interface Slide {
 }
 
 interface AiChatResult {
-  message: string | null;
   movies: AiMovie[];
 }
 
 const AUTO_PLAY_INTERVAL = 6000;
 const RESUME_DELAY = 8000;
+
+const CINEMA_TAGLINES = [
+  "READY FOR SHOWTIME,",
+  "SPOTLIGHT ON,",
+  "NOW STREAMING,",
+  "LIGHTS, CAMERA,",
+  "BINGE MODE ON,",
+  "BACK TO THE REEL,"
+];
 
 export default function HeroBanner() {
   const router = useRouter();
@@ -38,13 +51,21 @@ export default function HeroBanner() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiChatResult | null>(null);
   const [username, setUsername] = useState("Viewer");
+  const [tagline, setTagline] = useState("READY FOR SHOWTIME,");
   const { data: session } = authClient.useSession();
   const userName = session?.user.name ? session.user.name.split(' ')[0] : 'Viewer';
+
+  // Load popular widescreen backdrops dynamically from TMDB API
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * CINEMA_TAGLINES.length);
+    setTagline(CINEMA_TAGLINES[randomIndex]);
+  }, []);
 
   useEffect(() => {
     fetchFromTMDB<{ results: any[] }>("/movie/popular?language=en-US&page=1")
       .then((data) => {
         if (data.results && data.results.length > 0) {
+          // Take top 5 popular backdrops for widescreen banner slides
           const mapped = data.results.slice(0, 5).map((movie) => ({
             id: movie.id,
             image: getTMDBImageUrl(
@@ -117,76 +138,54 @@ export default function HeroBanner() {
   };
 
   const runAiSearch = async (query: string) => {
-    const trimmed = query.trim();
+  const trimmed = query.trim();
 
-    if (!trimmed) {
-      return;
+  if (!trimmed) {
+    return;
+  }
+
+  pauseAutoPlay();
+  setAiLoading(true);
+  setAiResult(null);
+
+  try {
+    const response = await fetch("http://localhost:5000/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: trimmed,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get AI recommendation");
     }
 
-    pauseAutoPlay();
-    setAiLoading(true);
-    setAiResult(null);
+    const result = await response.json();
+    console.log("AI Search Result:", result);
 
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: trimmed,
-          }),
-        },
-      );
-   
-      if (!response.ok) {
-        throw new Error("Failed to get AI recommendation");
-      }
+    // Safe extraction & state update matching AiChatResult interface
+    const extractedMovies = Array.isArray(result.data?.movies)
+      ? result.data.movies
+      : Array.isArray(result.movies)
+      ? result.movies
+      : [];
 
-      const result = await response.json();
-      console.log(result);
-      if (!result.success) {
-        throw new Error(result.message || "AI recommendation failed");
-      }
+    setAiResult({
+      movies: extractedMovies,
+    });
+  } catch (error) {
+    console.error("AI recommendation error:", error);
 
-      // Backend can respond with a plain message, a movies list (like the
-      // TMDB-shaped search payload), or both — normalize all shapes here.
-      const message: string | null =
-        result.data?.message ?? result.message ?? null;
-
-      const rawMovies =
-        result.data?.movies ?? result.movies ?? result.data?.results ?? [];
-
-      const movies: AiMovie[] = Array.isArray(rawMovies)
-        ? rawMovies.map((movie: any) => ({
-          id: movie.id,
-          title: movie.title ?? movie.original_title ?? "Untitled",
-          original_title: movie.original_title,
-          overview: movie.overview,
-          poster_path: movie.poster_path ?? null,
-          backdrop_path: movie.backdrop_path ?? null,
-          release_date: movie.release_date,
-          vote_average: movie.vote_average,
-          vote_count: movie.vote_count,
-          media_type: movie.media_type,
-        }))
-        : [];
-
-      setAiResult({ message, movies });
-    } catch (error) {
-      console.error("AI recommendation error:", error);
-
-      setAiResult({
-        message:
-          "Sorry, I could not get movie recommendations right now. Please try again.",
-        movies: [],
-      });
-    } finally {
-      setAiLoading(false);
-    }
-  };
+    setAiResult({
+      movies: [],
+    });
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -262,10 +261,19 @@ export default function HeroBanner() {
           className="mt-50 w-11/12 md:w-8/12 mx-auto"
         >
           <div className="mb-6 text-center sm:text-left animate-in fade-in duration-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-            <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">
-              Welcome, <span className="text-[#FF4C00]">{userName}</span>!
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF4C00]/15 border border-[#FF4C00]/30 text-[#FF4C00] text-[11px] font-bold tracking-widest uppercase mb-2 backdrop-blur-md">
+              <Sparkles size={12} className="animate-pulse text-[#FF4C00]" />
+              <span>AI Movie Engine</span>
+            </div>
+
+            <h2 className={`${bebas.className} text-4xl sm:text-5xl md:text-6xl tracking-wider text-white uppercase drop-shadow-[0_4px_15px_rgba(0,0,0,0.9)] leading-tight flex flex-wrap items-center justify-center sm:justify-start gap-x-3`}>
+              <span>{tagline}</span>
+              <span className={`${caveat.className} capitalize normal-case text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF4C00] via-[#FF7A00] to-[#FF4C00] drop-shadow-[0_0_20px_rgba(255,76,0,0.6)] px-1 -rotate-2`}>
+                {userName}!
+              </span>
             </h2>
-            <p className="text-xs md:text-sm text-zinc-300 font-bold uppercase tracking-widest mt-2">
+
+            <p className={`${jakarta.className} text-xs md:text-sm text-zinc-300 font-semibold tracking-widest uppercase mt-1 opacity-90`}>
               Our bot will help you find movies based on your mood
             </p>
           </div>
@@ -296,7 +304,7 @@ export default function HeroBanner() {
             </button>
           </form>
 
-          {/* AI response */}
+          {/* AI response - Only cards in Hero Banner */}
           <AnimatePresence mode="wait">
             {(aiLoading || aiResult) && (
               <motion.div
@@ -305,74 +313,41 @@ export default function HeroBanner() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25 }}
-                className="mt-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur-sm"
+                className="mt-3 rounded-2xl border border-[#FF4C00]/30 bg-zinc-950/90 p-3 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] z-20 relative font-sans"
               >
-                <div className="flex items-start gap-2.5">
-                  <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[#FF4C00]" />
-
-                  {aiLoading ? (
+                {aiLoading ? (
+                  <div className="flex items-center gap-2.5 px-2 py-1">
+                    <Sparkles size={14} className="flex-shrink-0 text-[#FF4C00] animate-pulse" />
                     <span className="text-xs font-medium text-zinc-400">
-                      Flix is thinking
-                      <span className="animate-pulse">...</span>
+                      Flix AI is discovering movies for you...
                     </span>
-                  ) : (
-                    aiResult?.message && (
-                      <ReactMarkdown
-                        components={{
-                          h3: ({ children }: { children?: React.ReactNode }) => (
-                            <h3 className="mt-3 text-sm font-bold text-white">
-                              {children}
-                            </h3>
-                          ),
-
-                          p: ({ children }: { children?: React.ReactNode }) => (
-                            <p className="mt-1 text-xs leading-relaxed text-zinc-300">
-                              {children}
-                            </p>
-                          ),
-
-                          strong: ({ children }: { children?: React.ReactNode }) => (
-                            <strong className="font-bold text-white">
-                              {children}
-                            </strong>
-                          ),
-
-                          ul: ({ children }: { children?: React.ReactNode }) => (
-                            <ul className="mt-2 list-disc space-y-1 pl-4">
-                              {children}
-                            </ul>
-                          ),
-                        }}
-                      >
-                        {aiResult.message}
-                      </ReactMarkdown>
-                    )
-                  )}
-                </div>
-
-                {/* Movie results carousel */}
-                {!aiLoading && aiResult && aiResult.movies.length > 0 && (
-                  <div className="mt-3 -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {aiResult.movies.map((movie, index) => (
-                      <AiMovieResultCard
-                        key={movie.id}
-                        movie={movie}
-                        index={index}
-                        onSelect={(m) => router.push(`/movie/${m.id}`)}
-                      />
-                    ))}
                   </div>
+                ) : (
+                  aiResult && (
+                    <>
+                      {/* Movie results carousel - ONLY CARDS */}
+                      {aiResult.movies.length > 0 ? (
+                        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto p-1 scrollbar-none">
+                          {aiResult.movies.map((movie, index) => (
+                            <AiMovieResultCard
+                              key={movie.id}
+                              movie={movie}
+                              index={index}
+                              onSelect={(m) => router.push(`/movie/${m.id}`)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 px-2 py-1">
+                          <Sparkles size={14} className="text-zinc-500" />
+                          <p className="text-xs font-medium text-zinc-400">
+                            No movie matches found for that search — try another genre or title.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )
                 )}
-
-                {!aiLoading &&
-                  aiResult &&
-                  aiResult.movies.length === 0 &&
-                  !aiResult.message && (
-                    <p className="mt-1 text-xs font-medium text-zinc-400">
-                      No matches found for that one — try describing the mood
-                      differently.
-                    </p>
-                  )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -400,7 +375,7 @@ export default function HeroBanner() {
       </button>
 
       {/* Indicators */}
-      <div className="absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 gap-3">
+      <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-3">
         {slides.map((slide, index) => (
           <button
             key={slide.id}

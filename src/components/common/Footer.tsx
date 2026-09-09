@@ -1,81 +1,86 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { Globe, ChevronDown, Film } from 'lucide-react';
-import { FaInstagram, FaTwitter, FaFacebookF, FaYoutube } from 'react-icons/fa';
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { Globe, ChevronDown } from "lucide-react";
+import {
+  FaInstagram,
+  FaTwitter,
+  FaFacebookF,
+  FaYoutube,
+} from "react-icons/fa";
 
 interface FooterLink {
   label: string;
   href: string;
 }
 
-interface FooterColumn {
+interface Column {
   title: string;
   links: FooterLink[];
 }
 
-const FOOTER_COLUMNS: FooterColumn[] = [
+const COLUMNS: Column[] = [
   {
-    title: 'Company',
+    title: "Company",
     links: [
-      { label: 'About Us', href: '/' },
-      { label: 'Careers', href: '/' },
-      { label: 'Press', href: '/' },
-      { label: 'Contact', href: '/' },
+      { label: "About Us", href: "/" },
+      { label: "Careers", href: "/" },
+      { label: "Press", href: "/" },
+      { label: "Contact", href: "/" },
     ],
   },
   {
-    title: 'Explore',
+    title: "Explore",
     links: [
-      { label: 'Movies', href: '/explore' },
-      { label: 'TV Shows', href: '/explore' },
-      { label: 'Anime', href: '/explore' },
-      { label: 'Genres', href: '/explore' },
-      { label: 'New Releases', href: '/trending' },
+      { label: "Movies", href: "/explore" },
+      { label: "TV Shows", href: "/explore" },
+      { label: "Anime", href: "/explore" },
+      { label: "Genres", href: "/explore" },
+      { label: "New Releases", href: "/trending" },
     ],
   },
   {
-    title: 'Account',
+    title: "Account",
     links: [
       {
-        label: 'Manage Subscription',
-        href: '/dashboard/subscription',
+        label: "Manage Subscription",
+        href: "/dashboard/subscription",
       },
       {
-        label: 'Billing',
-        href: '/dashboard/subscription',
+        label: "Billing",
+        href: "/dashboard/subscription",
       },
       {
-        label: 'Account Settings',
-        href: '/dashboard/setting',
+        label: "Account Settings",
+        href: "/dashboard/setting",
       },
       {
-        label: 'Help Center',
-        href: '/',
+        label: "Help Center",
+        href: "/",
       },
     ],
   },
   {
-    title: 'Legal',
+    title: "Legal",
     links: [
       {
-        label: 'Privacy Policy',
-        href: '/',
+        label: "Privacy Policy",
+        href: "/",
       },
       {
-        label: 'Terms of Service',
-        href: '/',
+        label: "Terms of Service",
+        href: "/",
       },
       {
-        label: 'Cookie Preferences',
-        href: '/',
+        label: "Cookie Preferences",
+        href: "/",
       },
       {
-        label: 'Content Guidelines',
-        href: '/',
+        label: "Content Guidelines",
+        href: "/",
       },
     ],
   },
@@ -83,52 +88,69 @@ const FOOTER_COLUMNS: FooterColumn[] = [
 
 const SOCIAL_LINKS = [
   {
-    label: 'Instagram',
+    label: "Instagram",
     icon: FaInstagram,
-    href: '#',
+    href: "#",
   },
   {
-    label: 'Twitter/X',
+    label: "Twitter/X",
     icon: FaTwitter,
-    href: '#',
+    href: "#",
   },
   {
-    label: 'Facebook',
+    label: "Facebook",
     icon: FaFacebookF,
-    href: '#',
+    href: "#",
   },
   {
-    label: 'YouTube',
+    label: "YouTube",
     icon: FaYoutube,
-    href: '#',
+    href: "#",
   },
 ];
 
-const PAYMENT_METHODS = ['VISA', 'MC', 'AMEX', 'PAYPAL'];
+const PAYMENT_METHODS = [
+  "VISA",
+  "MC",
+  "AMEX",
+  "PAYPAL",
+];
 
 export default function Footer() {
-  const [expandedSections, setExpandedSections] = useState<
-    Record<number, boolean>
-  >({});
+  const [expandedSections, setExpandedSections] =
+    useState<Record<number, boolean>>({});
+
   const pathname = usePathname();
 
   const toggleSection = (index: number) => {
-    setExpandedSections(previous => ({
+    setExpandedSections((previous) => ({
       ...previous,
       [index]: !previous[index],
     }));
   };
 
-  // Hide Footer on authentication, dashboard, and admin routes
-  if (pathname?.startsWith('/auth') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+  /*
+   * Hide footer on authentication,
+   * dashboard and admin routes.
+   */
+  if (
+    pathname?.startsWith("/auth") ||
+    pathname?.startsWith("/dashboard") ||
+    pathname?.startsWith("/admin")
+  ) {
     return null;
   }
 
   return (
     <footer className="w-full overflow-hidden border-t border-[#1A1A1A] bg-[#0A0A0A] px-4 pb-8 pt-14 text-zinc-500">
       <div className="mx-auto flex max-w-7xl flex-col gap-10">
-        {/* Header */}
+        {/* =========================================
+            HEADER
+        ========================================== */}
+
         <div className="flex flex-col justify-between gap-6 border-b border-[#1A1A1A]/50 pb-8 md:flex-row md:items-center">
+          {/* Logo */}
+
           <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
             <Link
               href="/"
@@ -149,32 +171,42 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Socials */}
+          {/* Social Links */}
+
           <div className="flex items-center justify-center gap-3">
-            {SOCIAL_LINKS.map(({ label, icon: Icon, href }) => (
-              <a
-                key={label}
-                href={href}
-                aria-label={label}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-900 text-zinc-500 outline-none transition-all duration-200 hover:scale-105 hover:border-[#FF4C00]/50 hover:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
-              >
-                <Icon size={16} />
-              </a>
-            ))}
+            {SOCIAL_LINKS.map(
+              ({ label, icon: Icon, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-900 text-zinc-500 outline-none transition-all duration-200 hover:scale-105 hover:border-[#FF4C00]/50 hover:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
+                >
+                  <Icon size={16} />
+                </a>
+              )
+            )}
           </div>
         </div>
 
-        {/* Footer Columns */}
+        {/* =========================================
+            COLUMNS
+        ========================================== */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-          {FOOTER_COLUMNS.map((column, index) => {
-            const isExpanded = expandedSections[index] ?? false;
+          {COLUMNS.map((column, index) => {
+            const isExpanded =
+              expandedSections[index] ?? false;
 
             return (
               <div key={column.title}>
                 {/* Column Header */}
+
                 <button
                   type="button"
-                  onClick={() => toggleSection(index)}
+                  onClick={() =>
+                    toggleSection(index)
+                  }
                   className="flex w-full items-center justify-between border-b border-[#1A1A1A]/50 py-4 text-left md:cursor-default md:border-none md:py-0"
                 >
                   <div>
@@ -188,22 +220,25 @@ export default function Footer() {
                   <ChevronDown
                     size={14}
                     className={`text-zinc-500 transition-transform duration-300 md:hidden ${
-                      isExpanded ? 'rotate-180 text-[#FF4C00]' : ''
+                      isExpanded
+                        ? "rotate-180 text-[#FF4C00]"
+                        : ""
                     }`}
                   />
                 </button>
 
                 {/* Links */}
+
                 <div
                   className={`overflow-hidden transition-all duration-300 md:block ${
                     isExpanded
-                      ? 'max-h-[300px] opacity-100'
-                      : 'max-h-0 opacity-0 md:max-h-none md:opacity-100'
+                      ? "max-h-[300px] opacity-100"
+                      : "max-h-0 opacity-0 md:max-h-none md:opacity-100"
                   }`}
                 >
                   <ul className="space-y-3 py-4 md:py-5">
-                    {column.links.map(link => (
-                      <li key={link.href}>
+                    {column.links.map((link, linkIndex) => (
+                      <li key={`${column.title}-${link.label}-${linkIndex}`}>
                         <Link
                           href={link.href}
                           className="rounded text-[13px] font-medium text-[#B3B3B3] outline-none transition-colors hover:text-[#FF4C00] focus-visible:text-[#FF4C00] focus-visible:ring-2 focus-visible:ring-[#FF4C00]/50"
@@ -219,16 +254,21 @@ export default function Footer() {
           })}
         </div>
 
-        {/* Bottom */}
+        {/* =========================================
+            BOTTOM
+        ========================================== */}
+
         <div className="flex flex-col items-center justify-between gap-6 border-t border-[#1A1A1A] pt-8 md:flex-row">
           {/* Copyright */}
+
           <p className="order-3 text-center text-[11px] text-zinc-600 md:order-1 md:text-left">
             © 2026 Flixora. All rights reserved.
           </p>
 
-          {/* Payments */}
+          {/* Payment Methods */}
+
           <div className="order-2 flex items-center gap-2.5 text-[10px] font-bold tracking-widest text-zinc-700">
-            {PAYMENT_METHODS.map(method => (
+            {PAYMENT_METHODS.map((method) => (
               <span
                 key={method}
                 className="rounded border border-zinc-900 bg-[#0A0A0A] px-2 py-0.5"
@@ -239,21 +279,33 @@ export default function Footer() {
           </div>
 
           {/* Language */}
-          <div className="order-1 relative flex items-center rounded-full border border-zinc-900 bg-zinc-950 px-3.5 py-2 text-zinc-400 transition-colors hover:border-[#FF4C00]/50 hover:text-white md:order-3">
-            <Globe size={14} className="mr-2 text-[#FF4C00]" />
+
+          <div className="relative order-1 flex items-center rounded-full border border-zinc-900 bg-zinc-950 px-3.5 py-2 text-zinc-400 transition-colors hover:border-[#FF4C00]/50 hover:text-white md:order-3">
+            <Globe
+              size={14}
+              className="mr-2 text-[#FF4C00]"
+            />
 
             <select
               aria-label="Select language"
               defaultValue="en-US"
               className="cursor-pointer appearance-none bg-transparent pr-5 text-xs font-bold outline-none"
             >
-              <option value="en-US">English (US)</option>
+              <option value="en-US">
+                English (US)
+              </option>
 
-              <option value="es-ES">Español</option>
+              <option value="es-ES">
+                Español
+              </option>
 
-              <option value="fr-FR">Français</option>
+              <option value="fr-FR">
+                Français
+              </option>
 
-              <option value="ja-JP">日本語</option>
+              <option value="ja-JP">
+                日本語
+              </option>
             </select>
 
             <ChevronDown

@@ -13,7 +13,9 @@ import {
   User, 
   LogOut, 
   ShieldAlert,
-  Home
+  Shield,
+  Home,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,8 +30,10 @@ const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { id: 'catalogue', label: 'Catalogue', icon: Film, href: '/admin/catalogue' },
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users' },
+  { id: 'kids', label: 'Kids Profiles', icon: Shield, href: '/admin/kids' },
   { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
+  { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' },
   { id: 'home', label: 'Home Page', icon: Home, href: '/' },
 ];

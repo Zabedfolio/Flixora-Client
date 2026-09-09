@@ -23,7 +23,8 @@ import {
   PanelLeftOpen,
   Shield,
   Zap,
-  Flame
+  Flame,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -45,21 +46,24 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  // User Navigation (7 items)
+  // User Navigation
   { id: 'dashboard_user', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['user'] },
   { id: 'mylist', label: 'My List', icon: Bookmark, href: '/dashboard/my-list', roles: ['user'] },
   { id: 'playlists', label: 'Mood Playlists', icon: Sparkles, href: '/dashboard/my-playlist', roles: ['user'] },
   { id: 'history_user', label: 'History', icon: Clock, href: '/dashboard/history', roles: ['user'] },
   { id: 'subscription', label: 'Subscription', icon: Crown, href: '/dashboard/subscription', roles: ['user'] },
+  { id: 'kids_control', label: 'Kids & Parental Control', icon: Shield, href: '/dashboard/kids-control', roles: ['user'] },
   { id: 'settings_user', label: 'Settings', icon: Settings, href: '/dashboard/setting', roles: ['user'] },
   { id: 'home_user', label: 'Home Page', icon: Home, href: '/', roles: ['user'] },
 
-  // Admin Navigation (7 items)
+  // Admin Navigation (8 items)
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin', roles: ['admin'] },
   { id: 'catalogue', label: 'Catalogue', icon: Film, href: '/admin/catalogue', roles: ['admin'] },
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users', roles: ['admin'] },
+  { id: 'kids_admin', label: 'Kids Profiles', icon: Shield, href: '/admin/kids', roles: ['admin'] },
   { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews', roles: ['admin'] },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics', roles: ['admin'] },
+  { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions', roles: ['admin'] },
   { id: 'settings_admin', label: 'Settings', icon: Settings, href: '/admin/settings', roles: ['admin'] },
   { id: 'home_admin', label: 'Home Page', icon: Home, href: '/', roles: ['admin'] },
 ];
@@ -108,8 +112,9 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     planId?: string;
   } | null>(null);
   const [sessionRole, setSessionRole] = useState<string>('user');
+  const [hasKidsProfiles, setHasKidsProfiles] = useState<boolean>(false);
 
-  // Load and update from the live database user profile
+  // Load and update from the live database user profile and kids profiles check
   useEffect(() => {
     const fetchLiveProfile = async () => {
       try {
@@ -127,14 +132,44 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
         console.error('Failed to fetch live user profile in sidebar:', err);
       }
     };
+
+    const checkKidsProfiles = async () => {
+      try {
+        const res = await fetch('/api/kids');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.profiles) && data.profiles.length > 0) {
+            setHasKidsProfiles(true);
+          } else {
+            setHasKidsProfiles(false);
+          }
+        }
+      } catch {
+        setHasKidsProfiles(false);
+      }
+    };
+
     fetchLiveProfile();
+    checkKidsProfiles();
   }, [session]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('flixora-session-role') as 'user' | 'admin';
+      if (saved) {
+        setSessionRole(saved);
+      }
+    }
+  }, []);
 
   const currentRole = forcedRole || (sessionLoading ? 'loading' : (session ? sessionRole : 'user'));
   const isLoading = sessionLoading || currentRole === 'loading';
 
   const handleRoleToggle = () => {
     const nextRole = currentRole === 'admin' ? 'user' : 'admin';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('flixora-session-role', nextRole);
+    }
     setSessionRole(nextRole);
     setIsProfileOpen(false);
   };
@@ -143,9 +178,12 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const permissionRole = currentRole === 'admin' ? 'admin' : 'user';
 
   // Filter items matching current role's permission level
-  const filteredItems = NAV_ITEMS.filter(item => 
-    !isLoading && item.roles.includes(permissionRole)
-  );
+  const filteredItems = NAV_ITEMS.filter(item => {
+    if (isLoading) return false;
+    if (!item.roles.includes(permissionRole)) return false;
+    if (item.id === 'kids_control' && !hasKidsProfiles) return false;
+    return true;
+  });
 
   // Active state matching based on active route
   const getActiveItem = () => {
@@ -222,7 +260,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
         </nav>
       ) : (
         /* CONDITIONAL ROLE NAVIGATION */
-        <nav className={`flex-grow px-4 py-6 space-y-2.5 overflow-visible ${isCollapsed ? 'px-2' : ''}`}>
+        <nav className={`flex-grow px-4 py-6 space-y-2.5 overflow-y-auto scrollbar-none ${isCollapsed ? 'px-2' : ''}`}>
           {filteredItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeId === item.id;

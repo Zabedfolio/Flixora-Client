@@ -75,9 +75,13 @@ export default function FeaturedActors() {
             The faces behind this week&apos;s biggest titles
           </p>
         </div>
-        <button className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-zinc-400 hover:text-[#FF4C00] transition-colors whitespace-nowrap">
-          View All
-        </button>
+        <Link
+          href="/actors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-xs font-bold text-zinc-300 hover:text-white hover:border-[#FF4C00]/50 transition-all whitespace-nowrap cursor-pointer shadow-sm"
+        >
+          <span>View All</span>
+          <ChevronRight className="w-3.5 h-3.5 text-[#FF4C00]" />
+        </Link>
       </div>
 
       {/* SCROLL ROW */}
@@ -108,44 +112,49 @@ export default function FeaturedActors() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="group/card flex-none w-[140px] sm:w-[160px] snap-start flex flex-col items-center text-center gap-3 cursor-pointer"
+              className="group/card flex-none w-[140px] sm:w-[160px] snap-start"
             >
-              {/* Circular avatar (DaisyUI avatar) */}
-              <div className="avatar">
-                <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full ring-2 ring-white/10 group-hover/card:ring-[#FF4C00] ring-offset-2 ring-offset-black overflow-hidden transition-all duration-300 group-hover/card:scale-105 group-hover/card:shadow-[0_0_20px_rgba(255,76,0,0.25)]">
-                  <Image
-                    width={50}
-                    height={50}
-                    src={actor.image}
-                    alt={actor.name}
-                    className="w-full h-full object-cover"
-                  />
-
-                  {/* Rating chip overlay */}
-                  <div className="absolute bottom-0 inset-x-0 py-1 bg-black/70 backdrop-blur-sm flex items-center justify-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-                    <Star
-                      size={10}
-                      className="text-[#FF4C00]"
-                      fill="currentColor"
+              <Link
+                href={`/person/${actor.id}`}
+                className="flex flex-col items-center text-center gap-3 cursor-pointer"
+              >
+                {/* Circular avatar (DaisyUI avatar) */}
+                <div className="avatar">
+                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full ring-2 ring-white/10 group-hover/card:ring-[#FF4C00] ring-offset-2 ring-offset-black overflow-hidden transition-all duration-300 group-hover/card:scale-105 group-hover/card:shadow-[0_0_20px_rgba(255,76,0,0.25)]">
+                    <Image
+                      width={128}
+                      height={128}
+                      src={actor.image}
+                      alt={actor.name}
+                      className="w-full h-full object-cover"
                     />
-                    <span className="text-[10px] font-black text-white">
-                      {actor.rating.toFixed(1)}
-                    </span>
+
+                    {/* Rating chip overlay */}
+                    <div className="absolute bottom-0 inset-x-0 py-1 bg-black/70 backdrop-blur-sm flex items-center justify-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+                      <Star
+                        size={10}
+                        className="text-[#FF4C00]"
+                        fill="currentColor"
+                      />
+                      <span className="text-[10px] font-black text-white">
+                        {actor.rating.toFixed(1)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-0.5">
-                <h4 className="text-sm font-bold text-white leading-tight group-hover/card:text-[#FF4C00] transition-colors">
-                  {actor.name}
-                </h4>
-                <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wide">
-                  {actor.role}
-                </p>
-                <p className="text-[10px] text-zinc-600 flex items-center justify-center gap-1 mt-0.5 truncate max-w-[140px]">
-                  <Film size={10} className="flex-shrink-0" /> {actor.knownFor}
-                </p>
-              </div>
+                <div className="flex flex-col gap-0.5">
+                  <h4 className="text-sm font-bold text-white leading-tight group-hover/card:text-[#FF4C00] transition-colors">
+                    {actor.name}
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wide">
+                    {actor.role}
+                  </p>
+                  <p className="text-[10px] text-zinc-600 flex items-center justify-center gap-1 mt-0.5 truncate max-w-[140px]">
+                    <Film size={10} className="flex-shrink-0" /> {actor.knownFor}
+                  </p>
+                </div>
+              </Link>
             </motion.div>
           ))}
         </div>

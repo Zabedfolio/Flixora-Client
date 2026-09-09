@@ -324,7 +324,7 @@ export default function AddToPlaylistModal({
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/*  Actions */}
         <div className="flex flex-col gap-2 pt-3 border-t border-[#1A1A1A]">
           <button 
             onClick={() => {

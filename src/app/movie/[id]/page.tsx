@@ -12,13 +12,14 @@ interface PageProps {
 export default async function MovieDetailsPage({ params }: PageProps) {
   const { id } = await params;
 
-  // 1. Authenticate User Server-Side
-  const authSession = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!authSession?.user?.id) {
-    redirect('/auth/login');
+  // 1. Authenticate User Server-Side (Soft check for watch history recording)
+  let authSession: any = null;
+  try {
+    authSession = await auth.api.getSession({
+      headers: await headers(),
+    });
+  } catch (err) {
+    // silent catch for unauthenticated / guest / kids mode sessions
   }
 
   let movieData: any = null;
@@ -135,27 +136,41 @@ export default async function MovieDetailsPage({ params }: PageProps) {
   };
 
   // Record Watch History in MongoDB
-  try {
-    const { db } = await connectToDatabase();
-    await db.collection("history").updateOne(
-      { userId: authSession.user.id, movieId: resolvedId },
-      { 
-        $set: { 
-          title: movie.title,
-          poster: movie.poster,
-          year: movie.releaseDate,
-          duration: movie.runtime,
-          category: movie.genres[0] || 'Movie',
-          watchedDate: new Date()
-        } 
-      },
-      { upsert: true }
-    );
-  } catch (err) {
-    console.error("Error recording watch history:", err);
+  if (authSession?.user?.id) {
+    try {
+      const { db } = await connectToDatabase();
+      const genreIds = Array.isArray(movieData.genres)
+        ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.id : null)).filter(Boolean)
+        : (Array.isArray(movieData.genre_ids) ? movieData.genre_ids : []);
+
+      const genreNames = Array.isArray(movieData.genres)
+        ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.name : g)).filter(Boolean)
+        : [];
+
+      await db.collection("history").updateOne(
+        { userId: authSession.user.id, movieId: resolvedId },
+        { 
+          $set: { 
+            title: movie.title,
+            poster: movie.poster,
+            year: movie.releaseDate,
+            duration: movie.runtime,
+            category: movie.genres[0] || 'Movie',
+            genres: genreNames.length > 0 ? genreNames : [movie.genres[0] || 'Movie'],
+            genreIds: genreIds,
+            tmdbId: resolvedId,
+            watchedDate: new Date()
+          } 
+        },
+        { upsert: true }
+      );
+    } catch (err) {
+      console.error("Error recording watch history:", err);
+    }
   }
 
-  const cast = creditsData?.cast?.slice(0, 6).map((c: any) => ({
+  const cast = creditsData?.cast?.slice(0, 12).map((c: any) => ({
+    id: c.id,
     name: c.name,
     character: c.character,
     profile: c.profile_path ? getTMDBImageUrl(c.profile_path, 'w200') : null

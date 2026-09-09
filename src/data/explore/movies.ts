@@ -72,3 +72,79 @@ export async function getExploreMovies(query: string, genre: string, page: numbe
     totalResults: data.total_results,
   };
 }
+
+export async function getExploreMoviesFor12Page(query: string, genre: string, cataloguePage: number = 1, filter?: string) {
+  const pageSize = 12;
+  const startIndex = (cataloguePage - 1) * pageSize;
+  const endIndex = cataloguePage * pageSize - 1;
+
+  const startTmdbPage = Math.floor(startIndex / 20) + 1;
+  const endTmdbPage = Math.floor(endIndex / 20) + 1;
+
+  const getEndpoint = (tmdbPage: number) => {
+    let endpoint = `/movie/popular?language=en-US&page=${tmdbPage}`;
+    if (query) {
+      endpoint = `/search/movie?query=${encodeURIComponent(query)}&language=en-US&page=${tmdbPage}`;
+    } else if (filter === 'trending') {
+      endpoint = `/trending/movie/day?language=en-US&page=${tmdbPage}`;
+    } else if (filter === 'top-rated') {
+      endpoint = `/movie/top_rated?language=en-US&page=${tmdbPage}`;
+    } else if (filter === 'new-releases') {
+      endpoint = `/movie/now_playing?language=en-US&page=${tmdbPage}`;
+    } else if (genre && genre !== 'All') {
+      const genreId = EXPLORE_GENRE_MAP[genre];
+      if (genreId) {
+        endpoint = `/discover/movie?with_genres=${genreId}&sort_by=popularity.desc&language=en-US&page=${tmdbPage}`;
+      }
+    }
+    return endpoint;
+  };
+
+  const data1 = await fetchFromTMDB<TMDBResponse>(getEndpoint(startTmdbPage));
+  let combinedResults = [...(data1.results || [])];
+
+  if (endTmdbPage > startTmdbPage && endTmdbPage <= data1.total_pages) {
+    const data2 = await fetchFromTMDB<TMDBResponse>(getEndpoint(endTmdbPage));
+    combinedResults = [...combinedResults, ...(data2.results || [])];
+  }
+
+  const tmdbStartOffset = (startTmdbPage - 1) * 20;
+  const localSliceStart = startIndex - tmdbStartOffset;
+  const localSliceEnd = localSliceStart + pageSize;
+
+  const slicedResults = combinedResults.slice(localSliceStart, localSliceEnd);
+
+  const movies = slicedResults.map((movie) => {
+    const matchScore = 80 + (movie.id % 20);
+    return {
+      id: movie.id.toString(),
+      title: movie.title,
+      rating: movie.vote_average || 8.0,
+      year: movie.release_date ? new Date(movie.release_date).getFullYear() : 2026,
+      duration: '2h 10m',
+      matchScore,
+      genres: movie.genre_ids ? movie.genre_ids.map(id => {
+        const genreMap: Record<number, string> = {
+          28: 'Action', 12: 'Adventure', 16: 'Anime', 35: 'Comedy', 80: 'Crime',
+          99: 'Doc', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+          27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance',
+          878: 'Sci-Fi', 53: 'Thriller', 10752: 'War', 37: 'Western'
+        };
+        return genreMap[id] || '';
+      }).filter(Boolean) : [],
+      moods: [],
+      posterUrl: getTMDBImageUrl(movie.poster_path, 'w500'),
+      isAiRecommended: matchScore >= 95,
+    };
+  });
+
+  const totalResults = data1.total_results || 0;
+  const totalPages = Math.max(1, Math.ceil(totalResults / pageSize));
+
+  return {
+    movies,
+    totalPages,
+    totalResults,
+  };
+}
+
