@@ -57,7 +57,7 @@ export default function FAQ() {
   };
 
   return (
-    <section className="w-full bg-black py-20 sm:py-24 lg:py-28">
+    <section className="w-full bg-black py-5 sm:py-10 ">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* =====================================
             HEADER
