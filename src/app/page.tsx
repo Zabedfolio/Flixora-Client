@@ -11,6 +11,7 @@ import GenreRows from '@/components/home/GenreRows';
 import PopularAnime from '@/components/home/PopularAnime';
 import TopRated from '@/components/home/TopReatedSection';
 import FeaturedActors from '@/components/home/FeatureBased';
+import AboutSection from "@/components/common/AboutSection";
 import ReviewSection from "@/components/home/ReviewSection";
 import FAQ from '@/components/home/FAQ';
 import AIChatbot from '@/components/AI/AIChatbot';
@@ -32,6 +33,7 @@ export default function Home() {
       <TopRated />
       <TitleRow />
       <FeaturedActors />
+      <AboutSection />
       <ReviewSection />
       <FAQ />
     </div>
