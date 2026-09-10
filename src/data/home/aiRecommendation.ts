@@ -89,7 +89,7 @@ export async function fetchAIRecommendation(customGenres?: string[], userId?: st
 
   const activeGenres = watchedGenres.length > 0 ? watchedGenres : ['Action', 'Sci-Fi', 'Thriller'];
 
-  const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+  const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'https://flixora-server.vercel.app';
 
   try {
     const response = await fetch(`${serverUrl}/api/ai/recommendations`, {

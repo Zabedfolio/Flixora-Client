@@ -149,7 +149,8 @@ export default function HeroBanner() {
   setAiResult(null);
 
   try {
-    const response = await fetch("http://localhost:5000/api/ai/chat", {
+    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || "https://flixora-server.vercel.app";
+    const response = await fetch(`${serverUrl}/api/ai/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -78,7 +78,7 @@ export default function ModeBaseMovie() {
       setRefreshing(true);
       const watched = getWatchedGenres();
 
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'https://flixora-server.vercel.app';
 
       // 1. Fetch AI recommendations endpoint from backend
       const res = await fetch(`${serverUrl}/api/ai/recommendations`, {
