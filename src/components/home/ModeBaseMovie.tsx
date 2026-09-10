@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getServerUrl } from '@/lib/config';
 import { Sparkles, Play, Plus, ChevronLeft, ChevronRight, RefreshCw, Wand2 } from 'lucide-react';
 import MediaCard from '@/components/ui/card';
 import { getTMDBImageUrl, fetchFromTMDB } from '@/data/tmdb';
@@ -78,7 +80,7 @@ export default function ModeBaseMovie() {
       setRefreshing(true);
       const watched = getWatchedGenres();
 
-      const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'https://flixora-server.vercel.app';
+      const serverUrl = getServerUrl();
 
       // 1. Fetch AI recommendations endpoint from backend
       const res = await fetch(`${serverUrl}/api/ai/recommendations`, {

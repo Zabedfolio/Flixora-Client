@@ -103,7 +103,9 @@ export interface PromoCodeFormInput {
   usageLimit: number;
 }
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'https://flixora-server.vercel.app';
+import { getServerUrl } from '@/lib/config';
+
+const SERVER_URL = getServerUrl();
 
 class AdminApiClient {
   /**

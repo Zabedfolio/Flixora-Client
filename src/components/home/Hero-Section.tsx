@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getServerUrl } from "@/lib/config";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
@@ -149,7 +150,7 @@ export default function HeroBanner() {
   setAiResult(null);
 
   try {
-    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || "https://flixora-server.vercel.app";
+    const serverUrl = getServerUrl();
     const response = await fetch(`${serverUrl}/api/ai/chat`, {
       method: "POST",
       headers: {

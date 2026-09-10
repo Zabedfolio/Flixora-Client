@@ -1,5 +1,6 @@
 import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
 import { getHistory } from '@/data/historyStore';
+import { getServerUrl } from '@/lib/config';
 
 export interface AIRecommendationResult {
   reason: string;
@@ -89,7 +90,7 @@ export async function fetchAIRecommendation(customGenres?: string[], userId?: st
 
   const activeGenres = watchedGenres.length > 0 ? watchedGenres : ['Action', 'Sci-Fi', 'Thriller'];
 
-  const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'https://flixora-server.vercel.app';
+  const serverUrl = getServerUrl();
 
   try {
     const response = await fetch(`${serverUrl}/api/ai/recommendations`, {
