@@ -103,7 +103,9 @@ export interface PromoCodeFormInput {
   usageLimit: number;
 }
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+import { getServerUrl } from '@/lib/config';
+
+const SERVER_URL = getServerUrl();
 
 class AdminApiClient {
   /**
