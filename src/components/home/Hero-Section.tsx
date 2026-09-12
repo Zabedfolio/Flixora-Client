@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getServerUrl } from "@/lib/config";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronLeft, ChevronRight, Send, Sparkles } from "lucide-react";
 import { fetchFromTMDB, getTMDBImageUrl } from "@/data/tmdb";
@@ -149,7 +150,8 @@ export default function HeroBanner() {
   setAiResult(null);
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/chat`, {
+    const serverUrl = getServerUrl();
+    const response = await fetch(`${serverUrl}/api/ai/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

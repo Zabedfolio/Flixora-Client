@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
 
-const SERVER_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// Live: https://flixora-server.vercel.app
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
 
 export async function GET(req: NextRequest) {
