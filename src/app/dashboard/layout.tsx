@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SideNavbar from "./Side-Navbar";
 import { PanelLeftOpen } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,21 @@ interface RootLayoutProps {
 export default function DashboardLayout({ children }: RootLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    // If user is currently logging out, do not redirect to login!
+    // The logout handler will redirect to the home page ('/').
+    if (typeof window !== "undefined" && sessionStorage.getItem("is_logging_out")) {
+      return;
+    }
+
+    if (!isPending && !session?.user) {
+      router.replace("/auth/login");
+    }
+  }, [isPending, session, router]);
 
   // Resolve breadcrumbs subpage
   const getSubpageLabel = () => {
@@ -25,6 +41,29 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
   };
 
   const subpage = getSubpageLabel();
+
+  // Show a full-screen loading state while session is being resolved
+  // or while redirecting unauthenticated users / logging out
+  if (isPending || !session?.user) {
+    const isLoggingOut =
+      typeof window !== "undefined" &&
+      Boolean(sessionStorage.getItem("is_logging_out"));
+
+    return (
+      <div className="flex h-screen bg-black items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 rounded-full border-2 border-[#FF4C00] border-t-transparent animate-spin" />
+          <p className="text-zinc-500 text-xs font-semibold tracking-widest uppercase">
+            {isLoggingOut
+              ? "Signing out..."
+              : isPending
+                ? "Loading..."
+                : "Redirecting..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-black text-white w-full overflow-hidden relative font-sans">

@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -172,6 +173,32 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     }
     setSessionRole(nextRole);
     setIsProfileOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    setIsProfileOpen(false);
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('is_logging_out', 'true');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('flixora-session-role');
+        window.dispatchEvent(new Event('auth-logout'));
+      }
+      useKidsStore.getState().setActiveKidsProfile(null);
+      setLiveProfile(null);
+
+      await authClient.signOut();
+      toast.success('Logged out successfully!');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Something went wrong during logout.');
+    } finally {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('is_logging_out');
+        window.location.href = '/';
+      }
+    }
   };
 
   // Resolve permission level: any role that is not admin acts as standard user permissions
@@ -407,13 +434,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
               <div className="h-px bg-[#1A1A1A] my-1" />
               
               <button 
-                onClick={async () => {
-                  setIsProfileOpen(false);
-                  await authClient.signOut({
-                    callbackURL: '/login',
-                  });
-                  toast.success('Logged out successfully!');
-                }}
+                onClick={handleSignOut}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left cursor-pointer"
               >
                 <LogOut size={14} />
