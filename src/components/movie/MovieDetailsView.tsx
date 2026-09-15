@@ -59,6 +59,7 @@ export default function MovieDetailsView({
   const [showPinInput, setShowPinInput] = useState(false);
   const [unlockedForSession, setUnlockedForSession] = useState(false);
   const [serverBlocked, setServerBlocked] = useState<boolean | null>(null);
+  console.log(movie);
 
   useEffect(() => {
     if (isKidsMode) {
