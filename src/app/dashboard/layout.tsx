@@ -15,6 +15,7 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
 
   // Resolve breadcrumbs subpage
   const getSubpageLabel = () => {
+    if (pathname === '/dashboard/my-tickets' || pathname === '/dashboard/bookings') return 'Bookings';
     if (pathname === '/dashboard/setting') return 'Settings';
     if (pathname === '/dashboard/my-list') return 'My List';
     if (pathname === '/dashboard/my-playlist') return 'Playlists';

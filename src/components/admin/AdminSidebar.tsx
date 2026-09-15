@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Shield,
   Home,
-  CreditCard
+  CreditCard,
+  Ticket
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -29,6 +30,7 @@ interface AdminSidebarProps {
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { id: 'catalogue', label: 'Catalogue', icon: Film, href: '/admin/catalogue' },
+  { id: 'bookings', label: 'Bookings', icon: Ticket, href: '/admin/bookings' },
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users' },
   { id: 'kids', label: 'Kids Profiles', icon: Shield, href: '/admin/kids' },
   { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews' },

@@ -15,6 +15,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
 
   const getSubpageLabel = () => {
+    if (pathname === '/admin/bookings') return 'Cinema Bookings';
     if (pathname === '/admin/analytics') return 'Revenue & Analytics';
     if (pathname === '/admin/transactions') return 'Transactions & Invoices';
     if (pathname === '/admin/settings') return 'Plans & Promo Codes';
