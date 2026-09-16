@@ -1,66 +1,104 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from './app/(auth)/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+  // Retrieve session token from cookies (Edge-compatible)
+  const sessionToken =
+    request.cookies.get('better-auth.session_token')?.value ||
+    request.cookies.get('__Secure-better-auth.session_token')?.value;
 
-    const user = session?.user;
-
-    // 1. ADMIN DASHBOARD ROUTE PROTECTION (/admin and /admin/*)
-    if (pathname.startsWith('/admin')) {
-      if (!user) {
-        const loginUrl = new URL('/auth/login', request.url);
-        loginUrl.searchParams.set('callbackUrl', pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-
-      if ((user as any).role !== 'admin') {
-        // Logged-in non-admin user trying to access admin dashboard -> redirect to user dashboard
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
+  // 1. ADMIN DASHBOARD ROUTE PROTECTION (/admin and /admin/*)
+  if (pathname.startsWith('/admin')) {
+    if (!sessionToken) {
+      const accessDeniedUrl = new URL('/access-denied', request.url);
+      accessDeniedUrl.searchParams.set('reason', 'unauthenticated');
+      accessDeniedUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(accessDeniedUrl);
     }
 
-    // 2. USER DASHBOARD ROUTE PROTECTION (/dashboard and /dashboard/*)
-    if (pathname.startsWith('/dashboard')) {
-      if (!user) {
-        const loginUrl = new URL('/auth/login', request.url);
-        loginUrl.searchParams.set('callbackUrl', pathname);
-        return NextResponse.redirect(loginUrl);
+    try {
+      // Fetch session from Node.js API route to verify admin role
+      const sessionRes = await fetch(new URL('/api/auth/get-session', request.url), {
+        headers: {
+          cookie: request.headers.get('cookie') || '',
+        },
+      });
+
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+        const user = sessionData?.user;
+
+        if (!user) {
+          const accessDeniedUrl = new URL('/access-denied', request.url);
+          accessDeniedUrl.searchParams.set('reason', 'unauthenticated');
+          accessDeniedUrl.searchParams.set('callbackUrl', pathname);
+          return NextResponse.redirect(accessDeniedUrl);
+        }
+
+        if (user.role !== 'admin') {
+          // Logged-in non-admin trying to breach admin dashboard -> redirect to production-level access-denied page
+          const accessDeniedUrl = new URL('/access-denied', request.url);
+          accessDeniedUrl.searchParams.set('reason', 'admin_required');
+          accessDeniedUrl.searchParams.set('callbackUrl', pathname);
+          return NextResponse.redirect(accessDeniedUrl);
+        }
+      } else {
+        const accessDeniedUrl = new URL('/access-denied', request.url);
+        accessDeniedUrl.searchParams.set('reason', 'unauthenticated');
+        accessDeniedUrl.searchParams.set('callbackUrl', pathname);
+        return NextResponse.redirect(accessDeniedUrl);
       }
+    } catch (err) {
+      console.error('[Middleware Admin Check Error]:', err);
+    }
+  }
+
+  // 2. USER DASHBOARD ROUTE PROTECTION (/dashboard and /dashboard/*)
+  if (pathname.startsWith('/dashboard')) {
+    if (!sessionToken) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 3. ADMIN API PROTECTION (/api/admin/*)
+  if (pathname.startsWith('/api/admin')) {
+    if (!sessionToken) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized: Authentication required.' },
+        { status: 401 }
+      );
     }
 
-    // 3. ADMIN API PROTECTION (/api/admin/*)
-    if (pathname.startsWith('/api/admin')) {
-      if (!user) {
+    try {
+      const sessionRes = await fetch(new URL('/api/auth/get-session', request.url), {
+        headers: {
+          cookie: request.headers.get('cookie') || '',
+        },
+      });
+
+      if (!sessionRes.ok) {
         return NextResponse.json(
-          { success: false, message: 'Unauthorized: Authentication required.' },
+          { success: false, message: 'Unauthorized: Invalid session.' },
           { status: 401 }
         );
       }
 
-      if ((user as any).role !== 'admin') {
+      const sessionData = await sessionRes.json();
+      const user = sessionData?.user;
+
+      if (!user || user.role !== 'admin') {
         return NextResponse.json(
           { success: false, message: 'Forbidden: Admin access required.' },
           { status: 403 }
         );
       }
-    }
-  } catch (err) {
-    console.error('[Next.js Middleware Auth Error]:', err);
-    if (pathname.startsWith('/admin') || pathname.startsWith('/dashboard')) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('callbackUrl', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    if (pathname.startsWith('/api/admin')) {
+    } catch (err) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized: Authentication validation error.' },
+        { success: false, message: 'Unauthorized: Authentication error.' },
         { status: 401 }
       );
     }
