@@ -64,8 +64,8 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#0A0A0A] text-white select-none relative font-sans overflow-visible">
-      <div className={`flex items-center justify-between px-6 pt-6 pb-4 overflow-visible ${isCollapsed ? 'justify-center px-2' : ''}`}>
+    <div className="flex flex-col h-full bg-[#0A0A0A] text-white select-none relative font-sans overflow-hidden">
+      <div className={`flex items-center justify-between px-6 pt-6 pb-4 shrink-0 ${isCollapsed ? 'justify-center px-2' : ''}`}>
         {!isCollapsed ? (
           <Link href="/" className="flex items-center gap-2.5 outline-none">
             <img 
@@ -93,13 +93,13 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
         </button>
       </div>
 
-      <nav className={`flex-grow px-4 py-6 space-y-2.5 overflow-visible ${isCollapsed ? 'px-2' : ''}`}>
+      <nav className={`flex-grow min-h-0 overflow-y-auto px-4 py-4 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700 ${isCollapsed ? 'px-2' : ''}`}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeId === item.id;
 
           return (
-            <div key={item.id} className="relative flex items-center w-full overflow-visible">
+            <div key={item.id} className="relative flex items-center w-full">
               {/* Far left vertical glowing bar */}
               {isActive && (
                 <div 
@@ -119,7 +119,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
               <Link
                 key={item.id}
                 href={item.href}
-                className={`group flex items-center gap-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-200 outline-none w-full relative rounded-2xl overflow-visible ${
+                className={`group flex items-center gap-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-200 outline-none w-full relative rounded-2xl ${
                   isCollapsed ? 'justify-center px-0' : 'pl-4 pr-3 ml-[-5px]'
                 } ${
                   isActive
@@ -147,7 +147,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
                 )}
 
                 {isCollapsed && (
-                  <div className="absolute left-16 z-50 scale-0 group-hover:scale-100 bg-[#1A1A1A] border border-zinc-805 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all duration-150 origin-left shadow-xl pointer-events-none whitespace-nowrap">
+                  <div className="absolute left-16 z-50 scale-0 group-hover:scale-100 bg-[#1A1A1A] border border-zinc-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all duration-150 origin-left shadow-xl pointer-events-none whitespace-nowrap">
                     {item.label}
                   </div>
                 )}
@@ -157,7 +157,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
         })}
       </nav>
 
-      <div className={`p-4 border-t border-[#1A1A1A] relative ${isCollapsed ? 'flex justify-center' : ''}`}>
+      <div className={`p-4 border-t border-[#1A1A1A] relative shrink-0 ${isCollapsed ? 'flex justify-center' : ''}`}>
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
