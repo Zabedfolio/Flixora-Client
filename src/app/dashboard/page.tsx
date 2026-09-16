@@ -287,7 +287,7 @@ export default function UserDashboardPage() {
                     {card.label}
                   </span>
                   <span className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                    {card.value}
+                    {card.id === 'watchlist' ? `${watchlistCount} titles` : card.value}
                   </span>
                 </div>
               </div>
