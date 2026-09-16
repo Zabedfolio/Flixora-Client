@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SideNavbar from "./Side-Navbar";
 import { Loader2, PanelLeftOpen } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
