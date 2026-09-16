@@ -1,32 +1,38 @@
-'use client';
-import React, { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { z } from 'zod';
-import { Eye, EyeOff } from 'lucide-react';
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 
-import { toast } from 'react-hot-toast';
-import { authClient } from '@/app/(auth)/lib/auth-client';
+import { toast } from "react-hot-toast";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
-const registerSchema = z.object({
-  fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string(),
-  agreeTerms: z.boolean().refine(val => val === true, {
-    message: "You must agree to the Terms & Conditions"
+const registerSchema = z
+  .object({
+    fullName: z
+      .string()
+      .min(2, { message: "Name must be at least 2 characters" }),
+    email: z.string().email({ message: "Invalid email address" }),
+    password: z
+      .string()
+      .min(6, { message: "Password must be at least 6 characters" }),
+    confirmPassword: z.string(),
+    agreeTerms: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Terms & Conditions",
+    }),
   })
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export const RegisterForm: React.FC = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
     agreeTerms: false,
   });
 
@@ -36,25 +42,25 @@ export const RegisterForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    const updatedValue = type === 'checkbox' ? checked : value;
+    const updatedValue = type === "checkbox" ? checked : value;
     const updatedData = {
       ...formData,
       [name]: updatedValue,
     };
-    
+
     setFormData(updatedData);
 
     // Instant validation on input change
     const result = registerSchema.safeParse(updatedData);
     if (!result.success) {
-      const issue = result.error.issues.find(issue => issue.path[0] === name);
+      const issue = result.error.issues.find((issue) => issue.path[0] === name);
       if (issue) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          [name]: issue.message
+          [name]: issue.message,
         }));
       } else {
-        setErrors(prev => {
+        setErrors((prev) => {
           const copy = { ...prev };
           delete copy[name];
           return copy;
@@ -62,15 +68,17 @@ export const RegisterForm: React.FC = () => {
       }
 
       // Sync mismatch password validation
-      if (name === 'password' || name === 'confirmPassword') {
-        const confirmIssue = result.error.issues.find(issue => issue.path[0] === 'confirmPassword');
+      if (name === "password" || name === "confirmPassword") {
+        const confirmIssue = result.error.issues.find(
+          (issue) => issue.path[0] === "confirmPassword",
+        );
         if (confirmIssue) {
-          setErrors(prev => ({
+          setErrors((prev) => ({
             ...prev,
-            confirmPassword: confirmIssue.message
+            confirmPassword: confirmIssue.message,
           }));
         } else {
-          setErrors(prev => {
+          setErrors((prev) => {
             const copy = { ...prev };
             delete copy.confirmPassword;
             return copy;
@@ -91,7 +99,7 @@ export const RegisterForm: React.FC = () => {
       const fieldErrors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
         const path = issue.path[0];
-        if (typeof path === 'string') {
+        if (typeof path === "string") {
           fieldErrors[path] = issue.message;
         }
       });
@@ -99,22 +107,24 @@ export const RegisterForm: React.FC = () => {
       return;
     }
 
-    const { data, error } = await authClient.signUp.email({
-      email: formData.email,
-      password: formData.password,
-      name: formData.fullName, 
-      callbackURL: "/", 
-    }, {
-      onRequest: (ctx) => {
-        // Optional: handle loading state
+    const { data, error } = await authClient.signUp.email(
+      {
+        email: formData.email,
+        password: formData.password,
+        name: formData.fullName,
       },
-      onSuccess: (ctx) => {
-        toast.success('Account created successfully!');
+      {
+        onRequest: (ctx) => {
+          // Optional: handle loading state
+        },
+        onSuccess: (ctx) => {
+          toast.success("Account created successfully!");
+        },
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+        },
       },
-      onError: (ctx) => {
-        toast.error(ctx.error.message);
-      },
-    });
+    );
   };
 
   return (
@@ -123,7 +133,10 @@ export const RegisterForm: React.FC = () => {
 
       <div className="w-full max-w-md bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl shadow-2xl p-8 z-10 hover:border-zinc-800/80 transition-colors duration-300">
         <div className="text-center mb-8 flex flex-col items-center justify-center">
-          <Link href="/" className="inline-block mb-3 focus:outline-none rounded outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]">
+          <Link
+            href="/"
+            className="inline-block mb-3 focus:outline-none rounded outline-none focus-visible:ring-2 focus-visible:ring-[#FF4C00]"
+          >
             <Image
               width={160}
               height={60}
@@ -150,10 +163,12 @@ export const RegisterForm: React.FC = () => {
               value={formData.fullName}
               onChange={handleChange}
               required
-              className={`w-full bg-[#141414] border ${errors.fullName ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+              className={`w-full bg-[#141414] border ${errors.fullName ? "border-red-500/80 focus:border-red-500 focus:ring-red-500/10" : "border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20"} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
             />
             {errors.fullName && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.fullName}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.fullName}
+              </span>
             )}
           </div>
 
@@ -168,10 +183,12 @@ export const RegisterForm: React.FC = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              className={`w-full bg-[#141414] border ${errors.email ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+              className={`w-full bg-[#141414] border ${errors.email ? "border-red-500/80 focus:border-red-500 focus:ring-red-500/10" : "border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20"} text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
             />
             {errors.email && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.email}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.email}
+              </span>
             )}
           </div>
 
@@ -187,7 +204,7 @@ export const RegisterForm: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className={`w-full bg-[#141414] border ${errors.password ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+                className={`w-full bg-[#141414] border ${errors.password ? "border-red-500/80 focus:border-red-500 focus:ring-red-500/10" : "border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20"} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
               />
               <button
                 type="button"
@@ -198,7 +215,9 @@ export const RegisterForm: React.FC = () => {
               </button>
             </div>
             {errors.password && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.password}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.password}
+              </span>
             )}
           </div>
 
@@ -214,7 +233,7 @@ export const RegisterForm: React.FC = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className={`w-full bg-[#141414] border ${errors.confirmPassword ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/10' : 'border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20'} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
+                className={`w-full bg-[#141414] border ${errors.confirmPassword ? "border-red-500/80 focus:border-red-500 focus:ring-red-500/10" : "border-[#262626] focus:border-[#FF4C00] focus:ring-[#FF4C00]/20"} text-white rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-1 hover:border-zinc-700 transition-all placeholder:text-zinc-650`}
               />
               <button
                 type="button"
@@ -225,7 +244,9 @@ export const RegisterForm: React.FC = () => {
               </button>
             </div>
             {errors.confirmPassword && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.confirmPassword}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.confirmPassword}
+              </span>
             )}
           </div>
 
@@ -240,18 +261,26 @@ export const RegisterForm: React.FC = () => {
                 className="w-4 h-4 mt-0.5 rounded border-[#262626] bg-[#141414] checked:bg-[#FF4C00] checked:border-[#FF4C00] transition-colors focus:ring-0 cursor-pointer accent-[#FF4C00]"
               />
               <span className="text-zinc-400 text-xs leading-normal">
-                I agree to the{' '}
-                <a href="#" className="text-[#FF4C00] font-bold hover:underline">
+                I agree to the{" "}
+                <a
+                  href="#"
+                  className="text-[#FF4C00] font-bold hover:underline"
+                >
                   Terms of Service
-                </a>{' '}
-                and{' '}
-                <a href="#" className="text-[#FF4C00] font-bold hover:underline">
+                </a>{" "}
+                and{" "}
+                <a
+                  href="#"
+                  className="text-[#FF4C00] font-bold hover:underline"
+                >
                   Privacy Policy
                 </a>
               </span>
             </label>
             {errors.agreeTerms && (
-              <span className="text-xs font-semibold text-red-500 mt-1">{errors.agreeTerms}</span>
+              <span className="text-xs font-semibold text-red-500 mt-1">
+                {errors.agreeTerms}
+              </span>
             )}
           </div>
 
@@ -264,7 +293,7 @@ export const RegisterForm: React.FC = () => {
         </form>
 
         <p className="text-center text-xs text-zinc-400 mt-6 select-none">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             href="/auth/login"
             className="text-[#FF4C00] font-black hover:underline"
