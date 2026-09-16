@@ -107,6 +107,68 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 2. Negative Preference / Dislike Intent Check ("I do not like odessey type movie", "I don't like horror")
+    const negativeMatch = qLower.match(/(?:do\s*n['’]?t\s+like|do\s+not\s+like|dislike|hate|avoid|not\s+a\s+fan\s+of|no\s+more|stop\s+showing|don['’]?t\s+want|do\s+not\s+want)\s+([^,.?!]+)/i);
+
+    if (negativeMatch && negativeMatch[1]) {
+      const dislikedPhrase = negativeMatch[1].trim();
+
+      let dislikedName = "that type of";
+      let excludedGenreId = "";
+
+      if (/\b(odyssey|odessey|space|sci-?fi|science\s*fiction|alien|futuristic)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Odyssey & Space Sci-Fi";
+        excludedGenreId = "878";
+      } else if (/\b(horror|scary|ghost|spooky|zombie|slasher|creepy)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Horror & Scary";
+        excludedGenreId = "27";
+      } else if (/\b(funny|comedy|comedies|humor)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Comedy";
+        excludedGenreId = "35";
+      } else if (/\b(action|fight|combat)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Action";
+        excludedGenreId = "28";
+      } else if (/\b(romance|romantic|love)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Romance";
+        excludedGenreId = "10749";
+      } else if (/\b(crime|gangster|mafia)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Crime";
+        excludedGenreId = "80";
+      } else if (/\b(drama|emotional)\b/i.test(dislikedPhrase)) {
+        dislikedName = "Drama";
+        excludedGenreId = "18";
+      } else {
+        const cleanedName = dislikedPhrase.replace(/\b(movie|movies|type|films?|shows?)\b/gi, '').trim();
+        dislikedName = cleanedName ? `"${cleanedName}"` : "that type of";
+      }
+
+      // Check if user specified a positive genre preference in the same query (e.g. "don't like horror, suggest comedy")
+      const hasPositiveGenre = /(funny|comedy|action|bangla|hindi|korean|anime|scifi|sci-fi|romance|crime|drama|adventure|family)/i.test(qLower.replace(negativeMatch[0], ''));
+
+      if (!hasPositiveGenre) {
+        const allOptions = [
+          "Funny Comedy",
+          "Action",
+          "Bangla",
+          "Sci-Fi",
+          "Romantic",
+          "Crime",
+          "Drama",
+          "Trending Blockbusters"
+        ];
+        const filteredOptions = allOptions.filter(
+          (opt) => !opt.toLowerCase().includes(dislikedName.toLowerCase().split(' ')[0])
+        );
+
+        return NextResponse.json({
+          success: true,
+          reply: `Understood! I will avoid **${dislikedName}** movies for you.\n\nWhat genres or types of movies do you prefer instead? Select an option below or type your preference:`,
+          options: filteredOptions,
+          source: 'ai_negative_preference',
+        });
+      }
+    }
+
     // Parse requested count (e.g. "suggest 5 movies" -> 5)
     // Check previous message context if user clicked a genre option after asking for "5 movies"
     let countMatch = qLower.match(/\b([1-9]|10)\b/);
