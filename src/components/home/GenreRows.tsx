@@ -66,7 +66,7 @@ const MovieRow = ({ genre }: MovieRowProps) => {
           type="button"
           onClick={() => scroll('left')}
           aria-label={`Previous ${genre.title} movies`}
-          className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/80 text-white opacity-0 backdrop-blur-md transition-all duration-300 hover:border-[#FF4C00] hover:bg-[#FF4C00] group-hover/row:opacity-100 lg:flex"
+          className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-800 bg-black/80 text-white opacity-0 backdrop-blur-md transition-all duration-300 hover:border-[#FF4C00] hover:bg-[#FF4C00] group-hover/row:opacity-100 lg:flex"
         >
           <ChevronLeft size={21} />
         </button>
@@ -115,7 +115,7 @@ const MovieRow = ({ genre }: MovieRowProps) => {
           type="button"
           onClick={() => scroll('right')}
           aria-label={`Next ${genre.title} movies`}
-          className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/80 text-white opacity-0 backdrop-blur-md transition-all duration-300 hover:border-[#FF4C00] hover:bg-[#FF4C00] group-hover/row:opacity-100 lg:flex"
+          className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-800 bg-black/80 text-white opacity-0 backdrop-blur-md transition-all duration-300 hover:border-[#FF4C00] hover:bg-[#FF4C00] group-hover/row:opacity-100 lg:flex"
         >
           <ChevronRight size={21} />
         </button>

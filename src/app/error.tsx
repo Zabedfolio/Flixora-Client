@@ -121,7 +121,7 @@ export default function Error({
                     {/* Go Home Button */}
                     <Link
                         href="/"
-                        className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-[#FF4C00]/40 hover:bg-white/10 sm:w-auto"
+                        className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-zinc-800 bg-zinc-950 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-[#FF4C00]/40 sm:w-auto"
                     >
                         <Home size={17} />
                         <span>GO HOME</span>
