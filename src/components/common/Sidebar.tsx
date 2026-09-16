@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -177,6 +178,8 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     setIsProfileOpen(false);
   };
 
+  const { isKidsMode } = useKidsStore();
+
   // Resolve permission level: any role that is not admin acts as standard user permissions
   const permissionRole = currentRole === 'admin' ? 'admin' : 'user';
 
@@ -184,6 +187,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const filteredItems = NAV_ITEMS.filter(item => {
     if (isLoading) return false;
     if (!item.roles.includes(permissionRole)) return false;
+    if (isKidsMode && (item.id === 'tickets_user' || item.id === 'kids_control')) return false;
     if (item.id === 'kids_control' && !hasKidsProfiles) return false;
     return true;
   });
