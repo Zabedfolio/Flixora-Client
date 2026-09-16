@@ -413,9 +413,10 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
                 onClick={async () => {
                   setIsProfileOpen(false);
                   await authClient.signOut({
-                    callbackURL: '/login',
+                    callbackURL: '/auth/login',
                   });
                   toast.success('Logged out successfully!');
+                  window.location.href = '/auth/login';
                 }}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left cursor-pointer"
               >

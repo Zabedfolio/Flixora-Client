@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import SideNavbar from "./Side-Navbar";
-import { PanelLeftOpen } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Loader2, PanelLeftOpen } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,16 @@ interface RootLayoutProps {
 export default function DashboardLayout({ children }: RootLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
+
+  React.useEffect(() => {
+    if (!isPending && !user) {
+      router.replace(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`);
+    }
+  }, [user, isPending, router, pathname]);
 
   // Resolve breadcrumbs subpage
   const getSubpageLabel = () => {
@@ -26,6 +37,23 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
   };
 
   const subpage = getSubpageLabel();
+
+  if (isPending) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={32} className="animate-spin text-[#FF4C00]" />
+          <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            Loading Dashboard...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-black text-white w-full overflow-hidden relative font-sans">
