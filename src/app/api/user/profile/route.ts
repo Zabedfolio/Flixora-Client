@@ -71,7 +71,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { name, image, avatarId } = body;
+    const { name, image, avatarId, plan, planId } = body;
 
     const { db } = await connectToDatabase();
     const rawId = authSession.user.id;
@@ -91,6 +91,12 @@ export async function PATCH(request: Request) {
     }
     if (avatarId !== undefined) {
       updateFields.avatarId = avatarId;
+    }
+    if (plan !== undefined) {
+      updateFields.plan = plan;
+    }
+    if (planId !== undefined) {
+      updateFields.planId = planId;
     }
 
     await db.collection('user').updateOne(filter, {

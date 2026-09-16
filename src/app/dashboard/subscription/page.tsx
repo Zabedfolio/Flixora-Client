@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -219,11 +219,36 @@ export default function SubscriptionPage() {
       (currentPlan && p.name?.toLowerCase() === currentPlan.toLowerCase())
   );
 
-  const handleConfirmCancel = (e: React.FormEvent) => {
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleConfirmCancel = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(`Subscription cancelled. Reason: ${cancelReason || 'None provided'}`);
-    setIsCancelModalOpen(false);
-    setCancelReason('');
+    setIsCancelling(true);
+    try {
+      const res = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cancelReason: cancelReason.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to cancel subscription');
+      }
+
+      toast.success('Subscription cancelled. Your plan has shifted to No Plan.');
+      setIsCancelModalOpen(false);
+      setCancelReason('');
+      setCurrentPlan('No Plan');
+      await loadData(session?.user?.id);
+    } catch (err: any) {
+      console.error('Subscription cancellation error:', err);
+      toast.error(err.message || 'Failed to cancel subscription.');
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   return (
@@ -614,9 +639,14 @@ export default function SubscriptionPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#FF4C00] px-4 py-2 text-sm font-black uppercase tracking-wider text-black"
+                  disabled={isCancelling}
+                  className="rounded-xl bg-[#FF4C00] hover:bg-[#e04300] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  Confirm
+                  {isCancelling ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <span>Confirm Cancellation</span>
+                  )}
                 </button>
               </div>
             </form>
