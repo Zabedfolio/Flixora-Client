@@ -116,10 +116,10 @@ export default function AIChatbot() {
     setIsTyping(true);
 
     try {
-      // Build conversation history format for API payload
-      const historyPayload = messages.map((msg) => ({
+      // Build conversation history format for API payload (limit to last 4 messages, truncate long text)
+      const historyPayload = messages.slice(-4).map((msg) => ({
         role: msg.sender === "user" ? "user" : "model",
-        parts: [{ text: msg.text }],
+        parts: [{ text: msg.text.slice(0, 300) }],
       }));
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai-chat`, {
