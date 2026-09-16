@@ -172,7 +172,7 @@ export default function AdminJobApplicationsPage() {
 
       {/* METRICS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-[#141414] rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-zinc-400">
             <span className="text-xs font-bold uppercase tracking-wider">Total Received</span>
             <Briefcase size={16} className="text-[#FF4C00]" />
@@ -180,7 +180,7 @@ export default function AdminJobApplicationsPage() {
           <div className="text-2xl font-black text-white">{totalCount}</div>
         </div>
 
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-[#141414] rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-amber-400">
             <span className="text-xs font-bold uppercase tracking-wider">Pending Review</span>
             <Clock size={16} />
@@ -188,7 +188,7 @@ export default function AdminJobApplicationsPage() {
           <div className="text-2xl font-black text-white">{pendingCount}</div>
         </div>
 
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-[#141414] rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-purple-400">
             <span className="text-xs font-bold uppercase tracking-wider">Interviewing</span>
             <UserCheck size={16} />
@@ -196,7 +196,7 @@ export default function AdminJobApplicationsPage() {
           <div className="text-2xl font-black text-white">{interviewingCount}</div>
         </div>
 
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-[#141414] rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-emerald-400">
             <span className="text-xs font-bold uppercase tracking-wider">Hired</span>
             <CheckCircle size={16} />
@@ -206,7 +206,7 @@ export default function AdminJobApplicationsPage() {
       </div>
 
       {/* SEARCH & FILTER BAR */}
-      <div className="bg-[#0E0E0E] border border-zinc-850 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-[#0D0D0D] border border-[#141414] rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:w-96">
           <Search size={16} className="absolute left-3.5 top-3 text-zinc-500" />
           <input
@@ -214,12 +214,12 @@ export default function AdminJobApplicationsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by candidate name, email, or position..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:border-[#FF4C00] focus:outline-none"
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-zinc-950 border border-[#141414] text-xs text-white placeholder-zinc-500 focus:border-[#FF4C00] focus:outline-none"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-400">
+          <div className="flex items-center gap-2 bg-zinc-950 border border-[#141414] px-3 py-1.5 rounded-xl text-xs text-zinc-400">
             <Filter size={14} className="text-[#FF4C00]" />
             <select
               value={statusFilter}
@@ -235,7 +235,7 @@ export default function AdminJobApplicationsPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-400">
+          <div className="flex items-center gap-2 bg-zinc-950 border border-[#141414] px-3 py-1.5 rounded-xl text-xs text-zinc-400">
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -252,10 +252,10 @@ export default function AdminJobApplicationsPage() {
       </div>
 
       {/* APPLICATIONS TABLE */}
-      <div className="bg-[#0E0E0E] border border-zinc-850 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#0D0D0D] border border-[#141414] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-zinc-300">
-            <thead className="bg-zinc-950 border-b border-zinc-850 text-zinc-400 uppercase tracking-wider font-bold">
+            <thead className="bg-zinc-950 border-b border-[#141414] text-zinc-400 uppercase tracking-wider font-bold">
               <tr>
                 <th className="py-4 px-6">Candidate</th>
                 <th className="py-4 px-6">Position & Dept</th>
@@ -265,7 +265,7 @@ export default function AdminJobApplicationsPage() {
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-850/60">
+            <tbody className="divide-y divide-[#141414]">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-500 font-medium">
@@ -366,7 +366,7 @@ export default function AdminJobApplicationsPage() {
               <p className="text-xs text-zinc-500 font-mono">Submitted on {new Date(selectedApp.createdAt).toLocaleString()}</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-950 border border-zinc-850 p-4 rounded-2xl text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-950 border border-[#141414] p-4 rounded-2xl text-xs">
               <div className="space-y-1">
                 <span className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">Candidate Name</span>
                 <div className="text-white font-bold text-sm">{selectedApp.name}</div>
@@ -409,12 +409,12 @@ export default function AdminJobApplicationsPage() {
 
             <div className="space-y-1.5">
               <span className="text-zinc-400 font-bold text-xs">Cover Letter / Application Notes</span>
-              <div className="bg-zinc-950 border border-zinc-850 p-4 rounded-2xl text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
+              <div className="bg-zinc-950 border border-[#141414] p-4 rounded-2xl text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
                 {selectedApp.coverLetter || 'No cover letter provided.'}
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-zinc-850">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#141414]">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-zinc-400 font-bold">Update Status:</span>
                 <select

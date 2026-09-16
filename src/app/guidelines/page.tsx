@@ -9,7 +9,7 @@ export default function ContentGuidelinesPage() {
       <div className="max-w-4xl mx-auto space-y-10">
         
         {/* HEADER */}
-        <div className="space-y-3 border-b border-zinc-900 pb-8">
+        <div className="space-y-3 border-b border-zinc-900/80 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] font-black text-xs uppercase tracking-widest">
             <FileCheck size={14} /> Community Standards
           </div>
@@ -21,7 +21,7 @@ export default function ContentGuidelinesPage() {
 
         {/* GUIDELINES CONTENT */}
         <div className="space-y-8 text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed">
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <Film size={16} className="text-[#FF4C00]" /> 1. Age Classification & Content Ratings
             </h2>
@@ -30,7 +30,7 @@ export default function ContentGuidelinesPage() {
             </p>
           </section>
 
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <ShieldAlert size={16} className="text-[#FF4C00]" /> 2. Community Reviews & Comments
             </h2>
@@ -39,7 +39,7 @@ export default function ContentGuidelinesPage() {
             </p>
           </section>
 
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <CheckCircle2 size={16} className="text-[#FF4C00]" /> 3. Copyright & Intellectual Property
             </h2>
@@ -48,7 +48,7 @@ export default function ContentGuidelinesPage() {
             </p>
           </section>
 
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <Flag size={16} className="text-[#FF4C00]" /> 4. Reporting Violations
             </h2>

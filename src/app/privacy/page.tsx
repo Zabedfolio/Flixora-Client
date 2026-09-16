@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
       <div className="max-w-4xl mx-auto space-y-10">
         
         {/* HEADER */}
-        <div className="space-y-3 border-b border-zinc-900 pb-8">
+        <div className="space-y-3 border-b border-zinc-900/80 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] font-black text-xs uppercase tracking-widest">
             <ShieldCheck size={14} /> Legal Documentation
           </div>
@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
 
         {/* POLICY CONTENT */}
         <div className="space-y-8 text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed">
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <Lock size={16} className="text-[#FF4C00]" /> 1. Information We Collect
             </h2>
@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <Eye size={16} className="text-[#FF4C00]" /> 2. How We Use Your Data
             </h2>
@@ -39,7 +39,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <ShieldCheck size={16} className="text-[#FF4C00]" /> 3. Data Protection & Encryption
             </h2>
@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="space-y-3 bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6">
+          <section className="space-y-3 bg-[#0B0B0B] border border-[#141414] rounded-2xl p-6 hover:border-[#FF4C00]/30 transition-all">
             <h2 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
               <FileText size={16} className="text-[#FF4C00]" /> 4. Your Rights & Account Deletion
             </h2>

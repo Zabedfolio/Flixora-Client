@@ -170,7 +170,7 @@ export default function AdminContactMessagesPage() {
 
       {/* METRICS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-zinc-900/60 rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-zinc-400">
             <span className="text-xs font-bold uppercase tracking-wider">Total Messages</span>
             <MessageSquare size={16} className="text-[#FF4C00]" />
@@ -178,7 +178,7 @@ export default function AdminContactMessagesPage() {
           <div className="text-2xl font-black text-white">{totalCount}</div>
         </div>
 
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-zinc-900/60 rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-amber-400">
             <span className="text-xs font-bold uppercase tracking-wider">Unread</span>
             <Clock size={16} />
@@ -186,7 +186,7 @@ export default function AdminContactMessagesPage() {
           <div className="text-2xl font-black text-white">{unreadCount}</div>
         </div>
 
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-zinc-900/60 rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-blue-400">
             <span className="text-xs font-bold uppercase tracking-wider">Technical Support</span>
             <Mail size={16} />
@@ -194,7 +194,7 @@ export default function AdminContactMessagesPage() {
           <div className="text-2xl font-black text-white">{supportCount}</div>
         </div>
 
-        <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-5 space-y-1">
+        <div className="bg-[#0D0D0D] border border-zinc-900/60 rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-purple-400">
             <span className="text-xs font-bold uppercase tracking-wider">General Inquiries</span>
             <CheckCircle2 size={16} />
@@ -204,7 +204,7 @@ export default function AdminContactMessagesPage() {
       </div>
 
       {/* SEARCH & FILTER BAR */}
-      <div className="bg-[#0E0E0E] border border-zinc-850 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-[#0D0D0D] border border-zinc-900/60 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:w-96">
           <Search size={16} className="absolute left-3.5 top-3 text-zinc-500" />
           <input
@@ -212,12 +212,12 @@ export default function AdminContactMessagesPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by sender name, email, or subject..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:border-[#FF4C00] focus:outline-none"
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-zinc-950 border border-zinc-900/80 text-xs text-white placeholder-zinc-500 focus:border-[#FF4C00] focus:outline-none"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-400">
+          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-900/80 px-3 py-1.5 rounded-xl text-xs text-zinc-400">
             <Filter size={14} className="text-[#FF4C00]" />
             <select
               value={statusFilter}
@@ -232,7 +232,7 @@ export default function AdminContactMessagesPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-xl text-xs text-zinc-400">
+          <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-900/80 px-3 py-1.5 rounded-xl text-xs text-zinc-400">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -250,10 +250,10 @@ export default function AdminContactMessagesPage() {
       </div>
 
       {/* MESSAGES TABLE */}
-      <div className="bg-[#0E0E0E] border border-zinc-850 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#0D0D0D] border border-zinc-900/60 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-zinc-300">
-            <thead className="bg-zinc-950 border-b border-zinc-850 text-zinc-400 uppercase tracking-wider font-bold">
+            <thead className="bg-zinc-950 border-b border-zinc-900/80 text-zinc-400 uppercase tracking-wider font-bold">
               <tr>
                 <th className="py-4 px-6">Sender</th>
                 <th className="py-4 px-6">Category & Subject</th>

@@ -75,7 +75,7 @@ export default function ContactUsPage() {
           
           {/* CONTACT INFO CARDS */}
           <div className="space-y-4 lg:col-span-1">
-            <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 space-y-2">
+            <div className="bg-[#0C0C0C] border border-[#141414] rounded-2xl p-6 space-y-2">
               <div className="w-10 h-10 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00]">
                 <Mail size={18} />
               </div>
@@ -86,7 +86,7 @@ export default function ContactUsPage() {
               </a>
             </div>
 
-            <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 space-y-2">
+            <div className="bg-[#0C0C0C] border border-[#141414] rounded-2xl p-6 space-y-2">
               <div className="w-10 h-10 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00]">
                 <MapPin size={18} />
               </div>
@@ -96,7 +96,7 @@ export default function ContactUsPage() {
               </p>
             </div>
 
-            <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 space-y-2">
+            <div className="bg-[#0C0C0C] border border-[#141414] rounded-2xl p-6 space-y-2">
               <div className="w-10 h-10 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00]">
                 <Clock size={18} />
               </div>
@@ -106,7 +106,7 @@ export default function ContactUsPage() {
           </div>
 
           {/* CONTACT FORM */}
-          <div className="bg-[#0E0E0E] border border-zinc-800 rounded-3xl p-6 sm:p-8 lg:col-span-2 space-y-6">
+          <div className="bg-[#0E0E0E] border border-[#141414] rounded-3xl p-6 sm:p-8 lg:col-span-2 space-y-6">
             <h2 className="text-xl font-black uppercase text-white">Send Us a Message</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
@@ -119,7 +119,7 @@ export default function ContactUsPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter your name"
-                    className="w-full h-11 rounded-xl bg-zinc-950 border border-zinc-800 px-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                    className="w-full h-11 rounded-xl bg-zinc-950 border border-[#141414] px-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
                   />
                 </div>
 
@@ -131,7 +131,7 @@ export default function ContactUsPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full h-11 rounded-xl bg-zinc-950 border border-zinc-800 px-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                    className="w-full h-11 rounded-xl bg-zinc-950 border border-[#141414] px-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
                   />
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function ContactUsPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full h-11 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white focus:border-[#FF4C00] focus:outline-none cursor-pointer"
+                    className="w-full h-11 rounded-xl bg-zinc-950 border border-[#141414] px-3.5 text-white focus:border-[#FF4C00] focus:outline-none cursor-pointer"
                   >
                     <option value="General Inquiry">General Inquiry</option>
                     <option value="Technical Support">Technical Support</option>
@@ -160,7 +160,7 @@ export default function ContactUsPage() {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="Cinema ticket issue, Billing, Feedback..."
-                    className="w-full h-11 rounded-xl bg-zinc-950 border border-zinc-800 px-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                    className="w-full h-11 rounded-xl bg-zinc-950 border border-[#141414] px-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
                   />
                 </div>
               </div>
@@ -173,7 +173,7 @@ export default function ContactUsPage() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="How can we help you today?"
-                  className="w-full rounded-xl bg-zinc-950 border border-zinc-800 p-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none resize-none"
+                  className="w-full rounded-xl bg-zinc-950 border border-[#141414] p-4 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none resize-none"
                 />
               </div>
 

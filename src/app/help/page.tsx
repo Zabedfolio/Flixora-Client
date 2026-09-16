@@ -82,7 +82,7 @@ export default function HelpCenterPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search help topics, tickets, billing, 4K streaming..."
-              className="w-full h-12 rounded-2xl bg-[#0C0C0C] border border-zinc-800 pl-12 pr-4 text-xs text-white placeholder-zinc-500 focus:border-[#FF4C00] focus:outline-none"
+              className="w-full h-12 rounded-2xl bg-[#0C0C0C] border border-[#141414] pl-12 pr-4 text-xs text-white placeholder-zinc-500 focus:border-[#FF4C00] focus:outline-none"
             />
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function HelpCenterPage() {
             const Icon = cat.icon;
             return (
               <div key={catIdx} className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-black uppercase text-[#FF4C00] border-b border-zinc-900 pb-2">
+                <div className="flex items-center gap-2 text-sm font-black uppercase text-[#FF4C00] border-b border-[#141414] pb-2">
                   <Icon size={16} /> <span>{cat.cat}</span>
                 </div>
 
@@ -106,7 +106,7 @@ export default function HelpCenterPage() {
                     if (!matches) return null;
 
                     return (
-                      <div key={key} className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl overflow-hidden">
+                      <div key={key} className="bg-[#0C0C0C] border border-[#141414] rounded-2xl overflow-hidden">
                         <button
                           onClick={() => toggleFaq(key)}
                           className="w-full p-4 text-left font-bold text-xs sm:text-sm text-white flex items-center justify-between gap-4 cursor-pointer hover:bg-zinc-950 transition-colors"
@@ -115,7 +115,7 @@ export default function HelpCenterPage() {
                           <ChevronDown size={16} className={`text-zinc-500 transition-transform ${isOpen ? 'rotate-180 text-[#FF4C00]' : ''}`} />
                         </button>
                         {isOpen && (
-                          <div className="p-4 pt-0 text-xs text-zinc-400 font-medium leading-relaxed border-t border-zinc-900/60 bg-zinc-950/40">
+                          <div className="p-4 pt-0 text-xs text-zinc-400 font-medium leading-relaxed border-t border-[#141414] bg-zinc-950/40">
                             {item.a}
                           </div>
                         )}
@@ -129,7 +129,7 @@ export default function HelpCenterPage() {
         </div>
 
         {/* STILL NEED HELP CTA */}
-        <div className="bg-[#0E0E0E] border border-zinc-800 rounded-3xl p-8 text-center space-y-4">
+        <div className="bg-[#0E0E0E] border border-[#141414] rounded-3xl p-8 text-center space-y-4">
           <MessageSquare size={28} className="text-[#FF4C00] mx-auto" />
           <h3 className="text-lg font-black uppercase text-white">Still Need Assistance?</h3>
           <p className="text-xs text-zinc-400 max-w-md mx-auto font-medium">

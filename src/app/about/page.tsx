@@ -59,7 +59,7 @@ export default function AboutUsPage() {
 
         {/* MISSION & VISION */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-[#0C0C0C] border border-zinc-850 rounded-3xl p-8 space-y-4">
+          <div className="bg-[#0B0B0B] border border-zinc-900/60 hover:border-[#FF4C00]/30 transition-all rounded-3xl p-8 space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00]">
               <Film size={24} />
             </div>
@@ -74,7 +74,7 @@ export default function AboutUsPage() {
             </ul>
           </div>
 
-          <div className="bg-[#0C0C0C] border border-zinc-850 rounded-3xl p-8 space-y-4">
+          <div className="bg-[#0B0B0B] border border-zinc-900/60 hover:border-[#FF4C00]/30 transition-all rounded-3xl p-8 space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00]">
               <Globe size={24} />
             </div>

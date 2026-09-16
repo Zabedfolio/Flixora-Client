@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Cookie, CheckCircle2, Shield, Save } from 'lucide-react';
+import { Cookie, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function CookiePreferencesPage() {
-  const [essential, setEssential] = useState(true);
   const [performance, setPerformance] = useState(true);
   const [analytics, setAnalytics] = useState(true);
   const [marketing, setMarketing] = useState(false);
@@ -19,7 +18,7 @@ export default function CookiePreferencesPage() {
       <div className="max-w-4xl mx-auto space-y-10">
         
         {/* HEADER */}
-        <div className="space-y-3 border-b border-zinc-900 pb-8">
+        <div className="space-y-3 border-b border-zinc-900/80 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] font-black text-xs uppercase tracking-widest">
             <Cookie size={14} /> Privacy Controls
           </div>
@@ -33,7 +32,7 @@ export default function CookiePreferencesPage() {
 
         {/* COOKIE TOGGLES */}
         <div className="space-y-4">
-          <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 flex items-start justify-between gap-6">
+          <div className="bg-[#0B0B0B] border border-[#141414] hover:border-[#FF4C00]/30 transition-all rounded-2xl p-6 flex items-start justify-between gap-6">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-black text-white uppercase">Essential Cookies</h3>
@@ -46,7 +45,7 @@ export default function CookiePreferencesPage() {
             <input type="checkbox" checked disabled className="w-5 h-5 accent-[#FF4C00] cursor-not-allowed mt-1" />
           </div>
 
-          <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 flex items-start justify-between gap-6">
+          <div className="bg-[#0B0B0B] border border-[#141414] hover:border-[#FF4C00]/30 transition-all rounded-2xl p-6 flex items-start justify-between gap-6">
             <div className="space-y-1">
               <h3 className="text-sm font-black text-white uppercase">Performance & Streaming Cookies</h3>
               <p className="text-xs text-zinc-400 font-medium">
@@ -61,7 +60,7 @@ export default function CookiePreferencesPage() {
             />
           </div>
 
-          <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 flex items-start justify-between gap-6">
+          <div className="bg-[#0B0B0B] border border-[#141414] hover:border-[#FF4C00]/30 transition-all rounded-2xl p-6 flex items-start justify-between gap-6">
             <div className="space-y-1">
               <h3 className="text-sm font-black text-white uppercase">Analytics & Recommendation Cookies</h3>
               <p className="text-xs text-zinc-400 font-medium">
@@ -76,7 +75,7 @@ export default function CookiePreferencesPage() {
             />
           </div>
 
-          <div className="bg-[#0C0C0C] border border-zinc-850 rounded-2xl p-6 flex items-start justify-between gap-6">
+          <div className="bg-[#0B0B0B] border border-[#141414] hover:border-[#FF4C00]/30 transition-all rounded-2xl p-6 flex items-start justify-between gap-6">
             <div className="space-y-1">
               <h3 className="text-sm font-black text-white uppercase">Promotional & Partner Cookies</h3>
               <p className="text-xs text-zinc-400 font-medium">
