@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -50,7 +51,6 @@ export default function AdminSidebar({
   onClose,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -74,21 +74,30 @@ export default function AdminSidebar({
 
   const handleLogout = async () => {
     try {
-      // লোকাল স্টোরেজ বা কুকিজ ক্লিন করা
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("is_logging_out", "true");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("flixora-session-role");
+      }
 
-      // যদি সার্ভার-সাইড লগআউট API থাকে:
-      // await fetch('/api/auth/logout', { method: 'POST' });
-
+      useKidsStore.getState().setActiveKidsProfile(null);
       setIsProfileOpen(false);
-      toast.success("Logged out successfully!");
 
-      // হোম পেজে রিডাইরেক্ট এবং স্টেট রিফ্রেশ
-      router.push("/");
-      router.refresh();
+      await authClient.signOut();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-logout"));
+      }
+
+      toast.success("Logged out successfully!");
     } catch (error) {
+      console.error("Logout failed:", error);
       toast.error("Failed to logout. Please try again.");
+    } finally {
+      if (typeof window !== "undefined") {
+        window.location.replace("/");
+      }
     }
   };
 
