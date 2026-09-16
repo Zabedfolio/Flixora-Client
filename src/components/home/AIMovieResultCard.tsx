@@ -55,7 +55,7 @@ export default function AiMovieResultCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.05 }}
-      className="group relative w-[132px] flex-shrink-0 snap-start overflow-hidden rounded-xl border border-white/10 bg-white/5 text-left backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#FF4C00]/60 hover:shadow-[0_8px_24px_rgba(255,76,0,0.25)] sm:w-[150px]"
+      className="group relative w-[132px] flex-shrink-0 snap-start overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/80 text-left backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#FF4C00]/60 hover:shadow-[0_8px_24px_rgba(255,76,0,0.25)] sm:w-[150px]"
     >
       {/* Poster */}
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-900">

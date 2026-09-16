@@ -311,7 +311,7 @@ export default function MovieDetailsView({
       </section>
 
       {/* 2. OVERVIEW & PRODUCTION SECTION */}
-      <section className="border-t border-white/10 bg-black px-6 py-16 md:px-10">
+      <section className="border-t border-zinc-900 bg-black px-6 py-16 md:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 md:grid-cols-[2fr_1fr]">
             {/* Overview & Production Details */}

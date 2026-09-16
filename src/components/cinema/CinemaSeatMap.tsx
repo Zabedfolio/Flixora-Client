@@ -200,7 +200,7 @@ export default function CinemaSeatMap({
                             <div
                               className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
                                 isSelected
-                                  ? 'bg-[#E64400] border-white/60'
+                                  ? 'bg-[#E64400] border-[#FF4C00]/80'
                                   : isBooked || isHeldByOther
                                   ? 'bg-zinc-900 border-zinc-800'
                                   : isPremium
@@ -260,7 +260,7 @@ export default function CinemaSeatMap({
                             <div
                               className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
                                 isSelected
-                                  ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
+                                  ? 'bg-[#FF4C00] text-black font-black ring-2 ring-[#FF4C00] shadow-[0_0_18px_rgba(255,76,0,1)]'
                                   : isBooked || isHeldByOther
                                   ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
                                   : isPremium
@@ -277,7 +277,7 @@ export default function CinemaSeatMap({
                             <div
                               className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
                                 isSelected
-                                  ? 'bg-[#E64400] border-white/60'
+                                  ? 'bg-[#E64400] border-[#FF4C00]/80'
                                   : isBooked || isHeldByOther
                                   ? 'bg-zinc-900 border-zinc-800'
                                   : isPremium

@@ -98,7 +98,7 @@ const PAYMENT_METHODS = [
   { name: "Amex", icon: FaCcAmex, color: "hover:text-[#006FCF] hover:border-[#006FCF]/50" },
   { name: "PayPal", icon: FaPaypal, color: "hover:text-[#003087] hover:border-[#003087]/50" },
   { name: "Google Pay", icon: FaGooglePay, color: "hover:text-[#4285F4] hover:border-[#4285F4]/50" },
-  { name: "Apple Pay", icon: FaApplePay, color: "hover:text-white hover:border-white/50" },
+  { name: "Apple Pay", icon: FaApplePay, color: "hover:text-white hover:border-zinc-500" },
 ];
 
 // Continuous Marquee Array

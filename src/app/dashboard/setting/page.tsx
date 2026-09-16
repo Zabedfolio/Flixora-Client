@@ -973,7 +973,7 @@ export default function SettingsPage() {
                       setEmailStep("input");
                       setIsEmailModalOpen(true);
                     }}
-                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
+                    className="border border-zinc-800 hover:border-[#FF4C00]/60 text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
                   >
                     Change Email
                   </button>
@@ -1006,7 +1006,7 @@ export default function SettingsPage() {
                       setConfirmPasswordInput("");
                       setIsPasswordModalOpen(true);
                     }}
-                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
+                    className="border border-zinc-800 hover:border-[#FF4C00]/60 text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
                   >
                     Change Password
                   </button>
