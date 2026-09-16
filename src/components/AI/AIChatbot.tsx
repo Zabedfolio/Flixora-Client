@@ -10,6 +10,15 @@ import {
   Film,
   Calendar,
   ChevronRight,
+  Flame,
+  Ghost,
+  Smile,
+  Zap,
+  Globe,
+  Rocket,
+  Heart,
+  ShieldAlert,
+  Film as MovieIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -28,17 +37,32 @@ interface ChatMessage {
   id: string;
   sender: "bot" | "user";
   text: string;
+  options?: string[];
   movies?: MovieCard[];
   timestamp: string;
 }
 
+// Icon mapper helper for Lucide icons (replaces emojis completely)
+const getOptionIcon = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes("horror") || n.includes("scary")) return <Ghost className="w-3.5 h-3.5 text-purple-400" />;
+  if (n.includes("funny") || n.includes("comedy")) return <Smile className="w-3.5 h-3.5 text-amber-400" />;
+  if (n.includes("action") || n.includes("fight")) return <Zap className="w-3.5 h-3.5 text-yellow-400" />;
+  if (n.includes("bangla") || n.includes("regional") || n.includes("hindi") || n.includes("korean")) return <Globe className="w-3.5 h-3.5 text-emerald-400" />;
+  if (n.includes("sci-fi") || n.includes("space")) return <Rocket className="w-3.5 h-3.5 text-cyan-400" />;
+  if (n.includes("roman") || n.includes("love")) return <Heart className="w-3.5 h-3.5 text-rose-400" />;
+  if (n.includes("crime") || n.includes("thriller")) return <ShieldAlert className="w-3.5 h-3.5 text-red-400" />;
+  if (n.includes("trending") || n.includes("popular")) return <Flame className="w-3.5 h-3.5 text-orange-400" />;
+  return <MovieIcon className="w-3.5 h-3.5 text-slate-400" />;
+};
+
 const QUICK_PROMPTS = [
-  "👻 Horror Movies",
-  "😂 Funny Movies",
-  "🇧🇩 Bangla Movies",
-  "🚀 Sci-Fi Hits",
-  "🍿 Trending Today",
-  "🎬 Movies like Inception",
+  { label: "Horror Movies", icon: <Ghost className="w-3.5 h-3.5 text-purple-400" /> },
+  { label: "Funny Comedy", icon: <Smile className="w-3.5 h-3.5 text-amber-400" /> },
+  { label: "Bangla Movies", icon: <Globe className="w-3.5 h-3.5 text-emerald-400" /> },
+  { label: "Sci-Fi Hits", icon: <Rocket className="w-3.5 h-3.5 text-cyan-400" /> },
+  { label: "Trending Today", icon: <Flame className="w-3.5 h-3.5 text-orange-400" /> },
+  { label: "Movies like Inception", icon: <Sparkles className="w-3.5 h-3.5 text-red-400" /> },
 ];
 
 // Simple Markdown Renderer component to format AI text responses nicely
@@ -105,7 +129,7 @@ export default function AIChatbot() {
       {
         id: "1",
         sender: "bot",
-        text: "Hello! 👋 Welcome to Flixora AI Assistant. What kind of movie, genre, or TV show are you looking for today?",
+        text: "Hello! Welcome to Flixora AI Assistant. What kind of movie, genre, or TV show are you looking for today?",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -141,7 +165,7 @@ export default function AIChatbot() {
       {
         id: Date.now().toString(),
         sender: "bot",
-        text: "Chat cleared! 🎬 How can I help you find your next movie or TV show?",
+        text: "Chat cleared! How can I help you find your next movie or TV show?",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -202,6 +226,7 @@ export default function AIChatbot() {
           id: (Date.now() + 1).toString(),
           sender: "bot",
           text: replyText,
+          options: resData.options,
           movies: rawMovies.map((m: any) => ({
             id: Number(m.id),
             title: m.title || m.name || "Featured Title",
@@ -222,11 +247,10 @@ export default function AIChatbot() {
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
-        // Fallback response if API fails
         const fallbackMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           sender: "bot",
-          text: "Hey! I'm Flix, your AI cinema guide! 🍿 Ask me for genre suggestions like **Horror**, **Funny**, **Bangla**, or **Sci-Fi** movies!",
+          text: "Hey! I'm Flix, your AI cinema guide! Ask me for genre suggestions like **Horror**, **Funny**, **Bangla**, or **Sci-Fi** movies!",
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -238,7 +262,7 @@ export default function AIChatbot() {
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "bot",
-        text: "I'm right here! 🍿 What kind of movie or genre (Horror, Comedy, Action, Bangla) would you like to explore tonight?",
+        text: "I'm right here! What kind of movie or genre (Horror, Comedy, Action, Bangla) would you like to explore tonight?",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -344,6 +368,22 @@ export default function AIChatbot() {
                     )}
                   </div>
 
+                  {/* Render Interactive Clarification Option Buttons if present */}
+                  {msg.options && msg.options.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {msg.options.map((opt, optIdx) => (
+                        <button
+                          key={optIdx}
+                          onClick={() => handleSendMessage(opt)}
+                          className="flex items-center gap-1.5 text-xs bg-slate-900 hover:bg-red-600/20 hover:border-red-500/60 text-slate-200 hover:text-white px-3 py-1.5 rounded-xl border border-slate-800 transition-all font-medium shadow-sm group"
+                        >
+                          {getOptionIcon(opt)}
+                          <span>{opt}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Render Movie Poster Cards if present */}
                   {msg.movies && msg.movies.length > 0 && (
                     <div className="grid grid-cols-1 gap-2 pt-1">
@@ -418,13 +458,14 @@ export default function AIChatbot() {
           {/* Quick Suggestions */}
           {!isTyping && (
             <div className="px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar border-t border-slate-800/80 bg-slate-900/60">
-              {QUICK_PROMPTS.map((prompt, idx) => (
+              {QUICK_PROMPTS.map((item, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSendMessage(prompt.replace(/^[\u2600-\u27BF\u1F300-\u1F6FF\u1F900-\u1F9FF]\s*/, ""))}
-                  className="whitespace-nowrap text-xs bg-slate-800/90 hover:bg-red-600/20 hover:border-red-500/50 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all shrink-0 font-medium"
+                  onClick={() => handleSendMessage(item.label)}
+                  className="flex items-center gap-1.5 whitespace-nowrap text-xs bg-slate-800/90 hover:bg-red-600/20 hover:border-red-500/50 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all shrink-0 font-medium"
                 >
-                  {prompt}
+                  {item.icon}
+                  <span>{item.label}</span>
                 </button>
               ))}
             </div>

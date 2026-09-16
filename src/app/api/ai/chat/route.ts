@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromTMDB, getTMDBImageUrl } from '@/data/tmdb';
 
-// Live: https://flixora-server.vercel.app
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const KIMI_API_KEY = process.env.KIMI_API_KEY || process.env.MOONSHOT_API_KEY || '';
 
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (!userMessage) {
       return NextResponse.json({
         success: true,
-        reply: "Hi! 👋 I'm Flix, your AI movie companion. Tell me what genre, language, or movie title you are looking for!",
+        reply: "Hi! I'm Flix, your AI movie companion. Tell me what genre, language, actor, or movie title you are looking for!",
       });
     }
 
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
     if (isGreeting) {
       return NextResponse.json({
         success: true,
-        reply: "Hey there! 👋 I'm Flix, your AI cinema guide on Flixora. 🎬\n\nWhat kind of movie or TV show are you in the mood for today? Ask me for genre suggestions (like Horror, Comedy, Action, or Bangla), movies similar to your favorites, or popular blockbusters!",
+        reply: "Hey there! I'm Flix, your AI cinema guide on Flixora.\n\nWhat kind of movie or TV show are you in the mood for today? Ask me for genre suggestions (Horror, Comedy, Action, Bangla), movies similar to your favorites, or popular blockbusters!",
         source: 'ai_engine'
       });
     }
@@ -79,7 +78,7 @@ export async function POST(req: NextRequest) {
     if (isIdentity) {
       return NextResponse.json({
         success: true,
-        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant! 🍿\n\nHere is how I can help you today:\n• 🎬 Find movie & TV show recommendations by genre or language\n• 🔍 Search for movies similar to your favorites\n• 📖 Provide detailed plot summaries & ratings\n• 🔥 Discover trending blockbusters worldwide",
+        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant!\n\nHere is how I can help you today:\n• Find movie & TV show recommendations by genre, language, or actor\n• Search for movies similar to your favorites\n• Provide detailed plot summaries & ratings\n• Discover trending blockbusters worldwide",
         source: 'ai_engine'
       });
     }
@@ -87,7 +86,7 @@ export async function POST(req: NextRequest) {
     if (isGratitude) {
       return NextResponse.json({
         success: true,
-        reply: "You're very welcome! 🍿 Let me know whenever you're ready for your next movie night. Enjoy streaming on Flixora!",
+        reply: "You're very welcome! Let me know whenever you're ready for your next movie night. Enjoy streaming on Flixora!",
         source: 'ai_engine'
       });
     }
@@ -95,7 +94,7 @@ export async function POST(req: NextRequest) {
     if (isFarewell) {
       return NextResponse.json({
         success: true,
-        reply: "Goodbye! Have an awesome movie night! 🎬✨ Come back anytime you need great recommendations!",
+        reply: "Goodbye! Have an awesome movie night! Come back anytime you need great recommendations!",
         source: 'ai_engine'
       });
     }
@@ -103,16 +102,21 @@ export async function POST(req: NextRequest) {
     if (isWatchlist) {
       return NextResponse.json({
         success: true,
-        reply: "🔖 **Flixora Watchlist Guide**:\n\nTo save any movie to your collection, click the **'+ Add to Watchlist'** button on any movie card or detail page. You can access your saved titles anytime from your User Dashboard!",
+        reply: "FLIXORA WATCHLIST GUIDE:\n\nTo save any movie to your collection, click the '+ Add to Watchlist' button on any movie card or detail page. You can access your saved titles anytime from your User Dashboard!",
         source: 'ai_engine'
       });
     }
 
     // Parse requested count (e.g. "suggest 5 movies" -> 5)
-    const countMatch = qLower.match(/\b([1-9]|10)\b/);
+    // Check previous message context if user clicked a genre option after asking for "5 movies"
+    let countMatch = qLower.match(/\b([1-9]|10)\b/);
+    if (!countMatch && messages.length >= 2) {
+      const prevMsg = messages[messages.length - 2]?.text?.toLowerCase() || '';
+      countMatch = prevMsg.match(/\b([1-9]|10)\b/);
+    }
     const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10) : 6;
 
-    // Helper function to extract TMDB movies array with dynamic count
+    // Helper function to extract TMDB movies array with STRICT dynamic count
     const extractMovies = (results: any[], count: number = 6) => {
       return (results || [])
         .filter((m: any) => m.media_type !== 'person')
@@ -139,94 +143,92 @@ export async function POST(req: NextRequest) {
         });
     };
 
-    // Helper to build rich AI markdown response listing items
-    const buildAIReply = (emoji: string, category: string, moviesList: any[]) => {
+    // Helper to build clean AI text response listing items
+    const buildAIReply = (category: string, moviesList: any[]) => {
       if (!moviesList || moviesList.length === 0) {
-        return `${emoji} Here are top ${category} movies for you on Flixora:`;
+        return `Here are top ${category} movies for you on Flixora:`;
       }
       const lines = [
-        `${emoji} Here are ${moviesList.length} top ${category} recommendations for your movie night:\n`
+        `Here are ${moviesList.length} top ${category} recommendations for your movie night:\n`
       ];
       moviesList.forEach((m, idx) => {
         const yearStr = m.year ? ` (${m.year})` : '';
-        const ratingStr = m.rating ? ` ⭐ ${m.rating}` : '';
-        const descStr = m.overview ? ` — *${m.overview.slice(0, 70)}...*` : '';
+        const ratingStr = m.rating ? ` [Rating: ${m.rating}]` : '';
+        const descStr = m.overview ? ` — *${m.overview.slice(0, 75)}...*` : '';
         lines.push(`${idx + 1}. **${m.title}**${yearStr}${ratingStr}${descStr}`);
       });
       return lines.join('\n');
     };
 
-    // 2. Try calling Kimi AI API Endpoint if key is present
-    if (KIMI_API_KEY) {
-      try {
-        const kimiRes = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${KIMI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'moonshot-v1-8k',
-            messages: [
-              {
-                role: 'system',
-                content:
-                  'You are Flix, a warm, intelligent AI cinema companion for Flixora. Speak naturally like a movie buff.',
-              },
-              ...messages.map((m: any) => ({
-                role: m.sender === 'user' ? 'user' : 'assistant',
-                content: m.text,
-              })),
-            ],
-            temperature: 0.7,
-          }),
-        });
+    // 2. Ambiguous Query Interception (Asking User Clarification with Interactive Option Buttons)
+    // Triggers when user asks e.g. "suggest 5 movies", "recommend some movies" without specifying genre/language/title
+    const hasCategorySignal = /(horror|funny|comedy|action|bangla|hindi|korean|anime|scifi|sci-fi|thriller|romance|crime|drama|family|adventure|like|starring|actor|actress|directed|90s|80s|2024|2023|top\s*rated|best)/i.test(qLower);
+    const isGenericRecommendation = (/^(suggest|recommend|give|show|find|get)\s*([1-9]|10)?\s*(movies?|films?|shows?|series?|something)?$/i.test(qLower) ||
+      (/^(suggest|recommend|give)\s*([1-9]|10)\b/i.test(qLower) && !hasCategorySignal));
 
-        if (kimiRes.ok) {
-          const kimiData = await kimiRes.json();
-          const aiText = kimiData.choices?.[0]?.message?.content;
-          if (aiText) {
-            const catSearch = resolveCategorySearch(userMessage);
-            let tmdbData = await fetchFromTMDB<any>(catSearch.endpoint).catch(() => null);
-            const movies = tmdbData?.results?.length ? extractMovies(tmdbData.results, requestedCount) : undefined;
-            return NextResponse.json({
-              success: true,
-              reply: aiText,
-              movies,
-              source: 'kimi_ai',
-            });
-          }
-        }
-      } catch (kimiErr) {
-        console.warn('Kimi API call error, using local AI cinema engine:', kimiErr);
-      }
+    if (isGenericRecommendation) {
+      return NextResponse.json({
+        success: true,
+        reply: `What type of movies or mood are you looking for${countMatch ? ` (${requestedCount} movies)` : ''}? Choose a genre below or type your preference:`,
+        options: [
+          "Horror",
+          "Funny Comedy",
+          "Action",
+          "Bangla",
+          "Sci-Fi",
+          "Romantic",
+          "Crime",
+          "Trending Blockbusters"
+        ],
+        requestedCount,
+        source: 'ai_clarification',
+      });
     }
 
-    // 3. Try Delegation to Express Backend Server (for movie queries only)
-    try {
-      const serverRes = await fetch(`${SERVER_URL}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userMessage, query: userMessage, sessionId, userId, messages }),
-      });
+    // 3. Actor / Director / Cast Query Intent ("movies starring Leonardo DiCaprio", "movies by Christopher Nolan")
+    const extractPersonTarget = (msg: string): string | null => {
+      const q = msg.toLowerCase().trim();
+      const personMatch = q.match(/(?:movies?\s+starring|movies?\s+with|actor|actress|directed\s+by|director|films?\s+with)\s+([^,.?!]+)/i);
+      if (personMatch && personMatch[1]) {
+        let candidate = personMatch[1].replace(/\b(please|suggest|recommend|show|give|movies|films)\b/gi, '').trim();
+        if (candidate && candidate.length >= 2) return candidate;
+      }
+      return null;
+    };
 
-      if (serverRes.ok) {
-        const serverData = await serverRes.json();
-        if (serverData.success && (serverData.reply || serverData.data)) {
-          const reply = serverData.reply || serverData.data?.message || `Here are recommendations for "${userMessage}":`;
-          const movies = serverData.movies || serverData.data?.movies || [];
-          if (movies && movies.length > 0) {
+    const personTarget = extractPersonTarget(userMessage);
+    if (personTarget) {
+      try {
+        const personSearch = await fetchFromTMDB<any>(`/search/person?query=${encodeURIComponent(personTarget)}&language=en-US&page=1`).catch(() => null);
+        const person = personSearch?.results?.[0];
+
+        if (person) {
+          const credits = await fetchFromTMDB<any>(`/person/${person.id}/movie_credits?language=en-US`).catch(() => null);
+          const castMovies = (credits?.cast || []).sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0));
+
+          if (castMovies.length > 0) {
+            const movies = extractMovies(castMovies, requestedCount);
+            const lines = [
+              `Top Movies Featuring **${person.name}**:\n`
+            ];
+            movies.forEach((m, idx) => {
+              const yearStr = m.year ? ` (${m.year})` : '';
+              const ratingStr = m.rating ? ` [Rating: ${m.rating}]` : '';
+              const descStr = m.overview ? ` — *${m.overview.slice(0, 75)}...*` : '';
+              lines.push(`${idx + 1}. **${m.title}**${yearStr}${ratingStr}${descStr}`);
+            });
+
             return NextResponse.json({
               success: true,
-              reply,
+              reply: lines.join('\n'),
               movies,
-              source: serverData.source || 'server_express',
+              source: 'tmdb_person',
             });
           }
         }
+      } catch (personErr) {
+        console.warn('Person search API error:', personErr);
       }
-    } catch (serverErr) {
-      console.warn('Backend server call failed, executing local AI fallback engine:', serverErr);
     }
 
     // 4. Movie Summary & Overview Intent ("summary about solo leveling")
@@ -256,11 +258,11 @@ export async function POST(req: NextRequest) {
           const ratingStr = target.vote_average ? `${Number(target.vote_average.toFixed(1))}/10` : '8.0/10';
 
           const textLines = [
-            `📖 **Summary & Overview: "${title}"${yearStr}**\n`,
-            `⭐ **Rating**: ${ratingStr}\n`,
+            `**Summary & Overview: "${title}"${yearStr}**\n`,
+            `Rating: ${ratingStr}\n`,
             `**Synopsis**:`,
             `${target.overview || 'No detailed synopsis available.'}\n`,
-            `🍿 *Enjoy watching ${title} on Flixora!*`
+            `Enjoy watching ${title} on Flixora!`
           ];
 
           const card = [{
@@ -316,12 +318,12 @@ export async function POST(req: NextRequest) {
             const yearStr = targetMovie.release_date ? ` (${new Date(targetMovie.release_date).getFullYear()})` : '';
 
             const lines = [
-              `🎬 **Movies Similar to "${targetMovie.title}"${yearStr}:**\n`
+              `Movies Similar to **"${targetMovie.title}"**${yearStr}:\n`
             ];
             movies.forEach((m, idx) => {
               const mYear = m.year ? ` (${m.year})` : '';
-              const mRating = m.rating ? ` ⭐ ${m.rating}` : '';
-              const mDesc = m.overview ? ` — *${m.overview.slice(0, 70)}...*` : '';
+              const mRating = m.rating ? ` [Rating: ${m.rating}]` : '';
+              const mDesc = m.overview ? ` — *${m.overview.slice(0, 75)}...*` : '';
               lines.push(`${idx + 1}. **${m.title}**${mYear}${mRating}${mDesc}`);
             });
 
@@ -338,18 +340,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Category & Genre Search Resolver (Horror, Funny, Bangla, Action, Sci-Fi, etc.)
+    // 6. Category, Genre, Language & Decade Resolver (Horror, Funny, Bangla, Action, Sci-Fi, 90s, Top Rated, etc.)
     const categoryInfo = resolveCategorySearch(userMessage);
     let tmdbData = await fetchFromTMDB<any>(categoryInfo.endpoint).catch(() => ({ results: [] }));
 
     if (!tmdbData?.results?.length && userMessage) {
       tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => ({ results: [] }));
       categoryInfo.name = 'Trending Blockbuster';
-      categoryInfo.emoji = '🎬';
     }
 
     const movies = extractMovies(tmdbData?.results, requestedCount);
-    const replyText = buildAIReply(categoryInfo.emoji, categoryInfo.name, movies);
+    const replyText = buildAIReply(categoryInfo.name, movies);
 
     return NextResponse.json({
       success: true,
@@ -361,7 +362,7 @@ export async function POST(req: NextRequest) {
     console.error('AI Chat Error:', error);
     return NextResponse.json({
       success: true,
-      reply: "Hey! 👋 I'm Flix, your AI movie guide! Ask me for genre suggestions (Horror, Comedy, Bangla, Action) or any movie title to get recommendations!",
+      reply: "Hey! I'm Flix, your AI movie guide! Ask me for genre suggestions (Horror, Comedy, Bangla, Action) or any movie title to get recommendations!",
     });
   }
 }
@@ -373,108 +374,107 @@ function resolveCategorySearch(userQuery: string) {
   // 1. Language & Regional Categories
   let langParam = '';
   let langName = '';
-  let langEmoji = '';
 
   if (/\b(bangla|bengali|bangladesh|bd\s*movies?|kolkata|dhallywood)\b/i.test(qLower)) {
     langParam = 'with_original_language=bn';
     langName = 'Bangla';
-    langEmoji = '🇧🇩';
   } else if (/\b(hindi|bollywood|indian\s*movies?|india)\b/i.test(qLower)) {
     langParam = 'with_original_language=hi';
     langName = 'Hindi / Bollywood';
-    langEmoji = '🇮🇳';
   } else if (/\b(korean|k-drama|kdrama|korea|seoul)\b/i.test(qLower)) {
     langParam = 'with_original_language=ko';
     langName = 'Korean';
-    langEmoji = '🇰🇷';
   } else if (/\b(japanese|japan)\b/i.test(qLower)) {
     langParam = 'with_original_language=ja';
     langName = 'Japanese';
-    langEmoji = '🇯🇵';
   } else if (/\b(spanish|spain|latino)\b/i.test(qLower)) {
     langParam = 'with_original_language=es';
     langName = 'Spanish';
-    langEmoji = '🇪🇸';
   } else if (/\b(french|france)\b/i.test(qLower)) {
     langParam = 'with_original_language=fr';
     langName = 'French';
-    langEmoji = '🇫🇷';
   }
 
   // 2. Genre Categories
   let genreParam = '';
   let genreName = '';
-  let genreEmoji = '';
 
   if (/\b(horror|scary|spooky|ghost|creepy|zombie|vampire|slasher|haunted|frightening|scariest)\b/i.test(qLower)) {
     genreParam = 'with_genres=27';
     genreName = 'Horror';
-    genreEmoji = '👻';
   } else if (/\b(funny|comedy|comedies|hilarious|laugh|humor|fun|amusing|joke)\b/i.test(qLower)) {
     genreParam = 'with_genres=35';
     genreName = 'Funny Comedy';
-    genreEmoji = '😂';
   } else if (/\b(action|fight|superhero|explosive|combat|martial\s*arts|gunfight|stunt)\b/i.test(qLower)) {
     genreParam = 'with_genres=28';
     genreName = 'Action';
-    genreEmoji = '⚡';
   } else if (/\b(anime|animation|animated|cartoon|manga|otaku)\b/i.test(qLower)) {
     genreParam = 'with_genres=16';
     genreName = 'Animation & Anime';
-    genreEmoji = '✨';
   } else if (/\b(romance|romantic|love|couple|date\s*night|heartwarming)\b/i.test(qLower)) {
     genreParam = 'with_genres=10749';
     genreName = 'Romantic';
-    genreEmoji = '❤️';
   } else if (/\b(sci-?fi|science\s*fiction|space|alien|futuristic|cyberpunk|time\s*travel)\b/i.test(qLower)) {
     genreParam = 'with_genres=878';
     genreName = 'Sci-Fi';
-    genreEmoji = '🚀';
   } else if (/\b(thriller|suspense|mystery|detective|mind-?bending|twist)\b/i.test(qLower)) {
     genreParam = 'with_genres=53';
     genreName = 'Suspenseful Thriller';
-    genreEmoji = '🔍';
   } else if (/\b(crime|gangster|mafia|heist|robbery|cop|police)\b/i.test(qLower)) {
     genreParam = 'with_genres=80';
     genreName = 'Crime';
-    genreEmoji = '🕵️';
   } else if (/\b(drama|emotional|tears|moving|biopic|true\s*story)\b/i.test(qLower)) {
     genreParam = 'with_genres=18';
     genreName = 'Drama';
-    genreEmoji = '🎭';
   } else if (/\b(family|kids|children|disney|pixar|all\s*ages)\b/i.test(qLower)) {
     genreParam = 'with_genres=10751';
     genreName = 'Family & Kids';
-    genreEmoji = '👨‍👩‍👧‍👦';
   } else if (/\b(adventure|journey|expedition|exploration|treasure)\b/i.test(qLower)) {
     genreParam = 'with_genres=12';
     genreName = 'Adventure';
-    genreEmoji = '🗺️';
   }
 
-  // Combined language + genre or language-only or genre-only
-  if (langParam || genreParam) {
-    const params = [langParam, genreParam].filter(Boolean).join('&');
-    const nameStr = [langName, genreName].filter(Boolean).join(' ');
-    const emojiStr = langEmoji || genreEmoji || '🍿';
+  // 3. Decade / Year Filters
+  let decadeParam = '';
+  let decadeName = '';
+  if (/\b(90s|nineties)\b/i.test(qLower)) {
+    decadeParam = 'primary_release_date.gte=1990-01-01&primary_release_date.lte=1999-12-31';
+    decadeName = '90s Classic';
+  } else if (/\b(80s|eighties)\b/i.test(qLower)) {
+    decadeParam = 'primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31';
+    decadeName = '80s Retro';
+  } else if (/\b(2024|2023|latest|recent)\b/i.test(qLower)) {
+    decadeParam = 'primary_release_date.gte=2023-01-01';
+    decadeName = 'Recent Blockbuster';
+  }
+
+  // 4. Rating / Top Rated Filter
+  let ratingParam = '';
+  if (/\b(top\s*rated|best|highest\s*rated)\b/i.test(qLower)) {
+    ratingParam = 'sort_by=vote_average.desc&vote_count.gte=500';
+  }
+
+  // Combined params
+  const activeParams = [langParam, genreParam, decadeParam, ratingParam].filter(Boolean);
+  if (activeParams.length > 0) {
+    const nameStr = [langName, genreName, decadeName].filter(Boolean).join(' ');
+    const sortStr = ratingParam ? '' : '&sort_by=popularity.desc';
 
     return {
-      endpoint: `/discover/movie?${params}&sort_by=popularity.desc&language=en-US&page=1`,
-      name: `${nameStr}`,
-      emoji: emojiStr,
+      endpoint: `/discover/movie?${activeParams.join('&')}${sortStr}&language=en-US&page=1`,
+      name: `${nameStr || 'Recommended'}`,
     };
   }
 
   // Trending / Popular
-  if (/\b(trending|popular|hits|top\s*rated|blockbusters?|best\s*movies?)\b/i.test(qLower)) {
+  if (/\b(trending|popular|hits|blockbusters?)\b/i.test(qLower)) {
     return {
       endpoint: '/trending/movie/day?language=en-US&page=1',
       name: 'Trending Blockbuster',
-      emoji: '🔥',
     };
   }
 
-  // Title / Search Query
+  // Title / Multi Search Query
   const cleanTitle = userQuery
     .replace(/\b(searching|search|show|find|give|suggest|recommend|movies?|films?|shows?|please|for|me|can\s+you|what\s+are)\b/gi, '')
     .trim() || userQuery;
@@ -482,6 +482,5 @@ function resolveCategorySearch(userQuery: string) {
   return {
     endpoint: `/search/multi?query=${encodeURIComponent(cleanTitle)}&language=en-US&page=1`,
     name: `"${cleanTitle}"`,
-    emoji: '🎬',
   };
 }
