@@ -1,11 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { Briefcase, MapPin, Clock, Sparkles, CheckCircle2, Send, ChevronRight } from 'lucide-react';
+import { Briefcase, MapPin, Send, Loader2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const OPEN_POSITIONS = [
+interface JobPosition {
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  type: string;
+  desc: string;
+}
+
+const OPEN_POSITIONS: JobPosition[] = [
   {
     id: 'pos-1',
     title: 'Senior Frontend Engineer (Next.js & WebGL)',
@@ -41,22 +49,66 @@ const OPEN_POSITIONS = [
 ];
 
 export default function CareersPage() {
-  const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<JobPosition | null>(null);
   const [applicantName, setApplicantName] = useState('');
   const [applicantEmail, setApplicantEmail] = useState('');
-  const [resumeUrl, setResumeUrl] = useState('');
+  const [applicantPhone, setApplicantPhone] = useState('');
+  const [experience, setExperience] = useState('Mid Level');
+  const [portfolioUrl, setPortfolioUrl] = useState('');
+  const [coverLetter, setCoverLetter] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleApplySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!applicantName || !applicantEmail) {
-      toast.error('Please enter your name and email address.');
-      return;
-    }
-    toast.success('Application submitted successfully! Our talent acquisition team will review your profile.');
+  const resetForm = () => {
     setSelectedJob(null);
     setApplicantName('');
     setApplicantEmail('');
-    setResumeUrl('');
+    setApplicantPhone('');
+    setExperience('Mid Level');
+    setPortfolioUrl('');
+    setCoverLetter('');
+    setIsSubmitting(false);
+  };
+
+  const handleApplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedJob) return;
+
+    if (!applicantName.trim() || !applicantEmail.trim() || !applicantPhone.trim()) {
+      toast.error('Please enter your name, email, and phone number.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/careers/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: applicantName.trim(),
+          email: applicantEmail.trim(),
+          phone: applicantPhone.trim(),
+          jobTitle: selectedJob.title,
+          department: selectedJob.department,
+          experience,
+          portfolioUrl: portfolioUrl.trim(),
+          coverLetter: coverLetter.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success('Application submitted! Sent directly to Admin Dashboard.');
+        resetForm();
+      } else {
+        toast.error(data.message || 'Failed to submit application.');
+        setIsSubmitting(false);
+      }
+    } catch (err: any) {
+      console.error('Submission error:', err);
+      toast.error('Server error submitting application. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,7 +153,7 @@ export default function CareersPage() {
               </div>
 
               <button
-                onClick={() => setSelectedJob(job.title)}
+                onClick={() => setSelectedJob(job)}
                 className="px-5 py-2.5 rounded-xl bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider transition-all cursor-pointer shrink-0 self-start md:self-auto"
               >
                 Apply Now
@@ -112,62 +164,119 @@ export default function CareersPage() {
 
         {/* APPLICATION FORM MODAL */}
         {selectedJob && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-lg bg-[#0E0E0E] border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="w-full max-w-xl bg-[#0E0E0E] border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800">
+              <button
+                onClick={resetForm}
+                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+
               <div>
                 <span className="text-[10px] font-bold text-[#FF4C00] uppercase tracking-wider font-mono">Job Application</span>
-                <h3 className="text-xl font-black text-white mt-0.5">{selectedJob}</h3>
+                <h3 className="text-xl font-black text-white mt-0.5">{selectedJob.title}</h3>
+                <p className="text-xs text-zinc-500 font-medium mt-1">Department: {selectedJob.department} ({selectedJob.type})</p>
               </div>
 
               <form onSubmit={handleApplySubmit} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-zinc-400 font-bold mb-1">Full Name</label>
+                  <label className="block text-zinc-400 font-bold mb-1">Full Name <span className="text-[#FF4C00]">*</span></label>
                   <input
                     type="text"
                     required
                     value={applicantName}
                     onChange={(e) => setApplicantName(e.target.value)}
-                    placeholder="Enter your full name"
+                    placeholder="e.g. Zabed Mahmud"
                     className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-zinc-400 font-bold mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    value={applicantEmail}
-                    onChange={(e) => setApplicantEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-zinc-400 font-bold mb-1">Email Address <span className="text-[#FF4C00]">*</span></label>
+                    <input
+                      type="email"
+                      required
+                      value={applicantEmail}
+                      onChange={(e) => setApplicantEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-zinc-400 font-bold mb-1">Phone Number <span className="text-[#FF4C00]">*</span></label>
+                    <input
+                      type="tel"
+                      required
+                      value={applicantPhone}
+                      onChange={(e) => setApplicantPhone(e.target.value)}
+                      placeholder="+880 1700 000000"
+                      className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-zinc-400 font-bold mb-1">Experience Level</label>
+                    <select
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                      className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3 text-white focus:border-[#FF4C00] focus:outline-none cursor-pointer"
+                    >
+                      <option value="Entry Level">Entry Level (0-2 yrs)</option>
+                      <option value="Mid Level">Mid Level (3-5 yrs)</option>
+                      <option value="Senior Level">Senior Level (5+ yrs)</option>
+                      <option value="Lead / Architect">Lead / Architect (8+ yrs)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-zinc-400 font-bold mb-1">Portfolio / Resume URL</label>
+                    <input
+                      type="url"
+                      value={portfolioUrl}
+                      onChange={(e) => setPortfolioUrl(e.target.value)}
+                      placeholder="https://linkedin.com/in/username"
+                      className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-zinc-400 font-bold mb-1">Portfolio / Resume Link</label>
-                  <input
-                    type="url"
-                    value={resumeUrl}
-                    onChange={(e) => setResumeUrl(e.target.value)}
-                    placeholder="https://linkedin.com/in/yourprofile or GitHub"
-                    className="w-full h-10 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none"
+                  <label className="block text-zinc-400 font-bold mb-1">Cover Letter / Additional Notes</label>
+                  <textarea
+                    rows={3}
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    placeholder="Tell us why you are excited about Flixora and what projects you have built..."
+                    className="w-full rounded-xl bg-zinc-950 border border-zinc-800 p-3 text-white placeholder-zinc-600 focus:border-[#FF4C00] focus:outline-none resize-none"
                   />
                 </div>
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setSelectedJob(null)}
-                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold uppercase tracking-wider"
+                    onClick={resetForm}
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white font-bold uppercase tracking-wider transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 rounded-xl bg-[#FF4C00] text-black font-black uppercase tracking-wider flex items-center justify-center gap-1.5"
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 rounded-xl bg-[#FF4C00] hover:bg-[#e04300] text-black font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <Send size={14} /> Submit Application
+                    {isSubmitting ? (
+                      <Loader2 size={16} className="animate-spin text-black" />
+                    ) : (
+                      <>
+                        <Send size={14} /> Submit Application
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

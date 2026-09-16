@@ -21,6 +21,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (pathname === '/admin/settings') return 'Plans & Promo Codes';
     if (pathname === '/admin/catalogue') return 'Catalogue';
     if (pathname === '/admin/users') return 'Users';
+    if (pathname === '/admin/applications') return 'Job Applications';
+    if (pathname === '/admin/messages') return 'Contact Messages';
     if (pathname === '/admin/reviews') return 'Reviews';
     return 'Dashboard Overview';
   };

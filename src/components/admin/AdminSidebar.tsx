@@ -16,7 +16,9 @@ import {
   Shield,
   Home,
   CreditCard,
-  Ticket
+  Ticket,
+  Briefcase,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -32,6 +34,8 @@ const NAV_ITEMS = [
   { id: 'catalogue', label: 'Catalogue', icon: Film, href: '/admin/catalogue' },
   { id: 'bookings', label: 'Bookings', icon: Ticket, href: '/admin/bookings' },
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users' },
+  { id: 'applications', label: 'Job Applications', icon: Briefcase, href: '/admin/applications' },
+  { id: 'messages', label: 'Contact Messages', icon: MessageSquare, href: '/admin/messages' },
   { id: 'kids', label: 'Kids Profiles', icon: Shield, href: '/admin/kids' },
   { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
