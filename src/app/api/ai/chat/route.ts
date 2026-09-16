@@ -155,16 +155,8 @@ export async function POST(req: NextRequest) {
             let movies = undefined;
 
             if (!isGreeting) {
-              let searchEndpoint = `/search/movie?query=${encodeURIComponent(userMessage.slice(0, 30))}&language=en-US&page=1`;
-              if (/sci[- ]?fi|science\s*fiction|scifi|space/i.test(qLower)) {
-                searchEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
-              } else if (/action|fight|superhero/i.test(qLower)) {
-                searchEndpoint = '/discover/movie?with_genres=28&sort_by=popularity.desc&language=en-US&page=1';
-              } else if (/horror|scary|spooky/i.test(qLower)) {
-                searchEndpoint = '/discover/movie?with_genres=27&sort_by=popularity.desc&language=en-US&page=1';
-              } else if (/comedy|funny|hilarious/i.test(qLower)) {
-                searchEndpoint = '/discover/movie?with_genres=35&sort_by=popularity.desc&language=en-US&page=1';
-              }
+              const catSearch = resolveCategorySearch(userMessage);
+              let searchEndpoint = catSearch.endpoint;
 
               let tmdbData = await fetchFromTMDB<any>(searchEndpoint).catch(() => null);
               if (!tmdbData?.results?.length) {
@@ -374,84 +366,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Flexible Genre and Movie Intent handling with TMDB rich cards
-    let tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-    let categoryName = 'Popular';
-    let emojiHeader = '🍿';
+    // Flexible Genre, Language and Regional Movie Category Resolver
+    const categoryInfo = resolveCategorySearch(userMessage);
+    let tmdbData = await fetchFromTMDB<any>(categoryInfo.endpoint).catch(() => ({ results: [] }));
 
-    if (/sci[- ]?fi|science\s*fiction|scifi|space|alien|futuristic|cyberpunk/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=878&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Sci-Fi';
-      emojiHeader = '🚀';
-    } else if (/action|fight|superhero|explosive|martial\s*arts/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=28&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Action';
-      emojiHeader = '⚡️';
-    } else if (/adventure|journey|expedition/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=12&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Adventure';
-      emojiHeader = '🗺️';
-    } else if (/horror|scary|spooky|creepy|ghost|zombie|vampire|slasher/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=27&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Horror';
-      emojiHeader = '👻';
-    } else if (/comedy|funny|hilarious|laugh|humor/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=35&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Hilarious Comedy';
-      emojiHeader = '🍿';
-    } else if (/anime|animation|animated|cartoon/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=16&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Animation & Anime';
-      emojiHeader = '✨';
-    } else if (/thriller|suspense|mystery|detective/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=53&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Suspenseful Thriller';
-      emojiHeader = '🔍';
-    } else if (/crime|gangster|mafia|heist/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=80&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Crime';
-      emojiHeader = '🕵️';
-    } else if (/romance|romantic|love\s*movie|date\s*night/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=10749&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Romantic';
-      emojiHeader = '❤️';
-    } else if (/drama|emotional/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=18&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Drama';
-      emojiHeader = '🎭';
-    } else if (/fantasy|magic|mythical/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=14&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Fantasy';
-      emojiHeader = '⚔️';
-    } else if (/family|kids|children/i.test(qLower)) {
-      tmdbEndpoint = '/discover/movie?with_genres=10751&sort_by=popularity.desc&language=en-US&page=1';
-      categoryName = 'Family & Kids';
-      emojiHeader = '👨‍👩‍👧‍👦';
-    } else if (/trending|popular|hits|top\s*rated|blockbuster/i.test(qLower)) {
-      tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-      categoryName = 'Trending Blockbuster';
-      emojiHeader = '🔥';
-    } else if (/recommend|suggest|what\s*(should|to)\s*watch|movie\s*night|good\s*movie/i.test(qLower)) {
-      tmdbEndpoint = '/trending/movie/day?language=en-US&page=1';
-      categoryName = 'Movie Night';
-      emojiHeader = '🍿';
-    } else if (userMessage) {
-      tmdbEndpoint = `/search/multi?query=${encodeURIComponent(userMessage)}&language=en-US&page=1`;
-      categoryName = `"${userMessage}" Search`;
-      emojiHeader = '🎬';
-    }
-
-    let tmdbData = await fetchFromTMDB<any>(tmdbEndpoint).catch(() => ({ results: [] }));
-
-    // Fallback to trending if search returned no results
+    // Fallback to trending if specific search returned no results
     if (!tmdbData?.results?.length && userMessage) {
       tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => ({ results: [] }));
-      categoryName = 'Trending Movie';
-      emojiHeader = '🎬';
+      categoryInfo.name = 'Trending Blockbuster';
+      categoryInfo.emoji = '🎬';
     }
 
     const movies = extractMovies(tmdbData?.results, requestedCount);
-    const replyText = buildAIReply(emojiHeader, categoryName, movies);
+    const replyText = buildAIReply(categoryInfo.emoji, categoryInfo.name, movies);
 
     return NextResponse.json({
       success: true,
@@ -463,7 +390,127 @@ export async function POST(req: NextRequest) {
     console.error('AI Chat Error:', error);
     return NextResponse.json({
       success: true,
-      reply: "Hey! I'm Flix, your AI cinema guide! Tell me what mood or genre you want to watch tonight.",
+      reply: "Hey! I'm Flix, your AI cinema guide! Tell me what mood or genre (e.g. Horror, Funny, Bangla, Action) you want to watch tonight.",
     });
   }
+}
+
+// Category & Intent Resolver Helper
+function resolveCategorySearch(userQuery: string) {
+  const qLower = userQuery.toLowerCase().trim();
+
+  // 1. Language & Regional Categories
+  let langParam = '';
+  let langName = '';
+  let langEmoji = '';
+
+  if (/\b(bangla|bengali|bangladesh|bd\s*movies?|kolkata|dhallywood)\b/i.test(qLower)) {
+    langParam = 'with_original_language=bn';
+    langName = 'Bangla';
+    langEmoji = '🇧🇩';
+  } else if (/\b(hindi|bollywood|indian\s*movies?|india)\b/i.test(qLower)) {
+    langParam = 'with_original_language=hi';
+    langName = 'Hindi / Bollywood';
+    langEmoji = '🇮🇳';
+  } else if (/\b(korean|k-drama|kdrama|korea|seoul)\b/i.test(qLower)) {
+    langParam = 'with_original_language=ko';
+    langName = 'Korean';
+    langEmoji = '🇰🇷';
+  } else if (/\b(japanese|japan)\b/i.test(qLower)) {
+    langParam = 'with_original_language=ja';
+    langName = 'Japanese';
+    langEmoji = '🇯🇵';
+  } else if (/\b(spanish|spain|latino)\b/i.test(qLower)) {
+    langParam = 'with_original_language=es';
+    langName = 'Spanish';
+    langEmoji = '🇪🇸';
+  } else if (/\b(french|france)\b/i.test(qLower)) {
+    langParam = 'with_original_language=fr';
+    langName = 'French';
+    langEmoji = '🇫🇷';
+  }
+
+  // 2. Genre Categories
+  let genreParam = '';
+  let genreName = '';
+  let genreEmoji = '';
+
+  if (/\b(horror|scary|spooky|ghost|creepy|zombie|vampire|slasher|haunted|frightening|scariest)\b/i.test(qLower)) {
+    genreParam = 'with_genres=27';
+    genreName = 'Horror';
+    genreEmoji = '👻';
+  } else if (/\b(funny|comedy|comedies|hilarious|laugh|humor|fun|amusing|joke)\b/i.test(qLower)) {
+    genreParam = 'with_genres=35';
+    genreName = 'Funny Comedy';
+    genreEmoji = '😂';
+  } else if (/\b(action|fight|superhero|explosive|combat|martial\s*arts|gunfight|stunt)\b/i.test(qLower)) {
+    genreParam = 'with_genres=28';
+    genreName = 'Action';
+    genreEmoji = '⚡';
+  } else if (/\b(anime|animation|animated|cartoon|manga|otaku)\b/i.test(qLower)) {
+    genreParam = 'with_genres=16';
+    genreName = 'Animation & Anime';
+    genreEmoji = '✨';
+  } else if (/\b(romance|romantic|love|couple|date\s*night|heartwarming)\b/i.test(qLower)) {
+    genreParam = 'with_genres=10749';
+    genreName = 'Romantic';
+    genreEmoji = '❤️';
+  } else if (/\b(sci-?fi|science\s*fiction|space|alien|futuristic|cyberpunk|time\s*travel)\b/i.test(qLower)) {
+    genreParam = 'with_genres=878';
+    genreName = 'Sci-Fi';
+    genreEmoji = '🚀';
+  } else if (/\b(thriller|suspense|mystery|detective|mind-?bending|twist)\b/i.test(qLower)) {
+    genreParam = 'with_genres=53';
+    genreName = 'Suspenseful Thriller';
+    genreEmoji = '🔍';
+  } else if (/\b(crime|gangster|mafia|heist|robbery|cop|police)\b/i.test(qLower)) {
+    genreParam = 'with_genres=80';
+    genreName = 'Crime';
+    genreEmoji = '🕵️';
+  } else if (/\b(drama|emotional|tears|moving|biopic|true\s*story)\b/i.test(qLower)) {
+    genreParam = 'with_genres=18';
+    genreName = 'Drama';
+    genreEmoji = '🎭';
+  } else if (/\b(family|kids|children|disney|pixar|all\s*ages)\b/i.test(qLower)) {
+    genreParam = 'with_genres=10751';
+    genreName = 'Family & Kids';
+    genreEmoji = '👨‍👩‍👧‍👦';
+  } else if (/\b(adventure|journey|expedition|exploration|treasure)\b/i.test(qLower)) {
+    genreParam = 'with_genres=12';
+    genreName = 'Adventure';
+    genreEmoji = '🗺️';
+  }
+
+  // Combined language + genre or language-only or genre-only
+  if (langParam || genreParam) {
+    const params = [langParam, genreParam].filter(Boolean).join('&');
+    const nameStr = [langName, genreName].filter(Boolean).join(' ');
+    const emojiStr = langEmoji || genreEmoji || '🍿';
+
+    return {
+      endpoint: `/discover/movie?${params}&sort_by=popularity.desc&language=en-US&page=1`,
+      name: `${nameStr}`,
+      emoji: emojiStr,
+    };
+  }
+
+  // Trending / Popular
+  if (/\b(trending|popular|hits|top\s*rated|blockbusters?|best\s*movies?)\b/i.test(qLower)) {
+    return {
+      endpoint: '/trending/movie/day?language=en-US&page=1',
+      name: 'Trending Blockbuster',
+      emoji: '🔥',
+    };
+  }
+
+  // Title / Search Query (Clean away common query boilerplate)
+  const cleanTitle = userQuery
+    .replace(/\b(searching|search|show|find|give|suggest|recommend|movies?|films?|shows?|please|for|me|can\s+you|what\s+are)\b/gi, '')
+    .trim() || userQuery;
+
+  return {
+    endpoint: `/search/multi?query=${encodeURIComponent(cleanTitle)}&language=en-US&page=1`,
+    name: `"${cleanTitle}"`,
+    emoji: '🎬',
+  };
 }

@@ -122,24 +122,39 @@ export default function AIChatbot() {
         parts: [{ text: msg.text }],
       }));
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai-chat`, {
+      const response = await fetch('/api/ai/chat', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: query,
-          history: historyPayload,
+          query: query,
+          prompt: query,
+          messages: messages.map((m) => ({
+            sender: m.sender,
+            text: m.text,
+          })),
         }),
       });
 
       const resData = await response.json();
-      console.log(resData);
 
       if (resData.success) {
+        const rawMovies = resData.movies || resData.data?.movies || [];
+        const replyText = resData.reply || resData.data?.message || resData.message || "Here are recommendations for you:";
+
         const botMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           sender: "bot",
-          text: resData.data.message,
-          movies: resData.data.movies || [],
+          text: replyText,
+          movies: rawMovies.map((m: any) => ({
+            id: Number(m.id),
+            title: m.title || m.name || "Featured Title",
+            mediaType: m.media_type || m.mediaType || "movie",
+            overview: m.overview || "",
+            releaseDate: m.release_date || m.first_air_date || (m.year ? String(m.year) : ""),
+            rating: m.rating || m.vote_average || 8.0,
+            poster: m.posterUrl || m.poster_path || m.poster || null,
+            backdropPath: m.backdrop_path || null,
+          })),
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
