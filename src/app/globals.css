@@ -6,6 +6,12 @@
   --font-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
+@layer base {
+  *, ::before, ::after {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
 @keyframes route-loading-overlay {
   0% {
     opacity: 0;

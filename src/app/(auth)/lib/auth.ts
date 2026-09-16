@@ -8,7 +8,10 @@ const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/Flixora';
 if (!process.env.MONGODB_URI) {
   console.warn('Warning: MONGODB_URI is not set in environment variables. Falling back to localhost.');
 }
-const client = new MongoClient(mongoUri);
+const client = new MongoClient(mongoUri, {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+});
 
 const db = client.db('Flixora');
 
@@ -39,10 +42,15 @@ function getRandomMoviePosters(count = 3) {
 }
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://flixora-client.vercel.app'),
+  secret: process.env.BETTER_AUTH_SECRET || 'qR1EZvvc9LkiShf8Jd4QdUQPjfMueIU3',
+  baseURL: process.env.NODE_ENV === 'production'
+    ? (process.env.BETTER_AUTH_URL && !process.env.BETTER_AUTH_URL.includes('localhost') ? process.env.BETTER_AUTH_URL : 'https://flixora-client.vercel.app')
+    : (process.env.BETTER_AUTH_URL || 'http://localhost:3000'),
   trustedOrigins: [
     'http://localhost:3000',
     'https://flixora-client.vercel.app',
+    'http://localhost:5000',
+    'https://flixora-server.vercel.app',
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`] : []),
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
@@ -155,7 +163,7 @@ export const auth = betterAuth({
                             <!-- Random Trending Movie Posters Grid -->
                             <div style="border-top: 1px solid #18181b; pt-5; padding-top: 24px;">
                               <div style="font-size: 10px; font-weight: 800; color: #FF4C00; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF4C00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 5px;"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>Trending on Flixora This Week
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF4C00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 5px;"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>Trending on Flixora This Week
                               </div>
                               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                                 <tr>
@@ -240,9 +248,9 @@ export const auth = betterAuth({
           return {
             data: {
               ...user,
-              planId: '',
-              plan: '',
-              role: 'user',
+              planId: (user as any).planId || '',
+              plan: (user as any).plan || '',
+              role: (user as any).role || 'user',
             },
           };
         },

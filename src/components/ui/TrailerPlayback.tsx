@@ -101,7 +101,7 @@ const TrailerPlayback: React.FC<TrailerPlaybackProps> = ({
     : "";
 
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl">
+    <div className="aspect-video w-full overflow-hidden rounded-2xl border border-zinc-850 bg-zinc-950 shadow-2xl">
       {trailerEmbedUrl ? (
         <iframe
           ref={iframeRef}

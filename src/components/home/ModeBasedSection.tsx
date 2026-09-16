@@ -195,7 +195,7 @@ export default function MoodBasedPicks() {
           </div>
 
           {/* VIEW MODE SWITCHER (Chips vs Grid) */}
-          <div className="flex items-center gap-2 bg-[#0E0E0E] border border-white/10 rounded-full p-1 self-start sm:self-auto">
+          <div className="flex items-center gap-2 bg-[#0E0E0E] border border-zinc-850 rounded-full p-1 self-start sm:self-auto">
             <button
               onClick={() => setSelectorMode('chips')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
@@ -248,7 +248,7 @@ export default function MoodBasedPicks() {
                     className={`relative flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-200 outline-none cursor-pointer ${
                       isActive
                         ? 'bg-[#FF4C00] border-[#FF4C00] text-black shadow-[0_0_20px_rgba(255,76,0,0.25)]'
-                        : 'bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:border-white/20'
+                        : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                     }`}
                   >
                     <Icon
@@ -307,7 +307,7 @@ export default function MoodBasedPicks() {
                     className={`relative p-3.5 rounded-2xl border cursor-pointer flex flex-col justify-between min-h-[110px] overflow-hidden transition-all duration-300 ${
                       isActive
                         ? 'bg-[#141414] border-[#FF4C00] shadow-[0_0_25px_rgba(255,76,0,0.3)]'
-                        : 'bg-[#0B0B0B] border-white/10 hover:border-white/20 hover:bg-[#121212]'
+                        : 'bg-[#0B0B0B] border-zinc-850 hover:border-zinc-750 hover:bg-[#121212]'
                     }`}
                   >
                     {/* Background Subtle Gradient */}
@@ -325,7 +325,7 @@ export default function MoodBasedPicks() {
                       >
                         <Icon size={18} />
                       </div>
-                      <span className="text-[10px] font-bold text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                      <span className="text-[10px] font-bold text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">
                         {moodMovieCount} picks
                       </span>
                     </div>
@@ -354,7 +354,7 @@ export default function MoodBasedPicks() {
         </AnimatePresence>
 
         {/* ENERGY INTENSITY FILTER & SUMMARY BAR */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-4">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-900 pb-4">
           <div className="flex flex-wrap items-center gap-3 min-w-0">
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 flex items-center gap-1.5 shrink-0">
               <SlidersHorizontal size={12} className="text-[#FF4C00]" />
@@ -368,7 +368,7 @@ export default function MoodBasedPicks() {
                     onClick={() => setEnergyFilter(lvl)}
                     className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md transition-all ${
                       energyFilter === lvl
-                        ? 'bg-white/10 text-white border border-white/20'
+                        ? 'bg-zinc-800 text-white border border-zinc-700'
                         : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
@@ -404,7 +404,7 @@ export default function MoodBasedPicks() {
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5"
             >
               {filteredMovies.length === 0 ? (
-                <div className="col-span-full py-16 text-center flex flex-col items-center justify-center bg-white/5 rounded-2xl border border-white/5">
+                <div className="col-span-full py-16 text-center flex flex-col items-center justify-center bg-zinc-950/60 rounded-2xl border border-zinc-900">
                   <Sparkles size={28} className="text-[#FF4C00] mb-2" />
                   <p className="text-sm font-bold text-white">
                     No matching titles for this energy filter

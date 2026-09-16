@@ -533,7 +533,7 @@ export default function CatalogueClient() {
                         </span>
 
                         {/* Media Type Badge */}
-                        <span className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-white/20 text-zinc-300 text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
+                        <span className="inline-flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-zinc-800 text-zinc-300 text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
                           <Film className="h-3.5 w-3.5 text-[#FF4C00]" />
                           {movie.type || "Movie"}
                         </span>
@@ -549,7 +549,7 @@ export default function CatalogueClient() {
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md border shadow-lg transition-all cursor-pointer ${
                             movie.isFeaturedHero
                               ? "bg-[#FF4C00]/90 text-white border-[#FF4C00]"
-                              : "bg-black/70 text-zinc-400 border-white/10 hover:text-white"
+                              : "bg-black/70 text-zinc-400 border-zinc-800 hover:text-white"
                           }`}
                         >
                           <Flame className={`h-3.5 w-3.5 ${movie.isFeaturedHero ? "text-amber-300 animate-pulse" : ""}`} />
@@ -601,18 +601,18 @@ export default function CatalogueClient() {
                       {/* Genre Tags */}
                       <div className="flex flex-wrap gap-1.5 pt-0.5">
                         {(movie.genres || []).slice(0, 3).map((g) => (
-                          <span key={g} className="text-[10px] font-bold text-zinc-300 bg-black/60 border border-white/15 px-2.5 py-0.5 rounded-lg backdrop-blur-md">
+                          <span key={g} className="text-[10px] font-bold text-zinc-300 bg-black/60 border border-zinc-800 px-2.5 py-0.5 rounded-lg backdrop-blur-md">
                             {g}
                           </span>
                         ))}
                       </div>
 
                       {/* Card Bottom Buttons Bar */}
-                      <div className="pt-3 border-t border-white/15 flex items-center justify-between">
+                      <div className="pt-3 border-t border-zinc-850 flex items-center justify-between">
                         <Link
                           href={`/movie/${movie.id}`}
                           target="_blank"
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white transition-colors bg-black/50 border border-white/15 px-3 py-1.5 rounded-xl backdrop-blur-md"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white transition-colors bg-black/50 border border-zinc-800 px-3 py-1.5 rounded-xl backdrop-blur-md"
                         >
                           <span>View</span>
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -624,7 +624,7 @@ export default function CatalogueClient() {
                             type="button"
                             onClick={() => handleOpenEditModal(movie)}
                             title="Edit Metadata & Stream Links"
-                            className="p-2 rounded-xl border border-white/15 bg-black/60 text-zinc-200 hover:border-[#FF4C00] hover:text-[#FF8A5C] transition-all backdrop-blur-md cursor-pointer"
+                            className="p-2 rounded-xl border border-zinc-800 bg-black/60 text-zinc-200 hover:border-[#FF4C00] hover:text-[#FF8A5C] transition-all backdrop-blur-md cursor-pointer"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
@@ -634,7 +634,7 @@ export default function CatalogueClient() {
                             type="button"
                             onClick={() => handleDeleteMovie(movie)}
                             title="Delete Media"
-                            className="p-2 rounded-xl border border-white/15 bg-black/60 text-zinc-400 hover:border-rose-500 hover:text-rose-400 transition-all backdrop-blur-md cursor-pointer"
+                            className="p-2 rounded-xl border border-zinc-800 bg-black/60 text-zinc-400 hover:border-rose-500 hover:text-rose-400 transition-all backdrop-blur-md cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

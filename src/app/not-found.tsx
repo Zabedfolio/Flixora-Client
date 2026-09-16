@@ -21,13 +21,13 @@ const NotFoundPage = () => {
         initial={{ opacity: 0, rotate: -18, x: -100 }}
         animate={{ opacity: 1, rotate: -18, x: 0 }}
         transition={{ duration: 1.2, ease: 'easeOut' }}
-        className="pointer-events-none absolute -left-24 top-24 hidden w-[420px] rotate-[-18deg] border-y border-white/10 py-5 opacity-30 lg:block"
+        className="pointer-events-none absolute -left-24 top-24 hidden w-[420px] rotate-[-18deg] border-y border-zinc-800 py-5 opacity-30 lg:block"
       >
         <div className="flex gap-5">
           {Array.from({ length: 8 }).map((_, index) => (
             <div
               key={index}
-              className="h-20 w-24 shrink-0 rounded-md border border-white/10 bg-white/5"
+              className="h-20 w-24 shrink-0 rounded-md border border-zinc-800 bg-zinc-950"
             />
           ))}
         </div>
@@ -37,13 +37,13 @@ const NotFoundPage = () => {
         initial={{ opacity: 0, rotate: 18, x: 100 }}
         animate={{ opacity: 1, rotate: 18, x: 0 }}
         transition={{ duration: 1.2, ease: 'easeOut' }}
-        className="pointer-events-none absolute -right-24 bottom-28 hidden w-[420px] border-y border-white/10 py-5 opacity-30 lg:block"
+        className="pointer-events-none absolute -right-24 bottom-28 hidden w-[420px] border-y border-zinc-800 py-5 opacity-30 lg:block"
       >
         <div className="flex gap-5">
           {Array.from({ length: 8 }).map((_, index) => (
             <div
               key={index}
-              className="h-20 w-24 shrink-0 rounded-md border border-white/10 bg-white/5"
+              className="h-20 w-24 shrink-0 rounded-md border border-zinc-800 bg-zinc-950"
             />
           ))}
         </div>
@@ -56,7 +56,7 @@ const NotFoundPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-2 backdrop-blur-md"
         >
           <Film className="h-4 w-4 text-[#FF4C00]" />
 
@@ -131,7 +131,7 @@ const NotFoundPage = () => {
 
           <Link
             href="/movies"
-            className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-[#FF4C00]/40 hover:bg-white/10 sm:w-auto"
+            className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-zinc-800 bg-zinc-950 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-[#FF4C00]/40 sm:w-auto"
           >
             <Play
               size={16}
