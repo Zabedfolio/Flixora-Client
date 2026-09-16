@@ -222,24 +222,37 @@ export default function AIChatbot() {
           resData.message ||
           "Here are recommendations for you:";
 
+const formatPosterUrl = (path: string | null | undefined): string => {
+  if (!path) {
+    return "https://images.unsplash.com/photo-1594744803329-e58b31de215f?q=80&w=400&auto=format&fit=crop";
+  }
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `https://image.tmdb.org/t/p/w500${cleanPath}`;
+};
+
         const botMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           sender: "bot",
           text: replyText,
           options: resData.options,
-          movies: rawMovies.map((m: any) => ({
-            id: Number(m.id),
-            title: m.title || m.name || "Featured Title",
-            mediaType: m.media_type || m.mediaType || "movie",
-            overview: m.overview || "",
-            releaseDate:
-              m.release_date ||
-              m.first_air_date ||
-              (m.year ? String(m.year) : ""),
-            rating: m.rating || m.vote_average || 8.0,
-            poster: m.posterUrl || m.poster_path || m.poster || null,
-            backdropPath: m.backdrop_path || null,
-          })),
+          movies: rawMovies.map((m: any) => {
+            const rawPoster = m.posterUrl || m.poster_path || m.poster || m.backdrop_path || m.backdropPath;
+            const ratingRaw = m.rating || m.vote_average || 8.0;
+            const yearRaw = m.releaseDate || m.release_date || m.first_air_date || (m.year ? String(m.year) : "");
+            const yearFormatted = yearRaw ? String(yearRaw).split("-")[0] : "";
+            return {
+              id: Number(m.id),
+              title: m.title || m.name || "Featured Title",
+              mediaType: m.media_type || m.mediaType || "movie",
+              overview: m.overview || "",
+              releaseDate: yearFormatted,
+              rating: typeof ratingRaw === "number" ? Number(ratingRaw.toFixed(1)) : 8.0,
+              poster: formatPosterUrl(rawPoster),
+            };
+          }),
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -400,6 +413,9 @@ export default function AIChatbot() {
                                 src={movie.poster}
                                 alt={movie.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1594744803329-e58b31de215f?q=80&w=400&auto=format&fit=crop";
+                                }}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-zinc-600">

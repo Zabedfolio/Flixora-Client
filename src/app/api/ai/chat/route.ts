@@ -119,11 +119,12 @@ export async function POST(req: NextRequest) {
     // Helper function to extract TMDB movies array with STRICT dynamic count
     const extractMovies = (results: any[], count: number = 6) => {
       return (results || [])
-        .filter((m: any) => m.media_type !== 'person')
+        .filter((m: any) => m.media_type !== 'person' && (m.poster_path || m.backdrop_path))
         .slice(0, count)
         .map((m: any) => {
           const itemTitle = m.title || m.name || 'Featured Title';
           const itemDate = m.release_date || m.first_air_date;
+          const poster = m.poster_path || m.backdrop_path;
           return {
             id: m.id.toString(),
             title: itemTitle,
@@ -131,8 +132,8 @@ export async function POST(req: NextRequest) {
             year: itemDate ? new Date(itemDate).getFullYear() : 2026,
             rating: m.vote_average ? Number(m.vote_average.toFixed(1)) : 8.0,
             genres: m.genre_ids || ['Featured'],
-            posterUrl: getTMDBImageUrl(m.poster_path, 'w500'),
-            poster_path: m.poster_path ? getTMDBImageUrl(m.poster_path, 'w500') : null,
+            posterUrl: getTMDBImageUrl(poster, 'w500'),
+            poster_path: poster ? getTMDBImageUrl(poster, 'w500') : null,
             backdrop_path: m.backdrop_path ? getTMDBImageUrl(m.backdrop_path, 'original') : null,
             overview: m.overview || '',
             vote_average: m.vote_average,
