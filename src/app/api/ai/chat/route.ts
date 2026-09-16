@@ -168,11 +168,11 @@ export async function POST(req: NextRequest) {
     }
     const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10) : 6;
 
-    // Helper function to extract TMDB movies array with STRICT dynamic count and RANDOM Math shuffling
-    const extractMovies = (results: any[], count: number = 6) => {
+    // Helper function to extract TMDB movies array with STRICT dynamic count and RANDOM Math shuffling for genre queries
+    const extractMovies = (results: any[], count: number = 6, shouldShuffle: boolean = false) => {
       const filtered = (results || []).filter((m: any) => m.media_type !== 'person' && (m.poster_path || m.backdrop_path));
-      const shuffled = filtered.sort(() => Math.random() - 0.5);
-      return shuffled
+      const items = shouldShuffle ? [...filtered].sort(() => Math.random() - 0.5) : filtered;
+      return items
         .slice(0, count)
         .map((m: any) => {
           const itemTitle = m.title || m.name || 'Featured Title';
@@ -252,7 +252,8 @@ export async function POST(req: NextRequest) {
         categoryInfo.name = 'Trending Blockbuster';
       }
 
-      const movies = extractMovies(tmdbData?.results, requestedCount);
+      // Genre queries MUST shuffle using Math.random() every time!
+      const movies = extractMovies(tmdbData?.results, requestedCount, categoryInfo.isGenre !== false);
       const replyText = buildAIReply(categoryInfo.name, movies);
 
       return NextResponse.json({
@@ -285,7 +286,8 @@ export async function POST(req: NextRequest) {
           const castMovies = (credits?.cast || []).sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0));
 
           if (castMovies.length > 0) {
-            const movies = extractMovies(castMovies, requestedCount);
+            // Actor credit query: deterministic ordering by popularity (shouldShuffle = false)
+            const movies = extractMovies(castMovies, requestedCount, false);
             const lines = [
               `Top Movies Featuring **${person.name}**:\n`
             ];
@@ -397,7 +399,8 @@ export async function POST(req: NextRequest) {
           }
 
           if (recData?.results?.length > 0) {
-            const movies = extractMovies(recData.results, requestedCount);
+            // Similarity search: deterministic top relevant movies (shouldShuffle = false)
+            const movies = extractMovies(recData.results, requestedCount, false);
             const yearStr = targetMovie.release_date ? ` (${new Date(targetMovie.release_date).getFullYear()})` : '';
 
             const lines = [
@@ -432,7 +435,7 @@ export async function POST(req: NextRequest) {
       categoryInfo.name = 'Trending Blockbuster';
     }
 
-    const movies = extractMovies(tmdbData?.results, requestedCount);
+    const movies = extractMovies(tmdbData?.results, requestedCount, categoryInfo.isGenre ?? false);
     const replyText = buildAIReply(categoryInfo.name, movies);
 
     return NextResponse.json({
@@ -456,26 +459,29 @@ function resolveCategorySearch(userQuery: string) {
 
   // 0. Dedicated Anime, K-Drama & TV Series Intent
   if (/\b(anime|manga|otaku|anime\s*series)\b/i.test(qLower)) {
-    const randomPage = Math.floor(Math.random() * 4) + 1;
+    const randomPage = Math.floor(Math.random() * 5) + 1;
     return {
       endpoint: `/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=en-US&page=${randomPage}`,
       name: 'Popular Anime',
+      isGenre: true,
     };
   }
 
   if (/\b(k-drama|kdrama|korean\s*drama|korean\s*series)\b/i.test(qLower)) {
-    const randomPage = Math.floor(Math.random() * 4) + 1;
+    const randomPage = Math.floor(Math.random() * 5) + 1;
     return {
       endpoint: `/discover/tv?with_original_language=ko&sort_by=popularity.desc&language=en-US&page=${randomPage}`,
       name: 'Korean Drama',
+      isGenre: true,
     };
   }
 
   if (/\b(tv\s*shows?|tv\s*series|shows|series)\b/i.test(qLower)) {
-    const randomPage = Math.floor(Math.random() * 4) + 1;
+    const randomPage = Math.floor(Math.random() * 5) + 1;
     return {
       endpoint: `/trending/tv/day?language=en-US&page=${randomPage}`,
       name: 'Popular TV Series',
+      isGenre: true,
     };
   }
 
@@ -620,6 +626,7 @@ function resolveCategorySearch(userQuery: string) {
     return {
       endpoint: `/discover/movie?${activeParams.join('&')}${sortStr}&language=en-US&page=${randomPage}`,
       name: `${nameStr || 'Recommended'}`,
+      isGenre: true,
     };
   }
 
@@ -628,6 +635,7 @@ function resolveCategorySearch(userQuery: string) {
     return {
       endpoint: `/trending/movie/day?language=en-US&page=${randomPage}`,
       name: 'Trending Blockbuster',
+      isGenre: true,
     };
   }
 
@@ -639,5 +647,6 @@ function resolveCategorySearch(userQuery: string) {
   return {
     endpoint: `/search/multi?query=${encodeURIComponent(cleanTitle)}&language=en-US&page=1`,
     name: `"${cleanTitle}"`,
+    isGenre: false,
   };
 }
