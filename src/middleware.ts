@@ -37,6 +37,12 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(accessDeniedUrl);
         }
 
+        if (user.status === 'suspended' || user.status === 'banned') {
+          const accessDeniedUrl = new URL('/access-denied', request.url);
+          accessDeniedUrl.searchParams.set('reason', `account_${user.status}`);
+          return NextResponse.redirect(accessDeniedUrl);
+        }
+
         if (user.role !== 'admin') {
           // Logged-in non-admin trying to breach admin dashboard -> redirect to production-level access-denied page
           const accessDeniedUrl = new URL('/access-denied', request.url);
@@ -67,6 +73,27 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
     }
+
+    try {
+      const sessionRes = await fetch(new URL('/api/auth/get-session', request.url), {
+        headers: {
+          cookie: request.headers.get('cookie') || '',
+        },
+      });
+
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+        const user = sessionData?.user;
+
+        if (user && (user.status === 'suspended' || user.status === 'banned')) {
+          const accessDeniedUrl = new URL('/access-denied', request.url);
+          accessDeniedUrl.searchParams.set('reason', `account_${user.status}`);
+          return NextResponse.redirect(accessDeniedUrl);
+        }
+      }
+    } catch (err) {
+      console.error('[Middleware User Check Error]:', err);
+    }
   }
 
   // 3. ADMIN API PROTECTION (/api/admin/*)
@@ -95,7 +122,21 @@ export async function middleware(request: NextRequest) {
       const sessionData = await sessionRes.json();
       const user = sessionData?.user;
 
-      if (!user || user.role !== 'admin') {
+      if (!user) {
+        return NextResponse.json(
+          { success: false, message: 'Unauthorized: Session missing.' },
+          { status: 401 }
+        );
+      }
+
+      if (user.status === 'suspended' || user.status === 'banned') {
+        return NextResponse.json(
+          { success: false, message: `Forbidden: Account is ${user.status}.` },
+          { status: 403 }
+        );
+      }
+
+      if (user.role !== 'admin') {
         return NextResponse.json(
           { success: false, message: 'Forbidden: Admin access required.' },
           { status: 403 }
