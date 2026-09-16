@@ -63,8 +63,15 @@ export async function POST(req: NextRequest) {
 
       if (serverRes.ok) {
         const serverData = await serverRes.json();
-        if (serverData.success && serverData.reply) {
-          return NextResponse.json(serverData);
+        if (serverData.success && (serverData.reply || serverData.data)) {
+          const reply = serverData.reply || serverData.data?.message || `Here are recommendations for "${userMessage}":`;
+          const movies = serverData.movies || serverData.data?.movies || [];
+          return NextResponse.json({
+            success: true,
+            reply,
+            movies,
+            source: serverData.source || 'server_express',
+          });
         }
       }
     } catch (serverErr) {
