@@ -337,7 +337,7 @@ export default function AdminDashboardPage() {
             </h2>
 
             <div className="flex items-center gap-3 pt-1">
-              <span className="inline-flex items-center gap-2 text-xs font-bold text-zinc-200 bg-black/70 border border-white/15 px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-lg">
+              <span className="inline-flex items-center gap-2 text-xs font-bold text-zinc-200 bg-black/70 border border-zinc-800 px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-lg">
                 <Eye size={14} className="text-[#FF4C00]" />
                 <span>{activeMovie.clickCount.toLocaleString()} Total Clicks & Views</span>
               </span>
@@ -345,7 +345,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Bottom Indicators (NO SIDE ARROWS AS REQUESTED) */}
-          <div className="relative z-10 px-6 py-3.5 flex items-center justify-between border-t border-white/10 bg-black/50 backdrop-blur-md">
+          <div className="relative z-10 px-6 py-3.5 flex items-center justify-between border-t border-zinc-900 bg-black/50 backdrop-blur-md">
             <div className="flex items-center gap-2">
               {movies.map((m, index) => (
                 <button
