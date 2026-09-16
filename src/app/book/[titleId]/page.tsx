@@ -22,6 +22,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface BookPageProps {
   params: Promise<{ titleId: string }>;
@@ -30,6 +31,14 @@ interface BookPageProps {
 export default function LocationAndShowtimePage({ params }: BookPageProps) {
   const { titleId } = use(params);
   const router = useRouter();
+  const { isKidsMode } = useKidsStore();
+
+  useEffect(() => {
+    if (isKidsMode) {
+      toast.error('Ticket booking is restricted in Kids Mode.');
+      router.replace('/');
+    }
+  }, [isKidsMode, router]);
 
   // Selection States
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Dhaka');

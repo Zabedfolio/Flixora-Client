@@ -52,6 +52,81 @@ const GENRE_CATEGORIES = [
   { id: "Romance", label: "Romance & Mature", icon: Heart, desc: "Block romantic and mature themes" },
 ];
 
+const RECOMMENDED_PARENTAL_BLOCKS = [
+  {
+    id: "293660",
+    title: "Deadpool",
+    mediaType: "Movie",
+    rating: "R / 18+",
+    tags: ["R-Rated", "Severe Violence", "Strong Language"],
+    poster: "https://image.tmdb.org/t/p/w500/fJy32Sgr4R3qvw3U8V7O67vS0P6.jpg",
+    reason: "Contains graphic combat violence, explicit adult language, and dark humor unsuitable for kids."
+  },
+  {
+    id: "475557",
+    title: "Joker",
+    mediaType: "Movie",
+    rating: "R / 18+",
+    tags: ["R-Rated", "Psychological Thriller", "Dark Violence"],
+    poster: "https://image.tmdb.org/t/p/w500/udDclSub2kg8vgE2Mrcc5w2nSY5.jpg",
+    reason: "Intense psychological distress, heavy violence, and dark themes of mental breakdown."
+  },
+  {
+    id: "1429",
+    title: "Attack on Titan",
+    mediaType: "Anime",
+    rating: "TV-MA / 18+",
+    tags: ["TV-MA", "Gore & Blood", "Horror"],
+    poster: "https://image.tmdb.org/t/p/w500/hTP12qAYEXsi2zh2wV2Pg4RjB6Y.jpg",
+    reason: "Severe graphic gore, human consumption imagery, and traumatic apocalyptic violence."
+  },
+  {
+    id: "85937",
+    title: "Demon Slayer (Entertainment District)",
+    mediaType: "Anime",
+    rating: "TV-MA / 16+",
+    tags: ["TV-MA", "Demonic Violence", "Decapitation"],
+    poster: "https://image.tmdb.org/t/p/w500/xUfVStVxBOx6vN4z6fOhzGQijvV.jpg",
+    reason: "Frequent demonic decapitations, severe bodily harm, and intense battles."
+  },
+  {
+    id: "114410",
+    title: "Chainsaw Man",
+    mediaType: "Anime",
+    rating: "TV-MA / 18+",
+    tags: ["TV-MA", "Extreme Gore", "Devils & Demons"],
+    poster: "https://image.tmdb.org/t/p/w500/npdB6eFzLwfiL7UTPK8wT4WqqYq.jpg",
+    reason: "Visceral chainsaw gore, demonic horror elements, and adult themes."
+  },
+  {
+    id: "93405",
+    title: "Squid Game",
+    mediaType: "TV Series",
+    rating: "TV-MA / 18+",
+    tags: ["TV-MA", "Fatal Games", "Mass Executions"],
+    poster: "https://image.tmdb.org/t/p/w500/dDlEmu3EZ0Pgg93K2SVN2miwcqw.jpg",
+    reason: "High-volume execution scenes, psychological betrayal, and lethal game mechanics."
+  },
+  {
+    id: "872585",
+    title: "Oppenheimer",
+    mediaType: "Movie",
+    rating: "R / 18+",
+    tags: ["R-Rated", "Brief Nudity", "Intense Drama"],
+    poster: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGvC2t9PjA7.jpg",
+    reason: "Contains brief nudity, intense existential themes, and adult dialogue."
+  },
+  {
+    id: "105971",
+    title: "Cyberpunk: Edgerunners",
+    mediaType: "Anime",
+    rating: "TV-MA / 18+",
+    tags: ["TV-MA", "Graphic Violence", "Cyberpsychosis"],
+    poster: "https://image.tmdb.org/t/p/w500/7inF9B2L2n34z8R7J24wF7262n.jpg",
+    reason: "Extremely graphic cyberpunk violence, substance abuse, and adult content."
+  }
+];
+
 export default function KidsControlPage() {
   const [profiles, setProfiles] = useState<KidsProfile[]>([]);
   const [planInfo, setPlanInfo] = useState<{
@@ -83,6 +158,7 @@ export default function KidsControlPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>("ALL");
 
   const { enterKidsMode, isKidsMode, activeKidsProfile } = useKidsStore();
 
@@ -681,6 +757,125 @@ export default function KidsControlPage() {
                     })}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* AI & Tag-Based Recommended Parental Blocks */}
+            <div className="rounded-3xl border border-zinc-900 bg-[#0C0C0C] p-6 sm:p-8 shadow-2xl space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest">
+                      <Sparkles size={12} />
+                      <span>Tag-Based Parental Guidance</span>
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-black uppercase tracking-wide text-white flex items-center gap-2">
+                    <ShieldAlert size={18} className="text-[#FF4C00]" />
+                    Recommended Titles to Block for <span className="text-[#FF4C00]">{activeProfile.name}</span>
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Based on movie & anime rating tags (violence, mature themes, gore), we recommend blocking these titles for young viewers.
+                  </p>
+                </div>
+
+                {/* Tag Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none shrink-0">
+                  {["ALL", "Movie", "Anime", "TV-MA"].map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedTagFilter(tag)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        selectedTagFilter === tag
+                          ? "bg-[#FF4C00] text-black shadow-md shadow-[#FF4C00]/20"
+                          : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800"
+                      }`}
+                    >
+                      {tag === "ALL" ? "All Tags" : tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommended Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {RECOMMENDED_PARENTAL_BLOCKS.filter((item) => {
+                  if (selectedTagFilter === "ALL") return true;
+                  if (selectedTagFilter === "Movie") return item.mediaType === "Movie";
+                  if (selectedTagFilter === "Anime") return item.mediaType === "Anime";
+                  if (selectedTagFilter === "TV-MA") return item.rating.includes("TV-MA") || item.rating.includes("R");
+                  return true;
+                }).map((item) => {
+                  const isBlocked = (activeProfile.blockedMovieIds || []).includes(String(item.id));
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-4 rounded-2xl border transition-all flex items-start gap-4 ${
+                        isBlocked
+                          ? "bg-red-500/10 border-red-500/30"
+                          : "bg-[#121212] border-zinc-900 hover:border-zinc-800"
+                      }`}
+                    >
+                      <img
+                        src={item.poster}
+                        alt={item.title}
+                        className="w-16 h-24 rounded-xl object-cover shrink-0 border border-zinc-800 shadow-md"
+                      />
+
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-black text-white truncate">{item.title}</h4>
+                              <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
+                                {item.rating}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-500 uppercase font-mono font-bold mt-0.5">
+                              {item.mediaType}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Content Warning Tags */}
+                        <div className="flex flex-wrap gap-1">
+                          {item.tags.map((t, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-amber-400 text-[9px] font-bold"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+
+                        <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2">
+                          {item.reason}
+                        </p>
+
+                        <div className="pt-1">
+                          <button
+                            onClick={() =>
+                              handleToggleMovieBlock(
+                                { id: item.id, title: item.title },
+                                isBlocked ? "unblock" : "block"
+                              )
+                            }
+                            className={`w-full py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                              isBlocked
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black"
+                                : "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white"
+                            }`}
+                          >
+                            <Ban size={12} />
+                            <span>{isBlocked ? "Unblock Title" : `Block for ${activeProfile.name}`}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
