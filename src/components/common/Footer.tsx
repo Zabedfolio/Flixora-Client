@@ -47,10 +47,10 @@ const COLUMNS: Column[] = [
   {
     title: "Company",
     links: [
-      { label: "About Us", href: "/" },
-      { label: "Careers", href: "/" },
-      { label: "Press", href: "/" },
-      { label: "Contact", href: "/" },
+      { label: "About Us", href: "/about" },
+      { label: "Careers", href: "/careers" },
+      { label: "Press", href: "/press" },
+      { label: "Contact", href: "/contact" },
     ],
   },
   {
@@ -69,16 +69,16 @@ const COLUMNS: Column[] = [
       { label: "Manage Subscription", href: "/dashboard/subscription" },
       { label: "Billing", href: "/dashboard/subscription" },
       { label: "Account Settings", href: "/dashboard/setting" },
-      { label: "Help Center", href: "/" },
+      { label: "Help Center", href: "/help" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy Policy", href: "/" },
-      { label: "Terms of Service", href: "/" },
-      { label: "Cookie Preferences", href: "/" },
-      { label: "Content Guidelines", href: "/" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Cookie Preferences", href: "/cookies" },
+      { label: "Content Guidelines", href: "/guidelines" },
     ],
   },
 ];
