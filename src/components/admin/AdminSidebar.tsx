@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  Film, 
-  Users, 
-  Flag, 
-  BarChart3, 
-  Settings, 
-  ChevronLeft, 
+import React, { useState } from "react";
+import {
+  LayoutDashboard,
+  Film,
+  Users,
+  Flag,
+  BarChart3,
+  Settings,
+  ChevronLeft,
   ChevronRight,
-  User, 
-  LogOut, 
+  User,
+  LogOut,
   ShieldAlert,
   Shield,
   Home,
@@ -45,17 +45,25 @@ const NAV_ITEMS = [
   { id: 'home', label: 'Home Page', icon: Home, href: '/' },
 ];
 
-export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
+export default function AdminSidebar({
+  isOpen = false,
+  onClose,
+}: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const getActiveItem = () => {
-    const sortedItems = [...NAV_ITEMS].sort((a, b) => b.href.length - a.href.length);
-    const active = sortedItems.find(item => 
-      pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href))
+    const sortedItems = [...NAV_ITEMS].sort(
+      (a, b) => b.href.length - a.href.length,
     );
-    return active?.id || 'dashboard';
+    const active = sortedItems.find(
+      (item) =>
+        pathname === item.href ||
+        (item.href !== "/admin" && pathname?.startsWith(item.href)),
+    );
+    return active?.id || "dashboard";
   };
 
   const activeId = getActiveItem();
@@ -64,33 +72,59 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
     setIsCollapsed(!isCollapsed);
   };
 
+  const handleLogout = async () => {
+    try {
+      // লোকাল স্টোরেজ বা কুকিজ ক্লিন করা
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // যদি সার্ভার-সাইড লগআউট API থাকে:
+      // await fetch('/api/auth/logout', { method: 'POST' });
+
+      setIsProfileOpen(false);
+      toast.success("Logged out successfully!");
+
+      // হোম পেজে রিডাইরেক্ট এবং স্টেট রিফ্রেশ
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to logout. Please try again.");
+    }
+  };
+
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#0A0A0A] text-white select-none relative font-sans overflow-hidden">
       <div className={`flex items-center justify-between px-6 pt-6 pb-4 shrink-0 ${isCollapsed ? 'justify-center px-2' : ''}`}>
         {!isCollapsed ? (
           <Link href="/" className="flex items-center gap-2.5 outline-none">
-            <img 
-              src="/logo.png" 
-              alt="Flixora Logo" 
-              className="h-6 w-auto object-contain" 
+            <img
+              src="/logo.png"
+              alt="Flixora Logo"
+              className="h-6 w-auto object-contain"
             />
             <span className="text-[#FF4C00] text-[8px] font-black font-mono border border-[#FF4C00]/30 px-1 py-0.5 rounded uppercase tracking-widest bg-[#FF4C00]/5 shrink-0 align-middle">
               Admin
             </span>
           </Link>
         ) : (
-          <Link href="/" className="flex items-center justify-center outline-none">
+          <Link
+            href="/"
+            className="flex items-center justify-center outline-none"
+          >
             <span className="w-6 h-6 rounded-lg bg-[#FF4C00] flex items-center justify-center font-black text-black text-[10px] font-mono">
               F
             </span>
           </Link>
         )}
-        
-        <button 
+
+        <button
           onClick={handleToggleCollapse}
           className="hidden md:flex items-center justify-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 transition-all outline-none"
         >
-          <ChevronLeft size={16} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+          <ChevronLeft
+            size={16}
+            className={`transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`}
+          />
         </button>
       </div>
 
@@ -103,20 +137,20 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
             <div key={item.id} className="relative flex items-center w-full">
               {/* Far left vertical glowing bar */}
               {isActive && (
-                <div 
+                <div
                   className={`absolute w-[5px] h-10 rounded-r-[4px] bg-[#FF4C00] z-20 ${
-                    isCollapsed ? 'left-[-8px]' : 'left-[-16px]'
+                    isCollapsed ? "left-[-8px]" : "left-[-16px]"
                   }`}
                   style={{
                     boxShadow: `
                       0 0 8px 2px rgba(255, 76, 0, 0.9),
                       0 0 40px 10px rgba(255, 76, 0, 0.35),
                       0 0 80px 20px rgba(255, 76, 0, 0.15)
-                    `
+                    `,
                   }}
                 />
               )}
-              
+
               <Link
                 key={item.id}
                 href={item.href}
@@ -124,25 +158,31 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
                   isCollapsed ? 'justify-center px-0' : 'pl-4 pr-3 ml-[-5px]'
                 } ${
                   isActive
-                    ? 'bg-[#1A1A1A] text-white font-bold'
-                    : 'text-[#B3B3B3] hover:bg-[#1A1A1A] hover:text-white'
+                    ? "bg-[#1A1A1A] text-white font-bold"
+                    : "text-[#B3B3B3] hover:bg-[#1A1A1A] hover:text-white"
                 }`}
-                style={!isCollapsed && isActive ? { marginLeft: '-5px', paddingLeft: '16px' } : {}}
+                style={
+                  !isCollapsed && isActive
+                    ? { marginLeft: "-5px", paddingLeft: "16px" }
+                    : {}
+                }
               >
-                {/* Icon in plain dark circle */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                  isActive 
-                    ? 'bg-[#2A2A2A] text-white' 
-                    : 'bg-[#141414] text-[#B3B3B3] group-hover:bg-[#2A2A2A] group-hover:text-white'
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                    isActive
+                      ? "bg-[#2A2A2A] text-white"
+                      : "bg-[#141414] text-[#B3B3B3] group-hover:bg-[#2A2A2A] group-hover:text-white"
+                  }`}
+                >
                   <Icon className="w-[18px] h-[18px]" />
                 </div>
-                
+
                 {!isCollapsed && (
-                  <span className="transition-opacity duration-200 flex-grow">{item.label}</span>
+                  <span className="transition-opacity duration-200 flex-grow">
+                    {item.label}
+                  </span>
                 )}
 
-                {/* Right-aligned chevron (active item only) */}
                 {isActive && !isCollapsed && (
                   <ChevronRight size={13} className="text-zinc-500 shrink-0" />
                 )}
@@ -167,11 +207,15 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
             <div className="w-10 h-10 rounded-full bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center font-bold text-white shadow-inner group-hover:border-[#FF4C00]/60 transition-colors shrink-0">
               A
             </div>
-            
+
             {!isCollapsed && (
               <div className="flex flex-col min-w-0 pr-4">
-                <span className="text-xs font-black text-white truncate">Admin Account</span>
-                <span className="text-[10px] text-zinc-500 truncate font-semibold uppercase tracking-wider">Super Admin</span>
+                <span className="text-xs font-black text-white truncate">
+                  Admin Account
+                </span>
+                <span className="text-[10px] text-zinc-500 truncate font-semibold uppercase tracking-wider">
+                  Super Admin
+                </span>
               </div>
             )}
           </button>
@@ -179,15 +223,15 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
 
         {isProfileOpen && (
           <div className="absolute bottom-16 left-4 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-2 w-48 z-50 flex flex-col gap-1">
-            <Link 
-              href="/admin/profile" 
+            <Link
+              href="/admin/profile"
               className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all"
             >
               <User size={14} className="text-[#FF4C00]" />
               Account Settings
             </Link>
-            <Link 
-              href="/admin/logs" 
+            <Link
+              href="/admin/logs"
               className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all"
             >
               <ShieldAlert size={14} className="text-[#FF4C00]" />
@@ -216,17 +260,17 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
 
   return (
     <>
-      <aside className={`hidden md:block h-screen bg-[#0A0A0A] shrink-0 sticky top-0 transition-all duration-300 ease-in-out overflow-visible z-30 ${
-        isCollapsed ? 'w-[78px]' : 'w-[260px]'
-      }`}>
+      <aside
+        className={`hidden md:block h-screen bg-[#0A0A0A] shrink-0 sticky top-0 transition-all duration-300 ease-in-out overflow-visible z-30 ${
+          isCollapsed ? "w-[78px]" : "w-[260px]"
+        }`}
+      >
         {sidebarContent}
       </aside>
 
       {isOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-          <div className="w-[260px] h-full shadow-2xl">
-            {sidebarContent}
-          </div>
+          <div className="w-[260px] h-full shadow-2xl">{sidebarContent}</div>
           <div className="flex-1" onClick={onClose} />
         </div>
       )}
