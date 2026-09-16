@@ -330,6 +330,137 @@ export default function MovieDetailsPage() {
   </div>
 </section>
 
+{/* Similar Movies Section */}
+<section className="bg-black px-6 py-16 md:px-10">
+  <div className="mx-auto max-w-7xl">
+
+    {/* Section Heading */}
+    <div className="mb-8 flex items-end justify-between">
+      <div>
+        <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#FF4C00]">
+          More Like This
+        </p>
+
+        <h2 className="text-3xl font-bold md:text-4xl">
+          You May Also Like
+        </h2>
+      </div>
+
+      <button className="hidden text-sm font-medium text-gray-400 transition hover:text-[#FF4C00] sm:block">
+        View All →
+      </button>
+    </div>
+
+    {/* Movie Cards */}
+    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+
+      {/* Movie 1 */}
+      <div className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition duration-300 hover:-translate-y-2 hover:border-[#FF4C00]/50">
+        <div className="aspect-[2/3] overflow-hidden bg-white/5">
+          <div className="flex h-full items-center justify-center text-5xl text-gray-600 transition duration-300 group-hover:scale-105">
+            🎬
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="truncate font-semibold text-white">
+            Spider-Man
+          </h3>
+
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className="text-[#FF4C00]">⭐ 8.2</span>
+            <span className="text-gray-500">2021</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Movie 2 */}
+      <div className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition duration-300 hover:-translate-y-2 hover:border-[#FF4C00]/50">
+        <div className="aspect-[2/3] overflow-hidden bg-white/5">
+          <div className="flex h-full items-center justify-center text-5xl text-gray-600 transition duration-300 group-hover:scale-105">
+            🎬
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="truncate font-semibold text-white">
+            Spider-Man 2
+          </h3>
+
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className="text-[#FF4C00]">⭐ 8.1</span>
+            <span className="text-gray-500">2023</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Movie 3 */}
+      <div className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition duration-300 hover:-translate-y-2 hover:border-[#FF4C00]/50">
+        <div className="aspect-[2/3] overflow-hidden bg-white/5">
+          <div className="flex h-full items-center justify-center text-5xl text-gray-600 transition duration-300 group-hover:scale-105">
+            🎬
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="truncate font-semibold text-white">
+            Avengers
+          </h3>
+
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className="text-[#FF4C00]">⭐ 8.0</span>
+            <span className="text-gray-500">2019</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Movie 4 */}
+      <div className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition duration-300 hover:-translate-y-2 hover:border-[#FF4C00]/50">
+        <div className="aspect-[2/3] overflow-hidden bg-white/5">
+          <div className="flex h-full items-center justify-center text-5xl text-gray-600 transition duration-300 group-hover:scale-105">
+            🎬
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="truncate font-semibold text-white">
+            Black Panther
+          </h3>
+
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className="text-[#FF4C00]">⭐ 7.8</span>
+            <span className="text-gray-500">2018</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Movie 5 */}
+      <div className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] transition duration-300 hover:-translate-y-2 hover:border-[#FF4C00]/50">
+        <div className="aspect-[2/3] overflow-hidden bg-white/5">
+          <div className="flex h-full items-center justify-center text-5xl text-gray-600 transition duration-300 group-hover:scale-105">
+            🎬
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="truncate font-semibold text-white">
+            Doctor Strange
+          </h3>
+
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span className="text-[#FF4C00]">⭐ 7.9</span>
+            <span className="text-gray-500">2022</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+
     </main>
   );
 }
