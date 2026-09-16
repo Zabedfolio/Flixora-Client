@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     if (isGreeting) {
       return NextResponse.json({
         success: true,
-        reply: "Hey there! I'm Flix, your AI cinema guide on Flixora.\n\nWhat kind of movie or TV show are you in the mood for today? Ask me for genre suggestions (Horror, Comedy, Action, Bangla), movies similar to your favorites, or popular blockbusters!",
+        reply: "Hey there! I'm Flix, your AI cinema guide on Flixora.\n\nWhat kind of movie or TV show are you in the mood for today? Ask me for genre suggestions (Horror, Comedy, Action, Bangla, Anime), movies similar to your favorites, or popular blockbusters!",
         source: 'ai_engine'
       });
     }
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     if (isIdentity) {
       return NextResponse.json({
         success: true,
-        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant!\n\nHere is how I can help you today:\n• Find movie & TV show recommendations by genre, language, mood, or actor\n• Search for movies similar to your favorites\n• Provide detailed plot summaries & ratings\n• Filter by decade, runtime, or date night picks",
+        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant!\n\nHere is how I can help you today:\n• Find movie & TV show recommendations by genre, language, mood, or actor\n• Explore popular Anime series & Japanese animation\n• Search for movies similar to your favorites\n• Provide detailed plot summaries & ratings\n• Filter by decade, runtime, or date night picks",
         source: 'ai_engine'
       });
     }
@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
     };
 
     // 3. Ambiguous Query Interception (Asking User Clarification with Interactive Option Buttons)
-    const hasCategorySignal = /(horror|funny|comedy|action|bangla|hindi|korean|anime|scifi|sci-fi|thriller|romance|crime|drama|family|adventure|like|starring|actor|actress|directed|90s|80s|2024|2023|top\s*rated|best|sad|depressed|bored|relaxing|chill|date\s*night|time\s*travel|heist|zombie|mind-?bending)/i.test(qLower);
+    const hasCategorySignal = /(anime|manga|otaku|horror|funny|comedy|action|bangla|hindi|korean|scifi|sci-fi|thriller|romance|crime|drama|family|adventure|like|starring|actor|actress|directed|90s|80s|2024|2023|top\s*rated|best|sad|depressed|bored|relaxing|chill|date\s*night|time\s*travel|heist|zombie|mind-?bending)/i.test(qLower);
     const isGenericRecommendation = (/^(suggest|recommend|give|show|find|get)\s*([1-9]|10)?\s*(movies?|films?|shows?|series?|something)?$/i.test(qLower) ||
       (/^(suggest|recommend|give)\s*([1-9]|10)\b/i.test(qLower) && !hasCategorySignal));
 
@@ -239,7 +239,31 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Actor / Director / Cast Query Intent ("movies starring Leonardo DiCaprio", "movies by Christopher Nolan")
+    // 4. Check for Category, Genre, Language, Mood, Occasion & Anime Intent FIRST
+    // If the query contains a known category (e.g. "i like anime", "i like horror", "action movies"), process category discovery first!
+    const isCategoryQuery = /\b(anime|manga|otaku|horror|funny|comedy|action|bangla|hindi|korean|kdrama|k-drama|scifi|sci-fi|romance|romantic|thriller|crime|drama|family|adventure|90s|80s|2024|2023|top\s*rated|best|sad|depressed|bored|chill|date\s*night|heist|zombie|time\s*travel)\b/i.test(qLower);
+
+    if (isCategoryQuery) {
+      const categoryInfo = resolveCategorySearch(userMessage);
+      let tmdbData = await fetchFromTMDB<any>(categoryInfo.endpoint).catch(() => ({ results: [] }));
+
+      if (!tmdbData?.results?.length) {
+        tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => ({ results: [] }));
+        categoryInfo.name = 'Trending Blockbuster';
+      }
+
+      const movies = extractMovies(tmdbData?.results, requestedCount);
+      const replyText = buildAIReply(categoryInfo.name, movies);
+
+      return NextResponse.json({
+        success: true,
+        reply: replyText,
+        movies: movies.length > 0 ? movies : undefined,
+        source: 'local_ai_engine',
+      });
+    }
+
+    // 5. Actor / Director / Cast Query Intent ("movies starring Leonardo DiCaprio", "movies by Christopher Nolan")
     const extractPersonTarget = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const personMatch = q.match(/(?:movies?\s+starring|movies?\s+with|actor|actress|directed\s+by|director|films?\s+with)\s+([^,.?!]+)/i);
@@ -285,7 +309,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Movie Summary & Overview Intent ("summary about solo leveling")
+    // 6. Movie Summary & Overview Intent ("summary about solo leveling")
     const extractSummaryTarget = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const isSummary = /(?:summary|synopsis|overview|plot|details?|info|explain|tell\s+me\s+about|what\s+is\s+.+\s+about)\b/i.test(q);
@@ -340,7 +364,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Movie Similarity Search Intent ("movies like Inception")
+    // 7. Movie Similarity Search Intent ("movies like Inception")
     const extractTargetMovie = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const isSimilarIntent = /(?:like|similar\s+to|resembling|related\s+to|same\s+as|liked|loved|enjoyed)\b/i.test(q);
@@ -350,6 +374,11 @@ export async function POST(req: NextRequest) {
       if (likeMatch && likeMatch[1]) {
         let candidate = likeMatch[1].split(/\b(what|how|where|suggest|give|show|recommend)\b/i)[0];
         candidate = candidate.replace(/\b(movies|films|shows|please|suggest|recommend|top|[0-9]+|this|that)\b/gi, '').trim();
+
+        // GUARD: Exclude genre/category keywords from being treated as movie title similarity targets!
+        const isCategoryKeyword = /\b(anime|animation|animated|horror|comedy|funny|action|scifi|sci-fi|romance|romantic|bangla|bengali|hindi|korean|kdrama|k-drama|thriller|crime|drama|family|kids|adventure)\b/i.test(candidate);
+        if (isCategoryKeyword) return null;
+
         if (candidate && candidate.length >= 2) return candidate;
       }
       return null;
@@ -394,7 +423,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 7. Comprehensive Category, Genre, Language, Mood, Occasion & Runtime Resolver
+    // 8. General Query Fallback
     const categoryInfo = resolveCategorySearch(userMessage);
     let tmdbData = await fetchFromTMDB<any>(categoryInfo.endpoint).catch(() => ({ results: [] }));
 
@@ -416,7 +445,7 @@ export async function POST(req: NextRequest) {
     console.error('AI Chat Error:', error);
     return NextResponse.json({
       success: true,
-      reply: "Hey! I'm Flix, your AI movie guide! Ask me for genre suggestions (Horror, Comedy, Bangla, Action) or any movie title to get recommendations!",
+      reply: "Hey! I'm Flix, your AI movie guide! Ask me for genre suggestions (Horror, Comedy, Bangla, Action, Anime) or any movie title to get recommendations!",
     });
   }
 }
@@ -487,9 +516,6 @@ function resolveCategorySearch(userQuery: string) {
   } else if (/\b(action|fight|superhero|explosive|combat|martial\s*arts|gunfight|stunt)\b/i.test(qLower)) {
     genreParam = 'with_genres=28';
     genreName = 'Action';
-  } else if (/\b(anime|animation|animated|cartoon|manga|otaku)\b/i.test(qLower)) {
-    genreParam = 'with_genres=16';
-    genreName = 'Animation & Anime';
   } else if (/\b(romance|romantic|love|couple|date\s*night|heartwarming)\b/i.test(qLower)) {
     genreParam = 'with_genres=10749';
     genreName = 'Romantic';
