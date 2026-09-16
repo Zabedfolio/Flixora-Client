@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -219,11 +219,32 @@ export default function SubscriptionPage() {
       (currentPlan && p.name?.toLowerCase() === currentPlan.toLowerCase())
   );
 
-  const handleConfirmCancel = (e: React.FormEvent) => {
+  const handleConfirmCancel = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(`Subscription cancelled. Reason: ${cancelReason || 'None provided'}`);
-    setIsCancelModalOpen(false);
-    setCancelReason('');
+    try {
+      setCurrentPlan(null);
+      setIsCancelModalOpen(false);
+
+      const res = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: cancelReason }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Subscription cancelled successfully.');
+      } else {
+        toast.error(data.message || 'Failed to cancel subscription');
+      }
+      await loadData(session?.user?.id);
+    } catch (err) {
+      console.error('Error cancelling subscription:', err);
+      toast.error('Failed to cancel subscription');
+      await loadData(session?.user?.id);
+    } finally {
+      setCancelReason('');
+    }
   };
 
   return (
