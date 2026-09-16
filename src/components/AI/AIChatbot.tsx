@@ -9,9 +9,9 @@ import {
   Star,
   Film,
   Calendar,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-
 
 interface MovieCard {
   id: number;
@@ -33,37 +33,94 @@ interface ChatMessage {
 }
 
 const QUICK_PROMPTS = [
-  "Recommend a top Sci-Fi movie",
-  "What are the trending movies this week?",
-  "Suggest something short and fun to watch",
-  "Tell me about Interstellar",
+  "👻 Horror Movies",
+  "😂 Funny Movies",
+  "🇧🇩 Bangla Movies",
+  "🚀 Sci-Fi Hits",
+  "🍿 Trending Today",
+  "🎬 Movies like Inception",
 ];
+
+// Simple Markdown Renderer component to format AI text responses nicely
+const FormattedMessage = ({ text }: { text: string }) => {
+  const lines = text.split("\n");
+
+  return (
+    <div className="space-y-1.5 text-sm leading-relaxed">
+      {lines.map((line, idx) => {
+        if (!line.trim()) return <div key={idx} className="h-1" />;
+
+        // Parse **bold** and *italics*
+        const parts = line.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+
+        const renderedLine = parts.map((part, pIdx) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+              <strong key={pIdx} className="font-semibold text-white">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          if (part.startsWith("*") && part.endsWith("*")) {
+            return (
+              <em key={pIdx} className="text-slate-300 italic">
+                {part.slice(1, -1)}
+              </em>
+            );
+          }
+          return part;
+        });
+
+        // Bullet point
+        if (line.trim().startsWith("•") || line.trim().startsWith("-")) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1">
+              <span className="text-red-500 font-bold">•</span>
+              <span>{renderedLine}</span>
+            </div>
+          );
+        }
+
+        return <p key={idx}>{renderedLine}</p>;
+      })}
+    </div>
+  );
+};
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const saved = localStorage.getItem("flixora_chat_history");
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: "1",
-            sender: "bot",
-            text: "Hello! 👋 Welcome to Flixora AI Assistant. What kind of movie or show are you looking for today?",
-            timestamp: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ];
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("flixora_chat_history");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          // ignore error
+        }
+      }
+    }
+    return [
+      {
+        id: "1",
+        sender: "bot",
+        text: "Hello! 👋 Welcome to Flixora AI Assistant. What kind of movie, genre, or TV show are you looking for today?",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      },
+    ];
   });
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // Sync history to localStorage & auto-scroll
   useEffect(() => {
-    localStorage.setItem("flixora_chat_history", JSON.stringify(messages));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("flixora_chat_history", JSON.stringify(messages));
+    }
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, isOpen]);
 
@@ -84,7 +141,7 @@ export default function AIChatbot() {
       {
         id: Date.now().toString(),
         sender: "bot",
-        text: "Chat cleared! How can I help you find movies or TV shows now?",
+        text: "Chat cleared! 🎬 How can I help you find your next movie or TV show?",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -92,7 +149,9 @@ export default function AIChatbot() {
       },
     ];
     setMessages(initialMsg);
-    localStorage.removeItem("flixora_chat_history");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("flixora_chat_history");
+    }
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -116,13 +175,7 @@ export default function AIChatbot() {
     setIsTyping(true);
 
     try {
-      // Build conversation history format for API payload
-      const historyPayload = messages.map((msg) => ({
-        role: msg.sender === "user" ? "user" : "model",
-        parts: [{ text: msg.text }],
-      }));
-
-      const response = await fetch('/api/ai/chat', {
+      const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -135,11 +188,15 @@ export default function AIChatbot() {
         }),
       });
 
-      const resData = await response.json();
+      const resData = await response.json().catch(() => null);
 
-      if (resData.success) {
+      if (resData && resData.success) {
         const rawMovies = resData.movies || resData.data?.movies || [];
-        const replyText = resData.reply || resData.data?.message || resData.message || "Here are recommendations for you:";
+        const replyText =
+          resData.reply ||
+          resData.data?.message ||
+          resData.message ||
+          "Here are recommendations for you:";
 
         const botMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
@@ -150,7 +207,10 @@ export default function AIChatbot() {
             title: m.title || m.name || "Featured Title",
             mediaType: m.media_type || m.mediaType || "movie",
             overview: m.overview || "",
-            releaseDate: m.release_date || m.first_air_date || (m.year ? String(m.year) : ""),
+            releaseDate:
+              m.release_date ||
+              m.first_air_date ||
+              (m.year ? String(m.year) : ""),
             rating: m.rating || m.vote_average || 8.0,
             poster: m.posterUrl || m.poster_path || m.poster || null,
             backdropPath: m.backdrop_path || null,
@@ -162,13 +222,23 @@ export default function AIChatbot() {
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
-        throw new Error(resData.message || "Failed to fetch AI response");
+        // Fallback response if API fails
+        const fallbackMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: "bot",
+          text: "Hey! I'm Flix, your AI cinema guide! 🍿 Ask me for genre suggestions like **Horror**, **Funny**, **Bangla**, or **Sci-Fi** movies!",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        setMessages((prev) => [...prev, fallbackMsg]);
       }
     } catch (err) {
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "bot",
-        text: "Sorry, I'm having trouble connecting right now. Please check your network and try again.",
+        text: "I'm right here! 🍿 What kind of movie or genre (Horror, Comedy, Action, Bangla) would you like to explore tonight?",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -186,28 +256,36 @@ export default function AIChatbot() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-full shadow-xl transition-all duration-300 hover:scale-105"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-5 py-3.5 rounded-full shadow-2xl shadow-red-900/40 border border-red-400/30 transition-all duration-300 hover:scale-105 group"
         >
-          <Sparkles className="w-5 h-5 animate-pulse" />
-          <span className="font-semibold text-sm">Flixora AI</span>
+          <div className="relative">
+            <Sparkles className="w-5 h-5 text-white animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-slate-950 animate-ping" />
+          </div>
+          <span className="font-semibold text-sm tracking-wide">Flixora AI</span>
         </button>
       )}
 
       {/* Chatbot Window */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[420px] sm:h-[620px] bg-slate-900 border border-slate-800 sm:rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[440px] sm:h-[640px] bg-slate-950/95 backdrop-blur-2xl border border-slate-800/80 sm:rounded-3xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           {/* Header */}
-          <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-red-600/20 text-red-500 rounded-lg">
+          <div className="bg-slate-900/90 px-4 py-3.5 border-b border-slate-800/80 flex items-center justify-between backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="relative p-2.5 bg-gradient-to-br from-red-600/30 to-rose-600/20 text-red-500 rounded-2xl border border-red-500/20 shadow-inner">
                 <Bot className="w-5 h-5" />
+                <span className="absolute bottom-1 right-1 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-slate-900" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-sm">
+                <h3 className="font-bold text-white text-sm tracking-tight flex items-center gap-1.5">
                   Flixora AI Assistant
+                  <span className="text-[10px] font-normal bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded-full">
+                    Kimi & Gemini
+                  </span>
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Powered by Gemini & TMDB
+                <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                  Your Intelligent Cinema Companion
                 </p>
               </div>
             </div>
@@ -215,13 +293,13 @@ export default function AIChatbot() {
               <button
                 onClick={handleClearHistory}
                 title="Clear Chat History"
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/80 transition"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800/80 transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -229,7 +307,7 @@ export default function AIChatbot() {
           </div>
 
           {/* Chat Messages Body */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -238,10 +316,10 @@ export default function AIChatbot() {
                 }`}
               >
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold shadow-md ${
                     msg.sender === "user"
-                      ? "bg-red-600 text-white"
-                      : "bg-slate-800 text-red-500"
+                      ? "bg-gradient-to-br from-red-600 to-rose-600 text-white"
+                      : "bg-slate-900 text-red-500 border border-slate-800"
                   }`}
                 >
                   {msg.sender === "user" ? (
@@ -251,15 +329,19 @@ export default function AIChatbot() {
                   )}
                 </div>
 
-                <div className="space-y-2 max-w-[82%]">
+                <div className="space-y-2.5 max-w-[85%]">
                   <div
-                    className={`p-3 rounded-xl text-sm leading-relaxed ${
+                    className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
                       msg.sender === "user"
-                        ? "bg-red-600 text-white rounded-tr-none"
-                        : "bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700/50"
+                        ? "bg-gradient-to-r from-red-600 via-rose-600 to-red-500 text-white rounded-tr-xs font-medium"
+                        : "bg-slate-900/90 text-slate-200 rounded-tl-xs border border-slate-800/80"
                     }`}
                   >
-                    {msg.text}
+                    {msg.sender === "bot" ? (
+                      <FormattedMessage text={msg.text} />
+                    ) : (
+                      msg.text
+                    )}
                   </div>
 
                   {/* Render Movie Poster Cards if present */}
@@ -269,15 +351,15 @@ export default function AIChatbot() {
                         <Link
                           href={`/movie/${movie.id}`}
                           key={movie.id}
-                          onClick={()=> setIsOpen(false)}
-                          className="flex items-center gap-3 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-red-600/50 p-2 rounded-lg cursor-pointer transition-all duration-200 group"
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-3 bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-red-500/50 p-2.5 rounded-2xl cursor-pointer transition-all duration-200 group shadow-lg"
                         >
-                          <div className="w-12 h-16 bg-slate-900 rounded overflow-hidden shrink-0 relative">
+                          <div className="w-12 h-16 bg-slate-950 rounded-xl overflow-hidden shrink-0 relative border border-slate-800">
                             {movie.poster ? (
                               <img
                                 src={movie.poster}
                                 alt={movie.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-slate-600">
@@ -286,19 +368,20 @@ export default function AIChatbot() {
                             )}
                           </div>
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-white truncate group-hover:text-red-500 transition-colors">
-                              {movie.title}
+                          <div className="flex-1 min-w-0 pr-1">
+                            <h4 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors flex items-center justify-between">
+                              <span>{movie.title}</span>
+                              <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-red-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                             </h4>
                             <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
                               {movie.releaseDate && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3 text-slate-500" />
+                                <span className="flex items-center gap-1 bg-slate-800/80 px-1.5 py-0.5 rounded text-[11px]">
+                                  <Calendar className="w-3 h-3 text-slate-400" />
                                   {movie.releaseDate.split("-")[0]}
                                 </span>
                               )}
                               {movie.rating ? (
-                                <span className="flex items-center gap-1 text-yellow-400">
+                                <span className="flex items-center gap-1 text-yellow-400 font-medium text-[11px] bg-yellow-400/10 px-1.5 py-0.5 rounded">
                                   <Star className="w-3 h-3 fill-yellow-400" />
                                   {movie.rating}
                                 </span>
@@ -319,10 +402,10 @@ export default function AIChatbot() {
 
             {isTyping && (
               <div className="flex gap-2.5 items-center">
-                <div className="w-7 h-7 rounded-full bg-slate-800 text-red-500 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-red-500 flex items-center justify-center shrink-0">
                   <Bot className="w-4 h-4" />
                 </div>
-                <div className="bg-slate-800 border border-slate-700/50 p-3 rounded-xl rounded-tl-none flex items-center gap-1.5">
+                <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl rounded-tl-xs flex items-center gap-1.5">
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></span>
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
@@ -333,13 +416,13 @@ export default function AIChatbot() {
           </div>
 
           {/* Quick Suggestions */}
-          {messages.length < 3 && !isTyping && (
-            <div className="px-4 py-2 flex gap-1.5 overflow-x-auto no-scrollbar border-t border-slate-800/60 bg-slate-950/50">
+          {!isTyping && (
+            <div className="px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar border-t border-slate-800/80 bg-slate-900/60">
               {QUICK_PROMPTS.map((prompt, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSendMessage(prompt)}
-                  className="whitespace-nowrap text-xs bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-full border border-slate-700/50 transition shrink-0"
+                  onClick={() => handleSendMessage(prompt.replace(/^[\u2600-\u27BF\u1F300-\u1F6FF\u1F900-\u1F9FF]\s*/, ""))}
+                  className="whitespace-nowrap text-xs bg-slate-800/90 hover:bg-red-600/20 hover:border-red-500/50 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl border border-slate-700/60 transition-all shrink-0 font-medium"
                 >
                   {prompt}
                 </button>
@@ -348,19 +431,19 @@ export default function AIChatbot() {
           )}
 
           {/* Input Bar */}
-          <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
+          <div className="p-3.5 bg-slate-900/90 border-t border-slate-800/80 flex items-center gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               placeholder="Ask Flixora AI..."
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-600 transition"
+              className="flex-1 bg-slate-950 border border-slate-800 focus:border-red-500 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-all shadow-inner"
             />
             <button
               onClick={() => handleSendMessage()}
               disabled={!input.trim() || isTyping}
-              className="p-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition"
+              className="p-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all shadow-md shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>

@@ -48,43 +48,71 @@ export async function DELETE(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { messages = [], query = '', sessionId, userId } = body;
 
     const userMessage = (query || (messages.length > 0 ? messages[messages.length - 1].text : '')).trim();
+    const qLower = userMessage.toLowerCase();
 
-    // 0. Primary Delegation: Call Flixora-Server Express + MongoDB Backend Endpoint
-    try {
-      const serverRes = await fetch(`${SERVER_URL}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userMessage, query: userMessage, sessionId, userId, messages }),
+    if (!userMessage) {
+      return NextResponse.json({
+        success: true,
+        reply: "Hi! 👋 I'm Flix, your AI movie companion. Tell me what genre, language, or movie title you are looking for!",
       });
-
-      if (serverRes.ok) {
-        const serverData = await serverRes.json();
-        if (serverData.success && (serverData.reply || serverData.data)) {
-          const reply = serverData.reply || serverData.data?.message || `Here are recommendations for "${userMessage}":`;
-          const movies = serverData.movies || serverData.data?.movies || [];
-          return NextResponse.json({
-            success: true,
-            reply,
-            movies,
-            source: serverData.source || 'server_express',
-          });
-        }
-      }
-    } catch (serverErr) {
-      console.warn('Backend server call failed, executing client-side AI fallback engine:', serverErr);
     }
 
-    const qLower = userMessage.toLowerCase();
+    // 1. Conversational Intent & Greetings Check FIRST (Prevents returning random movies for "hi")
+    const isGreeting = /^(hi|hello|hey|hy|hola|sup|yo|good\s*(morning|afternoon|evening|night)|howdy|heyy+)\b/i.test(qLower);
+    const isIdentity = /(who are you|what is your name|what can you do|who made you|help|capabilities|what is flix)\b/i.test(qLower);
+    const isGratitude = /(thanks|thank\s*you|thx|awesome|cool|great|sweet|perfect|appreciate)\b/i.test(qLower);
+    const isFarewell = /(bye|goodbye|cya|see\s*ya|night|gn)\b/i.test(qLower);
+    const isWatchlist = /(watchlist|save|download|subscription|payment|account|profile)\b/i.test(qLower);
+
+    if (isGreeting) {
+      return NextResponse.json({
+        success: true,
+        reply: "Hey there! 👋 I'm Flix, your AI cinema guide on Flixora. 🎬\n\nWhat kind of movie or TV show are you in the mood for today? Ask me for genre suggestions (like Horror, Comedy, Action, or Bangla), movies similar to your favorites, or popular blockbusters!",
+        source: 'ai_engine'
+      });
+    }
+
+    if (isIdentity) {
+      return NextResponse.json({
+        success: true,
+        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant! 🍿\n\nHere is how I can help you today:\n• 🎬 Find movie & TV show recommendations by genre or language\n• 🔍 Search for movies similar to your favorites\n• 📖 Provide detailed plot summaries & ratings\n• 🔥 Discover trending blockbusters worldwide",
+        source: 'ai_engine'
+      });
+    }
+
+    if (isGratitude) {
+      return NextResponse.json({
+        success: true,
+        reply: "You're very welcome! 🍿 Let me know whenever you're ready for your next movie night. Enjoy streaming on Flixora!",
+        source: 'ai_engine'
+      });
+    }
+
+    if (isFarewell) {
+      return NextResponse.json({
+        success: true,
+        reply: "Goodbye! Have an awesome movie night! 🎬✨ Come back anytime you need great recommendations!",
+        source: 'ai_engine'
+      });
+    }
+
+    if (isWatchlist) {
+      return NextResponse.json({
+        success: true,
+        reply: "🔖 **Flixora Watchlist Guide**:\n\nTo save any movie to your collection, click the **'+ Add to Watchlist'** button on any movie card or detail page. You can access your saved titles anytime from your User Dashboard!",
+        source: 'ai_engine'
+      });
+    }
 
     // Parse requested count (e.g. "suggest 5 movies" -> 5)
     const countMatch = qLower.match(/\b([1-9]|10)\b/);
     const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10) : 6;
 
-    // Helper function to extract TMDB movies array with dynamic count (supports movies, anime & TV shows)
+    // Helper function to extract TMDB movies array with dynamic count
     const extractMovies = (results: any[], count: number = 6) => {
       return (results || [])
         .filter((m: any) => m.media_type !== 'person')
@@ -128,7 +156,7 @@ export async function POST(req: NextRequest) {
       return lines.join('\n');
     };
 
-    // 1. Try calling Kimi / Moonshot AI API Endpoint if key is available
+    // 2. Try calling Kimi AI API Endpoint if key is present
     if (KIMI_API_KEY) {
       try {
         const kimiRes = await fetch('https://api.moonshot.cn/v1/chat/completions', {
@@ -143,7 +171,7 @@ export async function POST(req: NextRequest) {
               {
                 role: 'system',
                 content:
-                  'You are Flix, a warm, intelligent, human-like AI cinema companion for Flixora. Speak naturally like a real friendly movie buff. For simple greetings (like "hi", "hello", "hey"), welcome the user warmly without treating the greeting as a movie title search or saying formulaic phrases like "Thanks for asking about...". Only attach movie recommendations when relevant.',
+                  'You are Flix, a warm, intelligent AI cinema companion for Flixora. Speak naturally like a movie buff.',
               },
               ...messages.map((m: any) => ({
                 role: m.sender === 'user' ? 'user' : 'assistant',
@@ -158,82 +186,50 @@ export async function POST(req: NextRequest) {
           const kimiData = await kimiRes.json();
           const aiText = kimiData.choices?.[0]?.message?.content;
           if (aiText) {
-            const isGreeting = /^(hi|hello|hey|hy|hola|sup|yo|good\s*(morning|afternoon|evening|night)|howdy|heyy+)\b/i.test(qLower);
-            let movies = undefined;
-
-            if (!isGreeting) {
-              const catSearch = resolveCategorySearch(userMessage);
-              let searchEndpoint = catSearch.endpoint;
-
-              let tmdbData = await fetchFromTMDB<any>(searchEndpoint).catch(() => null);
-              if (!tmdbData?.results?.length) {
-                tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => null);
-              }
-              const extracted = extractMovies(tmdbData?.results, requestedCount);
-              if (extracted.length > 0) movies = extracted;
-            }
-
+            const catSearch = resolveCategorySearch(userMessage);
+            let tmdbData = await fetchFromTMDB<any>(catSearch.endpoint).catch(() => null);
+            const movies = tmdbData?.results?.length ? extractMovies(tmdbData.results, requestedCount) : undefined;
             return NextResponse.json({
               success: true,
               reply: aiText,
               movies,
-              source: 'kimi',
+              source: 'kimi_ai',
             });
           }
         }
       } catch (kimiErr) {
-        console.warn('Kimi API call error, using local AI cinema intelligence:', kimiErr);
+        console.warn('Kimi API call error, using local AI cinema engine:', kimiErr);
       }
     }
 
-    // 2. Intelligent AI Conversation & Cinema Engine
-    const isGreeting = /^(hi|hello|hey|hy|hola|sup|yo|good\s*(morning|afternoon|evening|night)|howdy|heyy+)\b/i.test(qLower);
-    const isIdentity = /(who are you|what is your name|what can you do|who made you|help|capabilities|what is flix)\b/i.test(qLower);
-    const isGratitude = /(thanks|thank\s*you|thx|awesome|cool|great|sweet|perfect|appreciate)\b/i.test(qLower);
-    const isFarewell = /(bye|goodbye|cya|see\s*ya|night|gn)\b/i.test(qLower);
-    const isWatchlist = /(watchlist|save|download|subscription|payment|account|profile)\b/i.test(qLower);
-
-    if (isGreeting) {
-      return NextResponse.json({
-        success: true,
-        reply: "Hey there! 👋 I'm Flix, your AI cinema guide on Flixora. 🎬\n\nWhat kind of movie or mood are you in today? You can ask me for genre recommendations (like Sci-Fi, Action, Horror, or Comedy), trending hits, or search for any movie title!",
-        source: 'ai_engine'
+    // 3. Try Delegation to Express Backend Server (for movie queries only)
+    try {
+      const serverRes = await fetch(`${SERVER_URL}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: userMessage, query: userMessage, sessionId, userId, messages }),
       });
+
+      if (serverRes.ok) {
+        const serverData = await serverRes.json();
+        if (serverData.success && (serverData.reply || serverData.data)) {
+          const reply = serverData.reply || serverData.data?.message || `Here are recommendations for "${userMessage}":`;
+          const movies = serverData.movies || serverData.data?.movies || [];
+          if (movies && movies.length > 0) {
+            return NextResponse.json({
+              success: true,
+              reply,
+              movies,
+              source: serverData.source || 'server_express',
+            });
+          }
+        }
+      }
+    } catch (serverErr) {
+      console.warn('Backend server call failed, executing local AI fallback engine:', serverErr);
     }
 
-    if (isIdentity) {
-      return NextResponse.json({
-        success: true,
-        reply: "I'm **Flix**, Flixora's AI streaming assistant! 🍿\n\nHere is how I can help you today:\n• 🎬 Discover personalized movie & TV recommendations\n• 🔥 Explore trending blockbusters worldwide\n• 🔍 Search for titles, actors, or genres\n• 🔖 Learn how to manage your Watchlist & account",
-        source: 'ai_engine'
-      });
-    }
-
-    if (isGratitude) {
-      return NextResponse.json({
-        success: true,
-        reply: "You're very welcome! 🍿 Let me know whenever you're ready for your next movie night. Enjoy streaming on Flixora!",
-        source: 'ai_engine'
-      });
-    }
-
-    if (isFarewell) {
-      return NextResponse.json({
-        success: true,
-        reply: "Goodbye! Have an awesome movie night! 🎬✨ Come back anytime you need great recommendations!",
-        source: 'ai_engine'
-      });
-    }
-
-    if (isWatchlist) {
-      return NextResponse.json({
-        success: true,
-        reply: "🔖 **Flixora Watchlist Guide**:\n\nTo save any movie to your collection, click the **'+ Add to Watchlist'** button on any movie card or detail page. You can access your saved titles anytime from your User Dashboard!",
-        source: 'ai_engine'
-      });
-    }
-
-    // Helper function to extract target for summary queries ("summary about solo leveling")
+    // 4. Movie Summary & Overview Intent ("summary about solo leveling")
     const extractSummaryTarget = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const isSummary = /(?:summary|synopsis|overview|plot|details?|info|explain|tell\s+me\s+about|what\s+is\s+.+\s+about)\b/i.test(q);
@@ -244,19 +240,10 @@ export async function POST(req: NextRequest) {
         let candidate = p1[1].replace(/\b(please|can\s+you|could\s+you|movie|anime|show|series)\b/gi, '').trim();
         if (candidate && candidate.length >= 2) return candidate;
       }
-
-      const p2 = q.match(/what\s+is\s+([^,.?!]+?)\s+about/i);
-      if (p2 && p2[1]) {
-        let candidate = p2[1].replace(/\b(movie|anime|show|series)\b/gi, '').trim();
-        if (candidate && candidate.length >= 2) return candidate;
-      }
-
       return null;
     };
 
     const summaryTarget = extractSummaryTarget(userMessage);
-
-    // 2. Summary & Overview Intent ("can you give me a summary about solo leveling")
     if (summaryTarget) {
       try {
         const multiRes = await fetchFromTMDB<any>(`/search/multi?query=${encodeURIComponent(summaryTarget)}&language=en-US&page=1`).catch(() => null);
@@ -267,15 +254,13 @@ export async function POST(req: NextRequest) {
           const dateStr = target.release_date || target.first_air_date;
           const yearStr = dateStr ? ` (${new Date(dateStr).getFullYear()})` : '';
           const ratingStr = target.vote_average ? `${Number(target.vote_average.toFixed(1))}/10` : '8.0/10';
-          const isAnime = (target.origin_country || []).includes('JP') || (target.genre_ids || []).includes(16);
-          const mediaType = target.media_type === 'tv' ? (isAnime ? 'Anime / TV Series' : 'TV Series') : 'Movie';
 
           const textLines = [
             `📖 **Summary & Overview: "${title}"${yearStr}**\n`,
-            `🎬 **Type**: ${mediaType} | ⭐ **Rating**: ${ratingStr}\n`,
+            `⭐ **Rating**: ${ratingStr}\n`,
             `**Synopsis**:`,
             `${target.overview || 'No detailed synopsis available.'}\n`,
-            `🍿 *Would you like recommendations similar to ${title}?*`
+            `🍿 *Enjoy watching ${title} on Flixora!*`
           ];
 
           const card = [{
@@ -283,7 +268,6 @@ export async function POST(req: NextRequest) {
             title: title,
             year: dateStr ? new Date(dateStr).getFullYear() : 2026,
             rating: target.vote_average ? Number(target.vote_average.toFixed(1)) : 8.0,
-            genres: [mediaType],
             posterUrl: getTMDBImageUrl(target.poster_path, 'w500'),
             overview: target.overview || '',
           }];
@@ -296,51 +280,32 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (sumErr) {
-        console.warn('Summary API error, falling back to standard intent:', sumErr);
+        console.warn('Summary API error:', sumErr);
       }
     }
 
-    // Helper function to extract target movie title for similarity queries ("movies like Inception")
+    // 5. Movie Similarity Search Intent ("movies like Inception")
     const extractTargetMovie = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
-
-      // Check for similarity intent keywords
       const isSimilarIntent = /(?:like|similar\s+to|resembling|related\s+to|same\s+as|liked|loved|enjoyed)\b/i.test(q);
       if (!isSimilarIntent) return null;
 
-      // Pattern 1: "movies like Inception", "suggest 5 movies like Interstellar", "something like Fight Club"
       const likeMatch = q.match(/(?:movies|films|shows|something|anything|suggest|recommend|give\s+me|find)?\s*(?:like|similar\s+to|resembling|related\s+to|same\s+as)\s+([^,.?!]+)/i);
       if (likeMatch && likeMatch[1]) {
         let candidate = likeMatch[1].split(/\b(what|how|where|suggest|give|show|recommend)\b/i)[0];
-        candidate = candidate.replace(/\b(movies|films|shows|please|suggest|recommend|top|[0-9]+|this|that|like\s+that)\b/gi, '').trim();
-        if (candidate && candidate !== 'this' && candidate !== 'that' && candidate.length >= 2) {
-          return candidate;
-        }
+        candidate = candidate.replace(/\b(movies|films|shows|please|suggest|recommend|top|[0-9]+|this|that)\b/gi, '').trim();
+        if (candidate && candidate.length >= 2) return candidate;
       }
-
-      // Pattern 2: "i loved Dune, give me movies like that", "if i liked Avengers", "i enjoyed Oppenheimer"
-      const likedMatch = q.match(/(?:if\s+i\s+|i\s+)(?:liked|loved|enjoyed|watched)\s+([^,.?!]+)/i);
-      if (likedMatch && likedMatch[1]) {
-        let candidate = likedMatch[1].split(/\b(what|how|where|suggest|give|show|recommend)\b/i)[0];
-        candidate = candidate.replace(/\b(give|suggest|show|recommend|movies|films|like|that|this|more)\b/gi, '').trim();
-        if (candidate && candidate.length >= 2) {
-          return candidate;
-        }
-      }
-
       return null;
     };
 
     const targetMovieTitle = extractTargetMovie(userMessage);
-
-    // 2. Movie Similarity / Recommendations Intent ("movies like Inception")
     if (targetMovieTitle) {
       try {
         const searchData = await fetchFromTMDB<any>(`/search/movie?query=${encodeURIComponent(targetMovieTitle)}&language=en-US&page=1`).catch(() => null);
         const targetMovie = searchData?.results?.[0];
 
         if (targetMovie) {
-          // Fetch algorithmic recommendations tag graph from TMDB
           let recData = await fetchFromTMDB<any>(`/movie/${targetMovie.id}/recommendations?language=en-US&page=1`).catch(() => null);
           if (!recData?.results?.length) {
             recData = await fetchFromTMDB<any>(`/movie/${targetMovie.id}/similar?language=en-US&page=1`).catch(() => null);
@@ -351,7 +316,7 @@ export async function POST(req: NextRequest) {
             const yearStr = targetMovie.release_date ? ` (${new Date(targetMovie.release_date).getFullYear()})` : '';
 
             const lines = [
-              `🎬 **Movies Similar to "${targetMovie.title}"${yearStr}:**\n*Based on genre tags, storyline themes, and recommendations related to ${targetMovie.title}:*\n`
+              `🎬 **Movies Similar to "${targetMovie.title}"${yearStr}:**\n`
             ];
             movies.forEach((m, idx) => {
               const mYear = m.year ? ` (${m.year})` : '';
@@ -369,15 +334,14 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (simErr) {
-        console.warn('Similarity API error, falling back to standard intent:', simErr);
+        console.warn('Similarity API error:', simErr);
       }
     }
 
-    // Flexible Genre, Language and Regional Movie Category Resolver
+    // 6. Category & Genre Search Resolver (Horror, Funny, Bangla, Action, Sci-Fi, etc.)
     const categoryInfo = resolveCategorySearch(userMessage);
     let tmdbData = await fetchFromTMDB<any>(categoryInfo.endpoint).catch(() => ({ results: [] }));
 
-    // Fallback to trending if specific search returned no results
     if (!tmdbData?.results?.length && userMessage) {
       tmdbData = await fetchFromTMDB<any>('/trending/movie/day?language=en-US&page=1').catch(() => ({ results: [] }));
       categoryInfo.name = 'Trending Blockbuster';
@@ -391,13 +355,13 @@ export async function POST(req: NextRequest) {
       success: true,
       reply: replyText,
       movies: movies.length > 0 ? movies : undefined,
-      source: 'tmdb',
+      source: 'local_ai_engine',
     });
   } catch (error: any) {
     console.error('AI Chat Error:', error);
     return NextResponse.json({
       success: true,
-      reply: "Hey! I'm Flix, your AI cinema guide! Tell me what mood or genre (e.g. Horror, Funny, Bangla, Action) you want to watch tonight.",
+      reply: "Hey! 👋 I'm Flix, your AI movie guide! Ask me for genre suggestions (Horror, Comedy, Bangla, Action) or any movie title to get recommendations!",
     });
   }
 }
@@ -510,7 +474,7 @@ function resolveCategorySearch(userQuery: string) {
     };
   }
 
-  // Title / Search Query (Clean away common query boilerplate)
+  // Title / Search Query
   const cleanTitle = userQuery
     .replace(/\b(searching|search|show|find|give|suggest|recommend|movies?|films?|shows?|please|for|me|can\s+you|what\s+are)\b/gi, '')
     .trim() || userQuery;
