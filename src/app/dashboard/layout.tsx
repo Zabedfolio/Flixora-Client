@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import SideNavbar from "./Side-Navbar";
-import { PanelLeftOpen } from "lucide-react";
+import { Loader2, PanelLeftOpen } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/app/(auth)/lib/auth-client";
 
@@ -16,21 +16,17 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
   const router = useRouter();
 
   const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
 
-  useEffect(() => {
-    // If user is currently logging out, do not redirect to login!
-    // The logout handler will redirect to the home page ('/').
-    if (typeof window !== "undefined" && sessionStorage.getItem("is_logging_out")) {
-      return;
+  React.useEffect(() => {
+    if (!isPending && !user) {
+      router.replace(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`);
     }
-
-    if (!isPending && !session?.user) {
-      router.replace("/auth/login");
-    }
-  }, [isPending, session, router]);
+  }, [user, isPending, router, pathname]);
 
   // Resolve breadcrumbs subpage
   const getSubpageLabel = () => {
+    if (pathname === '/dashboard/my-tickets' || pathname === '/dashboard/bookings') return 'Bookings';
     if (pathname === '/dashboard/setting') return 'Settings';
     if (pathname === '/dashboard/my-list') return 'My List';
     if (pathname === '/dashboard/my-playlist') return 'Playlists';
@@ -42,27 +38,21 @@ export default function DashboardLayout({ children }: RootLayoutProps) {
 
   const subpage = getSubpageLabel();
 
-  // Show a full-screen loading state while session is being resolved
-  // or while redirecting unauthenticated users / logging out
-  if (isPending || !session?.user) {
-    const isLoggingOut =
-      typeof window !== "undefined" &&
-      Boolean(sessionStorage.getItem("is_logging_out"));
-
+  if (isPending) {
     return (
-      <div className="flex h-screen bg-black items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-[#FF4C00] border-t-transparent animate-spin" />
-          <p className="text-zinc-500 text-xs font-semibold tracking-widest uppercase">
-            {isLoggingOut
-              ? "Signing out..."
-              : isPending
-                ? "Loading..."
-                : "Redirecting..."}
-          </p>
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={32} className="animate-spin text-[#FF4C00]" />
+          <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            Loading Dashboard...
+          </span>
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (

@@ -116,7 +116,7 @@ export default function PersonDetailsView({ data }: PersonDetailsViewProps) {
               {photos.length > 1 && (
                 <button
                   onClick={() => setSelectedPhotoIndex(0)}
-                  className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-white/20 hover:border-[#FF4C00] text-xs font-bold text-white px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shadow-lg cursor-pointer"
+                  className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-md border border-zinc-800 hover:border-[#FF4C00] text-xs font-bold text-white px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shadow-lg cursor-pointer"
                 >
                   <Camera className="w-3.5 h-3.5 text-[#FF4C00]" />
                   <span>{photos.length} Photos</span>
@@ -333,7 +333,7 @@ export default function PersonDetailsView({ data }: PersonDetailsViewProps) {
                       )}
 
                       {/* Media Type Badge */}
-                      <span className="absolute top-2 left-2 bg-black/80 backdrop-blur-md border border-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full text-zinc-300">
+                      <span className="absolute top-2 left-2 bg-black/80 backdrop-blur-md border border-zinc-800 text-[10px] font-bold px-2 py-0.5 rounded-full text-zinc-300">
                         {item.mediaType === 'tv' ? 'TV' : 'Movie'}
                       </span>
 

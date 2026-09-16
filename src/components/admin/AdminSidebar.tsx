@@ -16,10 +16,14 @@ import {
   Shield,
   Home,
   CreditCard,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
+  Ticket,
+  Briefcase,
+  MessageSquare
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -27,35 +31,18 @@ interface AdminSidebarProps {
 }
 
 const NAV_ITEMS = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/admin",
-  },
-  { id: "catalogue", label: "Catalogue", icon: Film, href: "/admin/catalogue" },
-  { id: "users", label: "Users", icon: Users, href: "/admin/users" },
-  { id: "kids", label: "Kids Profiles", icon: Shield, href: "/admin/kids" },
-  { id: "reviews", label: "Reviews", icon: Flag, href: "/admin/reviews" },
-  {
-    id: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-    href: "/admin/analytics",
-  },
-  {
-    id: "transactions",
-    label: "Transactions",
-    icon: CreditCard,
-    href: "/admin/transactions",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-    href: "/admin/settings",
-  },
-  { id: "home", label: "Home Page", icon: Home, href: "/" },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+  { id: 'catalogue', label: 'Catalogue', icon: Film, href: '/admin/catalogue' },
+  { id: 'bookings', label: 'Bookings', icon: Ticket, href: '/admin/bookings' },
+  { id: 'users', label: 'Users', icon: Users, href: '/admin/users' },
+  { id: 'applications', label: 'Job Applications', icon: Briefcase, href: '/admin/applications' },
+  { id: 'messages', label: 'Contact Messages', icon: MessageSquare, href: '/admin/messages' },
+  { id: 'kids', label: 'Kids Profiles', icon: Shield, href: '/admin/kids' },
+  { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews' },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
+  { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions' },
+  { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' },
+  { id: 'home', label: 'Home Page', icon: Home, href: '/' },
 ];
 
 export default function AdminSidebar({
@@ -106,10 +93,8 @@ export default function AdminSidebar({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#0A0A0A] text-white select-none relative font-sans overflow-visible">
-      <div
-        className={`flex items-center justify-between px-6 pt-6 pb-4 overflow-visible ${isCollapsed ? "justify-center px-2" : ""}`}
-      >
+    <div className="flex flex-col h-full bg-[#0A0A0A] text-white select-none relative font-sans overflow-hidden">
+      <div className={`flex items-center justify-between px-6 pt-6 pb-4 shrink-0 ${isCollapsed ? 'justify-center px-2' : ''}`}>
         {!isCollapsed ? (
           <Link href="/" className="flex items-center gap-2.5 outline-none">
             <img
@@ -143,18 +128,14 @@ export default function AdminSidebar({
         </button>
       </div>
 
-      <nav
-        className={`flex-grow px-4 py-6 space-y-2.5 overflow-visible ${isCollapsed ? "px-2" : ""}`}
-      >
+      <nav className={`flex-grow min-h-0 overflow-y-auto px-4 py-4 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700 ${isCollapsed ? 'px-2' : ''}`}>
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeId === item.id;
 
           return (
-            <div
-              key={item.id}
-              className="relative flex items-center w-full overflow-visible"
-            >
+            <div key={item.id} className="relative flex items-center w-full">
+              {/* Far left vertical glowing bar */}
               {isActive && (
                 <div
                   className={`absolute w-[5px] h-10 rounded-r-[4px] bg-[#FF4C00] z-20 ${
@@ -173,8 +154,8 @@ export default function AdminSidebar({
               <Link
                 key={item.id}
                 href={item.href}
-                className={`group flex items-center gap-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-200 outline-none w-full relative rounded-2xl overflow-visible ${
-                  isCollapsed ? "justify-center px-0" : "pl-4 pr-3 ml-[-5px]"
+                className={`group flex items-center gap-4 py-2.5 text-xs font-semibold tracking-wide transition-all duration-200 outline-none w-full relative rounded-2xl ${
+                  isCollapsed ? 'justify-center px-0' : 'pl-4 pr-3 ml-[-5px]'
                 } ${
                   isActive
                     ? "bg-[#1A1A1A] text-white font-bold"
@@ -207,7 +188,7 @@ export default function AdminSidebar({
                 )}
 
                 {isCollapsed && (
-                  <div className="absolute left-16 z-50 scale-0 group-hover:scale-100 bg-[#1A1A1A] border border-zinc-805 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all duration-150 origin-left shadow-xl pointer-events-none whitespace-nowrap">
+                  <div className="absolute left-16 z-50 scale-0 group-hover:scale-100 bg-[#1A1A1A] border border-zinc-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all duration-150 origin-left shadow-xl pointer-events-none whitespace-nowrap">
                     {item.label}
                   </div>
                 )}
@@ -217,9 +198,7 @@ export default function AdminSidebar({
         })}
       </nav>
 
-      <div
-        className={`p-4 border-t border-[#1A1A1A] relative ${isCollapsed ? "flex justify-center" : ""}`}
-      >
+      <div className={`p-4 border-t border-[#1A1A1A] relative shrink-0 ${isCollapsed ? 'flex justify-center' : ''}`}>
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -259,9 +238,16 @@ export default function AdminSidebar({
               System Logs
             </Link>
             <div className="h-px bg-[#1A1A1A] my-1" />
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left"
+            <button 
+              onClick={async () => {
+                setIsProfileOpen(false);
+                await authClient.signOut({
+                  callbackURL: '/auth/login',
+                });
+                toast.success('Logged out successfully!');
+                window.location.href = '/auth/login';
+              }}
+              className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left cursor-pointer"
             >
               <LogOut size={14} />
               Logout

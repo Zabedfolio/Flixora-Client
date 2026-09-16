@@ -37,7 +37,7 @@ export default function ReviewCard({
         overflow-hidden
         rounded-2xl
         border
-        border-white/[0.08]
+        border-zinc-850
         bg-[#0b0b0b]
         p-6
         transition-all
