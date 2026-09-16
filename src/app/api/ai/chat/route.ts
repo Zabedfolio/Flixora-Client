@@ -192,18 +192,20 @@ export async function POST(req: NextRequest) {
             vote_average: m.vote_average,
             vote_count: m.vote_count,
             release_date: m.release_date || m.first_air_date,
-            media_type: m.media_type || 'movie',
+            media_type: m.media_type || (m.first_air_date ? 'tv' : 'movie'),
           };
         });
     };
 
     // Helper to build clean AI text response listing items
     const buildAIReply = (category: string, moviesList: any[]) => {
+      const isTVOrAnime = /anime|tv|drama|series/i.test(category);
+      const typeStr = isTVOrAnime ? 'series & shows' : 'recommendations';
       if (!moviesList || moviesList.length === 0) {
-        return `Here are top ${category} movies for you on Flixora:`;
+        return `Here are top ${category} ${typeStr} for you on Flixora:`;
       }
       const lines = [
-        `Here are ${moviesList.length} top ${category} recommendations for your movie night:\n`
+        `Here are ${moviesList.length} top ${category} ${typeStr} for your watch list:\n`
       ];
       moviesList.forEach((m, idx) => {
         const yearStr = m.year ? ` (${m.year})` : '';
@@ -422,6 +424,31 @@ export async function POST(req: NextRequest) {
 // Category & Intent Resolver Helper
 function resolveCategorySearch(userQuery: string) {
   const qLower = userQuery.toLowerCase().trim();
+
+  // 0. Dedicated Anime, K-Drama & TV Series Intent
+  if (/\b(anime|manga|otaku|anime\s*series)\b/i.test(qLower)) {
+    const randomPage = Math.floor(Math.random() * 4) + 1;
+    return {
+      endpoint: `/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc&language=en-US&page=${randomPage}`,
+      name: 'Popular Anime',
+    };
+  }
+
+  if (/\b(k-drama|kdrama|korean\s*drama|korean\s*series)\b/i.test(qLower)) {
+    const randomPage = Math.floor(Math.random() * 4) + 1;
+    return {
+      endpoint: `/discover/tv?with_original_language=ko&sort_by=popularity.desc&language=en-US&page=${randomPage}`,
+      name: 'Korean Drama',
+    };
+  }
+
+  if (/\b(tv\s*shows?|tv\s*series|shows|series)\b/i.test(qLower)) {
+    const randomPage = Math.floor(Math.random() * 4) + 1;
+    return {
+      endpoint: `/trending/tv/day?language=en-US&page=${randomPage}`,
+      name: 'Popular TV Series',
+    };
+  }
 
   // 1. Language & Regional Categories
   let langParam = '';
