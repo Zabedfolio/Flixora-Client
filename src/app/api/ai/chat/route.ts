@@ -168,10 +168,11 @@ export async function POST(req: NextRequest) {
     }
     const requestedCount = countMatch ? Math.min(Math.max(parseInt(countMatch[1], 10), 1), 10) : 6;
 
-    // Helper function to extract TMDB movies array with STRICT dynamic count
+    // Helper function to extract TMDB movies array with STRICT dynamic count and RANDOM Math shuffling
     const extractMovies = (results: any[], count: number = 6) => {
-      return (results || [])
-        .filter((m: any) => m.media_type !== 'person' && (m.poster_path || m.backdrop_path))
+      const filtered = (results || []).filter((m: any) => m.media_type !== 'person' && (m.poster_path || m.backdrop_path));
+      const shuffled = filtered.sort(() => Math.random() - 0.5);
+      return shuffled
         .slice(0, count)
         .map((m: any) => {
           const itemTitle = m.title || m.name || 'Featured Title';
@@ -557,12 +558,14 @@ function resolveCategorySearch(userQuery: string) {
 
   // Combined active params
   const activeParams = [langParam, genreParam, moodParam, occasionParam, tropeParam, decadeParam, ratingParam, runtimeParam].filter(Boolean);
+  const randomPage = Math.floor(Math.random() * 5) + 1;
+
   if (activeParams.length > 0) {
     const nameStr = [langName, genreName, moodName, occasionName, tropeName, decadeName].filter(Boolean).join(' ');
     const sortStr = ratingParam ? '' : '&sort_by=popularity.desc';
 
     return {
-      endpoint: `/discover/movie?${activeParams.join('&')}${sortStr}&language=en-US&page=1`,
+      endpoint: `/discover/movie?${activeParams.join('&')}${sortStr}&language=en-US&page=${randomPage}`,
       name: `${nameStr || 'Recommended'}`,
     };
   }
@@ -570,7 +573,7 @@ function resolveCategorySearch(userQuery: string) {
   // Trending / Popular
   if (/\b(trending|popular|hits|blockbusters?)\b/i.test(qLower)) {
     return {
-      endpoint: '/trending/movie/day?language=en-US&page=1',
+      endpoint: `/trending/movie/day?language=en-US&page=${randomPage}`,
       name: 'Trending Blockbuster',
     };
   }
