@@ -483,27 +483,15 @@ export default function SettingsPage() {
 
     setIsChangingPassword(true);
     try {
-      let res = await (authClient as any).emailOtp.resetPassword({
+      const res = await (authClient as any).emailOtp.resetPassword({
         email: email,
         otp: passwordOtpInput.trim(),
         password: newPasswordInput.trim(),
       });
 
       if (res?.error) {
-        const apiRes = await fetch("/api/user/change-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            newPassword: newPasswordInput.trim(),
-          }),
-        });
-        const apiData = await apiRes.json();
-        if (!apiRes.ok || !apiData.success) {
-          toast.error(
-            res.error.message || apiData.message || "Failed to reset password.",
-          );
-          return;
-        }
+        toast.error(res.error.message || "YOU PUT WRONG OTP");
+        return;
       }
 
       toast.success("Password updated successfully!");
