@@ -56,11 +56,11 @@ export async function POST(req: NextRequest) {
     if (!userMessage) {
       return NextResponse.json({
         success: true,
-        reply: "Hi! I'm Flix, your AI movie companion. Tell me what genre, language, actor, or movie title you are looking for!",
+        reply: "Hi! I'm Flix, your AI movie companion. Tell me what genre, mood, language, actor, or movie title you are looking for!",
       });
     }
 
-    // 1. Conversational Intent & Greetings Check FIRST (Prevents returning random movies for "hi")
+    // 1. Conversational Intent & Greetings Check FIRST
     const isGreeting = /^(hi|hello|hey|hy|hola|sup|yo|good\s*(morning|afternoon|evening|night)|howdy|heyy+)\b/i.test(qLower);
     const isIdentity = /(who are you|what is your name|what can you do|who made you|help|capabilities|what is flix)\b/i.test(qLower);
     const isGratitude = /(thanks|thank\s*you|thx|awesome|cool|great|sweet|perfect|appreciate)\b/i.test(qLower);
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     if (isIdentity) {
       return NextResponse.json({
         success: true,
-        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant!\n\nHere is how I can help you today:\n• Find movie & TV show recommendations by genre, language, or actor\n• Search for movies similar to your favorites\n• Provide detailed plot summaries & ratings\n• Discover trending blockbusters worldwide",
+        reply: "I'm **Flix**, Flixora's intelligent AI streaming assistant!\n\nHere is how I can help you today:\n• Find movie & TV show recommendations by genre, language, mood, or actor\n• Search for movies similar to your favorites\n• Provide detailed plot summaries & ratings\n• Filter by decade, runtime, or date night picks",
         source: 'ai_engine'
       });
     }
@@ -114,35 +114,26 @@ export async function POST(req: NextRequest) {
       const dislikedPhrase = negativeMatch[1].trim();
 
       let dislikedName = "that type of";
-      let excludedGenreId = "";
 
       if (/\b(odyssey|odessey|space|sci-?fi|science\s*fiction|alien|futuristic)\b/i.test(dislikedPhrase)) {
         dislikedName = "Odyssey & Space Sci-Fi";
-        excludedGenreId = "878";
       } else if (/\b(horror|scary|ghost|spooky|zombie|slasher|creepy)\b/i.test(dislikedPhrase)) {
         dislikedName = "Horror & Scary";
-        excludedGenreId = "27";
       } else if (/\b(funny|comedy|comedies|humor)\b/i.test(dislikedPhrase)) {
         dislikedName = "Comedy";
-        excludedGenreId = "35";
       } else if (/\b(action|fight|combat)\b/i.test(dislikedPhrase)) {
         dislikedName = "Action";
-        excludedGenreId = "28";
       } else if (/\b(romance|romantic|love)\b/i.test(dislikedPhrase)) {
         dislikedName = "Romance";
-        excludedGenreId = "10749";
       } else if (/\b(crime|gangster|mafia)\b/i.test(dislikedPhrase)) {
         dislikedName = "Crime";
-        excludedGenreId = "80";
       } else if (/\b(drama|emotional)\b/i.test(dislikedPhrase)) {
         dislikedName = "Drama";
-        excludedGenreId = "18";
       } else {
         const cleanedName = dislikedPhrase.replace(/\b(movie|movies|type|films?|shows?)\b/gi, '').trim();
         dislikedName = cleanedName ? `"${cleanedName}"` : "that type of";
       }
 
-      // Check if user specified a positive genre preference in the same query (e.g. "don't like horror, suggest comedy")
       const hasPositiveGenre = /(funny|comedy|action|bangla|hindi|korean|anime|scifi|sci-fi|romance|crime|drama|adventure|family)/i.test(qLower.replace(negativeMatch[0], ''));
 
       if (!hasPositiveGenre) {
@@ -170,7 +161,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse requested count (e.g. "suggest 5 movies" -> 5)
-    // Check previous message context if user clicked a genre option after asking for "5 movies"
     let countMatch = qLower.match(/\b([1-9]|10)\b/);
     if (!countMatch && messages.length >= 2) {
       const prevMsg = messages[messages.length - 2]?.text?.toLowerCase() || '';
@@ -223,9 +213,8 @@ export async function POST(req: NextRequest) {
       return lines.join('\n');
     };
 
-    // 2. Ambiguous Query Interception (Asking User Clarification with Interactive Option Buttons)
-    // Triggers when user asks e.g. "suggest 5 movies", "recommend some movies" without specifying genre/language/title
-    const hasCategorySignal = /(horror|funny|comedy|action|bangla|hindi|korean|anime|scifi|sci-fi|thriller|romance|crime|drama|family|adventure|like|starring|actor|actress|directed|90s|80s|2024|2023|top\s*rated|best)/i.test(qLower);
+    // 3. Ambiguous Query Interception (Asking User Clarification with Interactive Option Buttons)
+    const hasCategorySignal = /(horror|funny|comedy|action|bangla|hindi|korean|anime|scifi|sci-fi|thriller|romance|crime|drama|family|adventure|like|starring|actor|actress|directed|90s|80s|2024|2023|top\s*rated|best|sad|depressed|bored|relaxing|chill|date\s*night|time\s*travel|heist|zombie|mind-?bending)/i.test(qLower);
     const isGenericRecommendation = (/^(suggest|recommend|give|show|find|get)\s*([1-9]|10)?\s*(movies?|films?|shows?|series?|something)?$/i.test(qLower) ||
       (/^(suggest|recommend|give)\s*([1-9]|10)\b/i.test(qLower) && !hasCategorySignal));
 
@@ -234,7 +223,6 @@ export async function POST(req: NextRequest) {
         success: true,
         reply: `What type of movies or mood are you looking for${countMatch ? ` (${requestedCount} movies)` : ''}? Choose a genre below or type your preference:`,
         options: [
-          "Horror",
           "Funny Comedy",
           "Action",
           "Bangla",
@@ -248,7 +236,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Actor / Director / Cast Query Intent ("movies starring Leonardo DiCaprio", "movies by Christopher Nolan")
+    // 4. Actor / Director / Cast Query Intent ("movies starring Leonardo DiCaprio", "movies by Christopher Nolan")
     const extractPersonTarget = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const personMatch = q.match(/(?:movies?\s+starring|movies?\s+with|actor|actress|directed\s+by|director|films?\s+with)\s+([^,.?!]+)/i);
@@ -294,7 +282,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Movie Summary & Overview Intent ("summary about solo leveling")
+    // 5. Movie Summary & Overview Intent ("summary about solo leveling")
     const extractSummaryTarget = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const isSummary = /(?:summary|synopsis|overview|plot|details?|info|explain|tell\s+me\s+about|what\s+is\s+.+\s+about)\b/i.test(q);
@@ -349,7 +337,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Movie Similarity Search Intent ("movies like Inception")
+    // 6. Movie Similarity Search Intent ("movies like Inception")
     const extractTargetMovie = (msg: string): string | null => {
       const q = msg.toLowerCase().trim();
       const isSimilarIntent = /(?:like|similar\s+to|resembling|related\s+to|same\s+as|liked|loved|enjoyed)\b/i.test(q);
@@ -403,7 +391,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Category, Genre, Language & Decade Resolver (Horror, Funny, Bangla, Action, Sci-Fi, 90s, Top Rated, etc.)
+    // 7. Comprehensive Category, Genre, Language, Mood, Occasion & Runtime Resolver
     const categoryInfo = resolveCategorySearch(userMessage);
     let tmdbData = await fetchFromTMDB<any>(categoryInfo.endpoint).catch(() => ({ results: [] }));
 
@@ -497,7 +485,57 @@ function resolveCategorySearch(userQuery: string) {
     genreName = 'Adventure';
   }
 
-  // 3. Decade / Year Filters
+  // 3. Emotion & Mood Intent
+  let moodParam = '';
+  let moodName = '';
+  if (/\b(sad|depressed|unhappy|heartbroken|lonely|down)\b/i.test(qLower)) {
+    moodParam = 'with_genres=35,10749';
+    moodName = 'Feel-Good & Uplifting';
+  } else if (/\b(bored|boredom|thrill|thrilling|exciting|hype|adrenalin)\b/i.test(qLower)) {
+    moodParam = 'with_genres=28,53';
+    moodName = 'High-Octane Excitement';
+  } else if (/\b(relaxing|chill|comfort|calm|peaceful|late\s*night)\b/i.test(qLower)) {
+    moodParam = 'with_genres=35,16';
+    moodName = 'Chill & Comforting';
+  }
+
+  // 4. Occasion & Social Context Intent
+  let occasionParam = '';
+  let occasionName = '';
+  if (/\b(date\s*night|couple|partner|rom-com)\b/i.test(qLower)) {
+    occasionParam = 'with_genres=10749,35';
+    occasionName = 'Date Night';
+  } else if (/\b(family\s*night|family|kids|children|sleepover)\b/i.test(qLower)) {
+    occasionParam = 'with_genres=10751,16';
+    occasionName = 'Family Movie Night';
+  }
+
+  // 5. Specific Sub-genre Tropes & Themes
+  let tropeParam = '';
+  let tropeName = '';
+  if (/\b(mind-?bending|plot\s*twist|twist|mind\s*fuck)\b/i.test(qLower)) {
+    tropeParam = 'with_genres=53,9648&sort_by=vote_average.desc&vote_count.gte=300';
+    tropeName = 'Mind-Bending Mystery';
+  } else if (/\b(time\s*travel|timeline)\b/i.test(qLower)) {
+    tropeParam = 'with_genres=878';
+    tropeName = 'Time Travel Sci-Fi';
+  } else if (/\b(heist|robbery|bank\s*robbery)\b/i.test(qLower)) {
+    tropeParam = 'with_genres=80,53';
+    tropeName = 'High-Stakes Heist';
+  } else if (/\b(zombie|apocalypse|undead)\b/i.test(qLower)) {
+    tropeParam = 'with_genres=27,28';
+    tropeName = 'Zombie & Survival';
+  }
+
+  // 6. Runtime & Duration Filters
+  let runtimeParam = '';
+  if (/\b(short|quick|under\s*90|under\s*1\.5\s*hours?|brief)\b/i.test(qLower)) {
+    runtimeParam = 'with_runtime.lte=95';
+  } else if (/\b(long|epic|over\s*2\s*hours?|marathon)\b/i.test(qLower)) {
+    runtimeParam = 'with_runtime.gte=135';
+  }
+
+  // 7. Decade / Year Filters
   let decadeParam = '';
   let decadeName = '';
   if (/\b(90s|nineties)\b/i.test(qLower)) {
@@ -511,16 +549,16 @@ function resolveCategorySearch(userQuery: string) {
     decadeName = 'Recent Blockbuster';
   }
 
-  // 4. Rating / Top Rated Filter
+  // 8. Rating / Top Rated Filter
   let ratingParam = '';
   if (/\b(top\s*rated|best|highest\s*rated)\b/i.test(qLower)) {
     ratingParam = 'sort_by=vote_average.desc&vote_count.gte=500';
   }
 
-  // Combined params
-  const activeParams = [langParam, genreParam, decadeParam, ratingParam].filter(Boolean);
+  // Combined active params
+  const activeParams = [langParam, genreParam, moodParam, occasionParam, tropeParam, decadeParam, ratingParam, runtimeParam].filter(Boolean);
   if (activeParams.length > 0) {
-    const nameStr = [langName, genreName, decadeName].filter(Boolean).join(' ');
+    const nameStr = [langName, genreName, moodName, occasionName, tropeName, decadeName].filter(Boolean).join(' ');
     const sortStr = ratingParam ? '' : '&sort_by=popularity.desc';
 
     return {
