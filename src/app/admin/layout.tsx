@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import { PanelLeftOpen, ShieldCheck, ArrowUpRight, Bell } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { PanelLeftOpen, ShieldCheck, ArrowUpRight, Bell, Loader2 } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authClient } from '@/app/(auth)/lib/auth-client';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,21 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
+  const role = (user as any)?.role;
+
+  // Client-side fallback guard
+  React.useEffect(() => {
+    if (!isPending) {
+      if (!user) {
+        router.replace(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`);
+      } else if (role !== 'admin') {
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, role, isPending, router, pathname]);
 
   const getSubpageLabel = () => {
     if (pathname === '/admin/bookings') return 'Cinema Bookings';
@@ -28,6 +44,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   const subpage = getSubpageLabel();
+
+  const userInitials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'AD';
+
+  if (isPending) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#050505] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={32} className="animate-spin text-[#FF4C00]" />
+          <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            Verifying Admin Credentials...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#050505] text-white w-full overflow-hidden relative font-sans">
@@ -89,11 +127,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Admin Profile Chip */}
             <div className="hidden md:flex items-center gap-2.5 pl-3 border-l border-[#1A1A1A]">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF4C00] to-amber-500 flex items-center justify-center text-xs font-black text-black shadow-[0_0_12px_rgba(255,76,0,0.4)]">
-                ZM
+                {userInitials}
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-white">Zabed Mahmud</span>
-                <span className="text-[10px] text-[#FF4C00] font-mono font-bold tracking-widest uppercase">SUPER ADMIN</span>
+                <span className="text-xs font-bold text-white">{user?.name || 'Admin User'}</span>
+                <span className="text-[10px] text-[#FF4C00] font-mono font-bold tracking-widest uppercase">
+                  {role === 'admin' ? 'SUPER ADMIN' : 'ADMIN'}
+                </span>
               </div>
             </div>
           </div>
