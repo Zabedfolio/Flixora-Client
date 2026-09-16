@@ -41,22 +41,28 @@ export async function POST(request: NextRequest) {
       const targetPlanId = targetPlan?._id?.toString() || planKey;
       const targetPlanName = targetPlan?.name || (planKey.charAt(0).toUpperCase() + planKey.slice(1));
 
-      let filter: any = {};
-      if (userId && ObjectId.isValid(userId)) {
-        filter = { _id: new ObjectId(userId) };
+      let filter: any = null;
+      if (userId) {
+        filter = ObjectId.isValid(userId)
+          ? { $or: [{ _id: new ObjectId(userId) }, { _id: userId }, { id: userId }] }
+          : { $or: [{ _id: userId }, { id: userId }] };
       } else if (session.customer_details?.email || metadata.userEmail) {
         filter = { email: session.customer_details?.email || metadata.userEmail };
       }
 
-      if (filter._id || filter.email) {
+      if (filter) {
         // 1. Update User Record
-        const userUpdateResult = await db.collection('user').updateOne(filter, {
-          $set: {
-            planId: targetPlanId,
-            plan: targetPlanName,
-            updatedAt: new Date(),
+        const userDoc = await db.collection('user').findOneAndUpdate(
+          filter,
+          {
+            $set: {
+              planId: targetPlanId,
+              plan: targetPlanName,
+              updatedAt: new Date(),
+            },
           },
-        });
+          { returnDocument: 'after' }
+        );
 
         // 2. Record Payment Entry
         const existingPayment = await db
@@ -70,19 +76,19 @@ export async function POST(request: NextRequest) {
             : '$14.99';
 
           // Extract resolved user ID from updated user or metadata
-          const targetUserId = userId || (await db.collection('user').findOne(filter))?._id?.toString();
+          const targetUserId = userDoc?._id?.toString() || userId || 'authenticated_user';
 
-          if (targetUserId) {
-            await db.collection('payments').insertOne({
-              userId: targetUserId,
-              planId: targetPlanId,
-              amount: amountPaid,
-              status: 'Paid',
-              stripeSessionId: session.id,
-              invoiceId: invoiceNum,
-              createdAt: new Date(),
-            });
-          }
+          await db.collection('payments').insertOne({
+            userId: targetUserId,
+            userEmail: session.customer_details?.email || metadata.userEmail || '',
+            planId: targetPlanId,
+            planName: targetPlanName,
+            amount: amountPaid,
+            status: 'Paid',
+            stripeSessionId: session.id,
+            invoiceId: invoiceNum,
+            createdAt: new Date(),
+          });
         }
 
         console.log(`[Stripe Webhook] Successfully updated user subscription & payment log for session ${session.id}`);

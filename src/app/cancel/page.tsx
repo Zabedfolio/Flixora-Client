@@ -56,7 +56,7 @@ export default async function CancelPage({ searchParams }: CancelProps) {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 text-[10px] font-bold text-zinc-550 leading-relaxed">
+          <div className="flex items-center gap-2.5 text-[10px] font-bold text-zinc-500 leading-relaxed">
             <HelpCircle size={14} className="text-zinc-500 shrink-0" />
             <span>Need help? Double-check card information, fund availability, or contact your card issuer.</span>
           </div>

@@ -178,6 +178,8 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     setIsProfileOpen(false);
   };
 
+  const { isKidsMode } = useKidsStore();
+
   const handleSignOut = async () => {
     setIsProfileOpen(false);
     try {
@@ -213,6 +215,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const filteredItems = NAV_ITEMS.filter(item => {
     if (isLoading) return false;
     if (!item.roles.includes(permissionRole)) return false;
+    if (isKidsMode && (item.id === 'tickets_user' || item.id === 'kids_control')) return false;
     if (item.id === 'kids_control' && !hasKidsProfiles) return false;
     return true;
   });

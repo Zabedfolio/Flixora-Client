@@ -55,8 +55,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 2. USER DASHBOARD ROUTE PROTECTION (/dashboard and /dashboard/*)
-  if (pathname.startsWith('/dashboard')) {
+  // 2. USER DASHBOARD & DETAILS / BOOKING ROUTE PROTECTION (/dashboard, /movie/*, /book/*, /tickets/*)
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/movie/') ||
+    pathname.startsWith('/book') ||
+    pathname.startsWith('/tickets')
+  ) {
     if (!sessionToken) {
       const loginUrl = new URL('/auth/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);

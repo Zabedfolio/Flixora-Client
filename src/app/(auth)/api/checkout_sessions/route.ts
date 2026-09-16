@@ -70,7 +70,11 @@ async function handleCheckout(request: NextRequest) {
     }
 
     const plan = PLANS_MAP[resolvedKey];
-    const origin = request.nextUrl.origin;
+    const origin =
+      request.headers.get('origin') ||
+      request.nextUrl.origin ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      'http://localhost:3000';
 
     const authSession = await auth.api.getSession({
       headers: await headers(),

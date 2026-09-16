@@ -21,7 +21,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
 import { useKidsStore } from '@/lib/store/kidsStore';
