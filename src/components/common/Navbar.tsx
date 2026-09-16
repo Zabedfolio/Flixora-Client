@@ -320,27 +320,17 @@ export default function Navbar({
                     </div>
 
                     {isKidsMode ? (
-                      <>
-                        <Link
-                          href="/dashboard/kids-control"
-                          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-300 hover:bg-[#1A1A1A] hover:text-amber-400 transition-colors"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                        >
-                          <Shield size={14} className="text-amber-400" />
-                          <span>Kids Control Panel</span>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProfileDropdownOpen(false);
-                            setIsExitPinModalOpen(true);
-                          }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
-                        >
-                          <Lock size={14} />
-                          <span>Exit Kids Mode</span>
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          setIsExitPinModalOpen(true);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                      >
+                        <Lock size={14} />
+                        <span>Exit Kids Mode</span>
+                      </button>
                     ) : (
                       <>
                         <Link
