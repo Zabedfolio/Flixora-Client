@@ -118,7 +118,7 @@ export default function NewReleases() {
                 type="button"
                 onClick={scrollLeft}
                 aria-label="Previous movies"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-all duration-300 hover:border-[#FF4C00]/50 hover:bg-[#FF4C00] hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-all duration-300 hover:border-[#FF4C00]/50 hover:bg-[#FF4C00] hover:text-white"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -127,7 +127,7 @@ export default function NewReleases() {
                 type="button"
                 onClick={scrollRight}
                 aria-label="Next movies"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-all duration-300 hover:border-[#FF4C00]/50 hover:bg-[#FF4C00] hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-all duration-300 hover:border-[#FF4C00]/50 hover:bg-[#FF4C00] hover:text-white"
               >
                 <ChevronRight size={18} />
               </button>
@@ -179,7 +179,7 @@ export default function NewReleases() {
             type="button"
             onClick={scrollLeft}
             aria-label="Previous movies"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-all hover:border-[#FF4C00] hover:bg-[#FF4C00] hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-all hover:border-[#FF4C00] hover:bg-[#FF4C00] hover:text-white"
           >
             <ChevronLeft size={18} />
           </button>
@@ -188,7 +188,7 @@ export default function NewReleases() {
             type="button"
             onClick={scrollRight}
             aria-label="Next movies"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-all hover:border-[#FF4C00] hover:bg-[#FF4C00] hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-all hover:border-[#FF4C00] hover:bg-[#FF4C00] hover:text-white"
           >
             <ChevronRight size={18} />
           </button>

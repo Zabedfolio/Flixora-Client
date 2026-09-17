@@ -90,14 +90,14 @@ export default function TopRated() {
       <div className="relative z-10 max-w-7xl mx-auto group/row">
         <button
           onClick={() => scroll('left')}
-          className="absolute -left-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
+          className="absolute -left-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/80 hover:bg-[#FF4C00] text-white rounded-full border border-zinc-800 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
           aria-label="Scroll left"
         >
           <ChevronLeft size={20} />
         </button>
         <button
           onClick={() => scroll('right')}
-          className="absolute -right-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
+          className="absolute -right-2 top-[42%] -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/80 hover:bg-[#FF4C00] text-white rounded-full border border-zinc-800 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
           aria-label="Scroll right"
         >
           <ChevronRight size={20} />

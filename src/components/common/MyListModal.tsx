@@ -100,22 +100,26 @@ export default function MyListModal({ isOpen, onClose }: MyListModalProps) {
                 {watchlist.map((item) => (
                   <div 
                     key={item.id}
-                    className="flex items-center justify-between gap-4 p-3 rounded-xl border border-[#1A1A1A] bg-[#141414]/30 hover:bg-[#1A1A1A]/20 hover:border-zinc-800/80 transition-all group"
+                    className="flex items-center justify-between gap-4 p-3 rounded-xl border border-[#1A1A1A] bg-[#141414]/30 hover:bg-[#1A1A1A]/40 hover:border-zinc-800 transition-all group"
                   >
-                    {/* Item Info */}
-                    <div className="flex items-center gap-4 min-w-0">
+                    {/* Item Info - Navigates to movie details */}
+                    <Link
+                      href={`/movie/${item.id}`}
+                      onClick={onClose}
+                      className="flex items-center gap-4 min-w-0 flex-1 group/item cursor-pointer"
+                    >
                       {/* Image Poster */}
                       <img 
                         src={item.unsplash_url} 
-                        alt="" 
-                        className="w-10 h-12 rounded object-cover bg-zinc-950 shrink-0 border border-zinc-900 shadow" 
+                        alt={item.title} 
+                        className="w-10 h-12 rounded object-cover bg-zinc-950 shrink-0 border border-zinc-900 shadow group-hover/item:scale-105 transition-transform" 
                       />
                       
                       <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-xs font-black text-white truncate block">
+                        <span className="text-xs font-black text-white group-hover/item:text-[#FF4C00] transition-colors truncate block">
                           {item.title}
                         </span>
-                        <div className="flex items-center gap-1.5 text-[9px] text-zinc-550 font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
                           <span>{item.category}</span>
                           <span>•</span>
                           <span>{item.year}</span>
@@ -123,16 +127,16 @@ export default function MyListModal({ isOpen, onClose }: MyListModalProps) {
                           <span>{item.duration}</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Actions */}
                     <div className="flex items-center gap-2.5 shrink-0">
-                      {/* Watch now */}
+                      {/* Watch now / Movie Details */}
                       <Link
-                        href={`/dashboard`}
+                        href={`/movie/${item.id}`}
                         onClick={onClose}
-                        className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-[#FF4C00] hover:text-black hover:bg-[#FF4C00] flex items-center justify-center transition-all shadow-inner outline-none"
-                        title="Watch Now"
+                        className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-[#FF4C00] hover:text-black hover:bg-[#FF4C00] flex items-center justify-center transition-all shadow-inner outline-none cursor-pointer"
+                        title="Watch Movie"
                       >
                         <Play size={12} fill="currentColor" className="ml-0.5" />
                       </Link>

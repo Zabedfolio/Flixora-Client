@@ -47,10 +47,10 @@ const COLUMNS: Column[] = [
   {
     title: "Company",
     links: [
-      { label: "About Us", href: "/" },
-      { label: "Careers", href: "/" },
-      { label: "Press", href: "/" },
-      { label: "Contact", href: "/" },
+      { label: "About Us", href: "/about" },
+      { label: "Careers", href: "/careers" },
+      { label: "Press", href: "/press" },
+      { label: "Contact", href: "/contact" },
     ],
   },
   {
@@ -69,16 +69,16 @@ const COLUMNS: Column[] = [
       { label: "Manage Subscription", href: "/dashboard/subscription" },
       { label: "Billing", href: "/dashboard/subscription" },
       { label: "Account Settings", href: "/dashboard/setting" },
-      { label: "Help Center", href: "/" },
+      { label: "Help Center", href: "/help" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy Policy", href: "/" },
-      { label: "Terms of Service", href: "/" },
-      { label: "Cookie Preferences", href: "/" },
-      { label: "Content Guidelines", href: "/" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Cookie Preferences", href: "/cookies" },
+      { label: "Content Guidelines", href: "/guidelines" },
     ],
   },
 ];
@@ -98,7 +98,7 @@ const PAYMENT_METHODS = [
   { name: "Amex", icon: FaCcAmex, color: "hover:text-[#006FCF] hover:border-[#006FCF]/50" },
   { name: "PayPal", icon: FaPaypal, color: "hover:text-[#003087] hover:border-[#003087]/50" },
   { name: "Google Pay", icon: FaGooglePay, color: "hover:text-[#4285F4] hover:border-[#4285F4]/50" },
-  { name: "Apple Pay", icon: FaApplePay, color: "hover:text-white hover:border-white/50" },
+  { name: "Apple Pay", icon: FaApplePay, color: "hover:text-white hover:border-zinc-500" },
 ];
 
 // Continuous Marquee Array

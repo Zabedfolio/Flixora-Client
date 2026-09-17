@@ -56,3 +56,61 @@ export async function GET() {
     );
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const authSession = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!authSession?.user?.id) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { name, image, avatarId } = body;
+
+    const { db } = await connectToDatabase();
+    const rawId = authSession.user.id;
+    const filter = ObjectId.isValid(rawId)
+      ? { $or: [{ _id: new ObjectId(rawId) }, { _id: rawId }] }
+      : { _id: rawId };
+
+    const updateFields: Record<string, any> = {
+      updatedAt: new Date(),
+    };
+
+    if (name !== undefined && name !== null) {
+      updateFields.name = name.trim();
+    }
+    if (image !== undefined) {
+      updateFields.image = image;
+    }
+    if (avatarId !== undefined) {
+      updateFields.avatarId = avatarId;
+    }
+
+    await db.collection('user').updateOne(filter, {
+      $set: updateFields,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'User profile updated successfully in database',
+      user: {
+        id: rawId,
+        ...updateFields,
+      },
+    });
+  } catch (error: any) {
+    console.error('PATCH /api/user/profile error:', error);
+    return NextResponse.json(
+      { success: false, message: error.message || 'Failed to update user profile' },
+      { status: 500 }
+    );
+  }
+}
+

@@ -24,12 +24,14 @@ import {
   Shield,
   Zap,
   Flame,
-  CreditCard
+  CreditCard,
+  Ticket
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { authClient } from '@/app/(auth)/lib/auth-client';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -49,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
   // User Navigation
   { id: 'dashboard_user', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['user'] },
   { id: 'mylist', label: 'My List', icon: Bookmark, href: '/dashboard/my-list', roles: ['user'] },
+  { id: 'tickets_user', label: 'Bookings', icon: Ticket, href: '/dashboard/my-tickets', roles: ['user'] },
   { id: 'playlists', label: 'Mood Playlists', icon: Sparkles, href: '/dashboard/my-playlist', roles: ['user'] },
   { id: 'history_user', label: 'History', icon: Clock, href: '/dashboard/history', roles: ['user'] },
   { id: 'subscription', label: 'Subscription', icon: Crown, href: '/dashboard/subscription', roles: ['user'] },
@@ -56,9 +59,10 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'settings_user', label: 'Settings', icon: Settings, href: '/dashboard/setting', roles: ['user'] },
   { id: 'home_user', label: 'Home Page', icon: Home, href: '/', roles: ['user'] },
 
-  // Admin Navigation (8 items)
+  // Admin Navigation
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin', roles: ['admin'] },
   { id: 'catalogue', label: 'Catalogue', icon: Film, href: '/admin/catalogue', roles: ['admin'] },
+  { id: 'bookings_admin', label: 'Bookings', icon: Ticket, href: '/admin/bookings', roles: ['admin'] },
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users', roles: ['admin'] },
   { id: 'kids_admin', label: 'Kids Profiles', icon: Shield, href: '/admin/kids', roles: ['admin'] },
   { id: 'reviews', label: 'Reviews', icon: Flag, href: '/admin/reviews', roles: ['admin'] },
@@ -174,6 +178,34 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
     setIsProfileOpen(false);
   };
 
+  const { isKidsMode } = useKidsStore();
+
+  const handleSignOut = async () => {
+    setIsProfileOpen(false);
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('is_logging_out', 'true');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('flixora-session-role');
+        window.dispatchEvent(new Event('auth-logout'));
+      }
+      useKidsStore.getState().setActiveKidsProfile(null);
+      setLiveProfile(null);
+
+      await authClient.signOut();
+      toast.success('Logged out successfully!');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Something went wrong during logout.');
+    } finally {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('is_logging_out');
+        window.location.href = '/';
+      }
+    }
+  };
+
   // Resolve permission level: any role that is not admin acts as standard user permissions
   const permissionRole = currentRole === 'admin' ? 'admin' : 'user';
 
@@ -181,6 +213,7 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
   const filteredItems = NAV_ITEMS.filter(item => {
     if (isLoading) return false;
     if (!item.roles.includes(permissionRole)) return false;
+    if (isKidsMode && (item.id === 'tickets_user' || item.id === 'kids_control')) return false;
     if (item.id === 'kids_control' && !hasKidsProfiles) return false;
     return true;
   });
@@ -410,9 +443,10 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
                 onClick={async () => {
                   setIsProfileOpen(false);
                   await authClient.signOut({
-                    callbackURL: '/login',
+                    callbackURL: '/auth/login',
                   });
                   toast.success('Logged out successfully!');
+                  window.location.href = '/auth/login';
                 }}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-red-500 hover:text-red-400 hover:bg-red-950/20 transition-all w-full text-left cursor-pointer"
               >

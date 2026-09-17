@@ -198,7 +198,7 @@ export default function TitleRow() {
                 justify-center
                 rounded-full
                 border
-                border-white/10
+                border-zinc-800
                 bg-black/60
                 text-white
                 transition-all
@@ -229,7 +229,7 @@ export default function TitleRow() {
                 justify-center
                 rounded-full
                 border
-                border-white/10
+                border-zinc-800
                 bg-black/60
                 text-white
                 transition-all

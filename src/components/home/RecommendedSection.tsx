@@ -192,13 +192,13 @@ export default function RecommendedSection() {
             <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 z-20 flex flex-col gap-2.5">
               {/* Badges Row */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                <div className="flex items-center gap-1.5 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-zinc-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#FF4C00] animate-pulse" />
                   <span className="text-[9px] font-black tracking-widest text-[#FF4C00] uppercase">
                     {activeTopPick.matchPercentage}% AI MATCH
                   </span>
                 </div>
-                <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+                <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full">
                   {activeTopPick.reason}
                 </span>
               </div>
@@ -223,7 +223,7 @@ export default function RecommendedSection() {
                 <button className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#FF4C00] hover:bg-[#E04300] active:scale-98 text-black text-xs font-black uppercase rounded-lg transition-all shadow-lg shadow-[#FF4C00]/20">
                   <Play size={12} fill="currentColor" /> Play Now
                 </button>
-                <button className="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10">
+                <button className="w-10 h-10 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg transition-colors border border-zinc-800">
                   <Plus size={16} />
                 </button>
               </div>
@@ -235,7 +235,7 @@ export default function RecommendedSection() {
         <div className="lg:col-span-8 flex flex-col gap-4 group/row relative w-full overflow-hidden">
           <button 
             onClick={() => scroll("left")}
-            className="absolute -left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
+            className="absolute -left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/80 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-zinc-800 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
             aria-label="Scroll left"
           >
             <ChevronLeft size={20} />
@@ -243,7 +243,7 @@ export default function RecommendedSection() {
 
           <button
             onClick={() => scroll("right")}
-            className="absolute -right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/70 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-white/10 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-black/80 hover:bg-[#FF4C00] text-white hover:text-white rounded-full border border-zinc-800 hover:border-transparent opacity-0 group-hover/row:opacity-100 transition-all duration-300 hover:scale-105"
             aria-label="Scroll right"
           >
             <ChevronRight size={20} />
