@@ -112,8 +112,29 @@ class AdminApiClient {
    * Helper to perform fetch with fallback to internal Next.js API routes
    */
   private async request<T>(serverPath: string, nextApiPath: string, options?: RequestInit): Promise<T> {
+    const isBrowser = typeof window !== 'undefined';
+    const isHttps = isBrowser && window.location.protocol === 'https:';
+
+    // On live HTTPS deployment, try internal Next.js API route first for reliability
+    if (isHttps) {
+      try {
+        const nextResponse = await fetch(nextApiPath, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(options?.headers || {}),
+          },
+        });
+        if (nextResponse.ok) {
+          return await nextResponse.json();
+        }
+      } catch {
+        // Fallthrough to direct Express server URL
+      }
+    }
+
     try {
-      // First try calling Express backend directly
+      // Try calling Express backend directly
       const response = await fetch(`${SERVER_URL}${serverPath}`, {
         ...options,
         headers: {
@@ -127,7 +148,7 @@ class AdminApiClient {
         return (json.data !== undefined ? json : { success: true, data: json }) as T;
       }
     } catch {
-      // Backend not running on port 5000; fall through to Next.js API route
+      // Backend unavailable; fall through to Next.js API route
     }
 
     // Fallback to Next.js internal API route
