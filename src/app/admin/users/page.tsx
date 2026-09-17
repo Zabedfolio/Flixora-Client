@@ -19,6 +19,7 @@ import {
   CreditCard,
   UserCog,
   X,
+  AlertTriangle,
 } from "lucide-react";
 
 /* =====================================================
@@ -214,6 +215,48 @@ export default function UsersPage() {
 
   const [actionLoading, setActionLoading] =
     useState(false);
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    variant: 'danger' | 'warning';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
+
+  const triggerBanConfirm = (targetUser: User) => {
+    setConfirmModal({
+      isOpen: true,
+      title: `Ban ${targetUser.name}?`,
+      message: `Are you sure you want to ban ${targetUser.name}? This account will be immediately blocked from accessing Flixora.`,
+      confirmText: 'Ban Account',
+      variant: 'danger',
+      onConfirm: () => {
+        void updateUser(targetUser.id, { action: 'status', status: 'banned' });
+      },
+    });
+  };
+
+  const triggerSuspendConfirm = (targetUser: User) => {
+    setConfirmModal({
+      isOpen: true,
+      title: `Suspend ${targetUser.name}?`,
+      message: `Are you sure you want to suspend ${targetUser.name}? They will be temporarily restricted from logging in.`,
+      confirmText: 'Suspend Account',
+      variant: 'warning',
+      onConfirm: () => {
+        void updateUser(targetUser.id, { action: 'status', status: 'suspended' });
+      },
+    });
+  };
 
   /* ===================================================
      FETCH USERS
@@ -749,22 +792,12 @@ export default function UsersPage() {
                               "active" && (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  void updateUser(
-                                    user.id,
-                                    {
-                                      action:
-                                        "status",
-                                      status:
-                                        "suspended",
-                                    }
-                                  )
-                                }
+                                onClick={() => triggerSuspendConfirm(user)}
                                 title="Suspend"
                                 disabled={
                                   actionLoading
                                 }
-                                className="w-9 h-9 rounded-lg bg-yellow-500/10 border border-yellow-500/10 text-yellow-400 flex items-center justify-center hover:bg-yellow-500 hover:text-black disabled:opacity-40"
+                                className="w-9 h-9 rounded-lg bg-yellow-500/10 border border-yellow-500/10 text-yellow-400 flex items-center justify-center hover:bg-yellow-500 hover:text-black disabled:opacity-40 font-bold"
                               >
                                 <PauseCircle
                                   size={16}
@@ -796,31 +829,12 @@ export default function UsersPage() {
                               "banned" && (
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const confirmed =
-                                    window.confirm(
-                                      `Ban ${user.name}?`
-                                    );
-
-                                  if (
-                                    confirmed
-                                  ) {
-                                    void updateUser(
-                                      user.id,
-                                      {
-                                        action:
-                                          "status",
-                                        status:
-                                          "banned",
-                                      }
-                                    );
-                                  }
-                                }}
+                                onClick={() => triggerBanConfirm(user)}
                                 title="Ban"
                                 disabled={
                                   actionLoading
                                 }
-                                className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white disabled:opacity-40"
+                                className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white disabled:opacity-40 font-bold"
                               >
                                 <Ban size={16} />
                               </button>
@@ -1255,16 +1269,8 @@ export default function UsersPage() {
                     <button
                       type="button"
                       disabled={actionLoading}
-                      onClick={() =>
-                        void updateUser(
-                          selectedUser.id,
-                          {
-                            action: "status",
-                            status: "suspended",
-                          }
-                        )
-                      }
-                      className="py-3 rounded-xl bg-yellow-500/10 text-yellow-400 text-xs font-bold hover:bg-yellow-500/20 disabled:opacity-40"
+                      onClick={() => triggerSuspendConfirm(selectedUser)}
+                      className="py-3 rounded-xl bg-yellow-500/10 text-yellow-400 text-xs font-bold hover:bg-yellow-500/20 disabled:opacity-40 cursor-pointer"
                     >
                       Suspend
                     </button>
@@ -1274,23 +1280,8 @@ export default function UsersPage() {
                     <button
                       type="button"
                       disabled={actionLoading}
-                      onClick={() => {
-                        const confirmed =
-                          window.confirm(
-                            `Ban ${selectedUser.name}?`
-                          );
-
-                        if (confirmed) {
-                          void updateUser(
-                            selectedUser.id,
-                            {
-                              action: "status",
-                              status: "banned",
-                            }
-                          );
-                        }
-                      }}
-                      className="py-3 rounded-xl bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20 disabled:opacity-40"
+                      onClick={() => triggerBanConfirm(selectedUser)}
+                      className="py-3 rounded-xl bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20 disabled:opacity-40 cursor-pointer"
                     >
                       Ban
                     </button>
@@ -1300,6 +1291,65 @@ export default function UsersPage() {
             </div>
           </div>
         )}
+
+      {/* CUSTOM FLIXORA CONFIRMATION MODAL */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl shadow-2xl p-6 select-none animate-in zoom-in-95 duration-150 space-y-5">
+            <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    confirmModal.variant === 'danger'
+                      ? 'bg-red-950/50 border border-red-900/60 text-red-500'
+                      : 'bg-amber-950/50 border border-amber-900/60 text-amber-400'
+                  }`}
+                >
+                  <AlertTriangle size={20} />
+                </div>
+                <h3 className="text-base font-black uppercase tracking-wider text-white">
+                  {confirmModal.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs font-semibold text-zinc-300 leading-relaxed">
+              {confirmModal.message}
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1A1A1A]">
+              <button
+                type="button"
+                onClick={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2.5 rounded-xl bg-[#141414] hover:bg-[#1E1E1E] border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white transition-all cursor-pointer uppercase"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                  confirmModal.onConfirm();
+                }}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-lg ${
+                  confirmModal.variant === 'danger'
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/20'
+                    : 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/20'
+                }`}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </main>
     </div>
   );

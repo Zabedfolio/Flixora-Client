@@ -367,15 +367,16 @@ export async function PATCH(request: NextRequest) {
        UPDATE USER
     ================================================= */
 
-    const result =
-      await usersCollection.updateOne(
-        {
-          _id: new ObjectId(userId),
-        },
-        {
-          $set: updateData,
-        }
-      );
+    const userQuery = ObjectId.isValid(userId)
+      ? { $or: [{ _id: new ObjectId(userId) }, { _id: userId as any }, { id: userId as any }] }
+      : { $or: [{ _id: userId as any }, { id: userId as any }] };
+
+    const result = await usersCollection.updateOne(
+      userQuery as any,
+      {
+        $set: updateData,
+      }
+    );
 
     /* User not found */
     if (result.matchedCount === 0) {

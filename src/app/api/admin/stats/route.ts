@@ -10,6 +10,20 @@ export async function GET() {
       headers: await headers(),
     });
 
+    if (!authSession || !authSession.user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized: Authentication required.' },
+        { status: 401 }
+      );
+    }
+
+    if (authSession.user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden: Admin access required.' },
+        { status: 403 }
+      );
+    }
+
     const { db } = await connectToDatabase();
 
     // 1. Query User collection stats

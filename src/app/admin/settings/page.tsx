@@ -19,13 +19,39 @@ import {
   Loader2,
   Copy,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  User,
+  ShieldCheck,
+  Upload,
+  KeyRound,
+  Shield,
+  Zap,
+  Flame,
 } from 'lucide-react';
 import { adminApi, AdminPlan, PromoCodeItem, PromoCodeFormInput } from '@/lib/api/adminApi';
 import { toast } from 'react-hot-toast';
+import { authClient } from '@/app/(auth)/lib/auth-client';
+
+const PRESET_AVATARS = [
+  { id: 'spiderman', name: 'Spider-Man', url: 'https://i.ibb.co/Cs0Z14TD/857476df6e87.jpg' },
+  { id: 'batman', name: 'Batman', url: 'https://i.ibb.co/fzQdvy33/c5005c8f408c.jpg' },
+  { id: 'hulk', name: 'Hulk', url: 'https://i.ibb.co/KjG62St5/28a071b23c43.jpg' },
+  { id: 'ironman', name: 'Iron Man', url: 'https://i.ibb.co/N6pnL1Vd/c0b33285fed7.jpg' },
+  { id: 'captain_america', name: 'Captain America', url: 'https://i.ibb.co/9kBq2HrN/99052d2013b0.jpg' },
+  { id: 'robot', name: 'Robot', url: 'https://i.ibb.co/99BwLZ1f/df4b1e66aac1.png' },
+  { id: 'tom', name: 'Tom', url: 'https://i.ibb.co/ZRCZZjZY/77a32760a782.png' },
+  { id: 'jerry', name: 'Jerry', url: 'https://i.ibb.co/chCxgVC0/e7ba688df62e.png' },
+  { id: 'preset_1', name: 'Vector 1', url: 'https://i.ibb.co/T94VNG1/feca82718a3f.png' },
+  { id: 'preset_2', name: 'Vector 2', url: 'https://i.ibb.co/hRfpJsBz/77c8ff018f5a.png' },
+  { id: 'preset_3', name: 'Vector 3', url: 'https://i.ibb.co/XxyLdGR6/3dc0753b83ec.png' },
+  { id: 'preset_4', name: 'Vector 4', url: 'https://i.ibb.co/mrkSXMgF/7dedb3686be5.png' },
+  { id: 'preset_5', name: 'Vector 5', url: 'https://i.ibb.co/LXQNQV9m/652fb8497ee2.png' },
+  { id: 'preset_6', name: 'Vector 6', url: 'https://i.ibb.co/1Y2xx1kP/51b2fb15a0ee.png' },
+];
 
 export default function AdminSettingsPage() {
-  const [activeTab, setActiveTab] = useState<'plans' | 'promos'>('plans');
+  const [activeTab, setActiveTab] = useState<'plans' | 'promos' | 'profile'>('plans');
+  const { data: session } = authClient.useSession();
 
   // Plan Settings States
   const [plans, setPlans] = useState<AdminPlan[]>([]);
@@ -46,6 +72,24 @@ export default function AdminSettingsPage() {
     expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     usageLimit: 100,
   });
+
+  // Admin Profile States
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminAvatar, setAdminAvatar] = useState(PRESET_AVATARS[0].url);
+  const [adminAvatarId, setAdminAvatarId] = useState(PRESET_AVATARS[0].id);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
+  // Sync Admin Session Info
+  useEffect(() => {
+    if (session?.user) {
+      if (session.user.name) setAdminName(session.user.name);
+      if (session.user.email) setAdminEmail(session.user.email);
+      if (session.user.image) setAdminAvatar(session.user.image);
+    }
+  }, [session]);
 
   // Load Plans
   const loadPlans = async () => {
@@ -80,7 +124,7 @@ export default function AdminSettingsPage() {
     loadPromoCodes();
   }, []);
 
-  // Handle Save Plan (Create or Update)
+  // Save Plan
   const handleSavePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPlan) return;
@@ -88,12 +132,10 @@ export default function AdminSettingsPage() {
     try {
       setIsSavingPlan(true);
       if (editingPlan._id) {
-        // Update existing plan
         const updated = await adminApi.updatePlan(editingPlan._id, editingPlan);
         toast.success(`Plan "${updated.name}" updated successfully!`);
         setPlans((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
       } else {
-        // Create new plan
         const created = await adminApi.createPlan(editingPlan);
         toast.success(`New plan "${created.name}" created!`);
         setPlans((prev) => [...prev, created]);
@@ -108,7 +150,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Handle Delete Plan
+  // Delete Plan
   const handleDeletePlan = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete the "${name}" plan?`)) return;
 
@@ -122,7 +164,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Handle Create Promo Code
+  // Create Promo Code
   const handleCreatePromo = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -145,7 +187,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Handle Delete Promo Code
+  // Delete Promo Code
   const handleDeletePromo = async (id: string, code: string) => {
     if (!confirm(`Are you sure you want to remove promo code "${code}"?`)) return;
 
@@ -159,6 +201,121 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // Upload Custom Avatar
+  const handleCustomImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        setAdminAvatar(data.url);
+        setAdminAvatarId('custom_upload');
+        toast.success('Custom avatar uploaded!');
+      } else {
+        throw new Error('No URL returned from upload server');
+      }
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast.error(error.message || 'Failed to upload avatar image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Save Admin Profile
+  const handleSaveAdminProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminName.trim()) {
+      toast.error('Admin name cannot be empty');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      // 1. Update primary MongoDB user record
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: adminName.trim(),
+          image: adminAvatar,
+          avatarId: adminAvatarId,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update admin profile in database');
+      }
+
+      // 2. Update Better Auth session
+      try {
+        if ((authClient as any).updateUser) {
+          await (authClient as any).updateUser({
+            name: adminName.trim(),
+          });
+        }
+      } catch (authErr) {
+        console.warn('Better Auth session update notice:', authErr);
+      }
+
+      toast.success('Admin Profile updated successfully!');
+    } catch (err: any) {
+      console.error('Save admin profile error:', err);
+      toast.error(err.message || 'Failed to update admin profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  // Trigger Password Reset Email
+  const handleSendAdminPasswordReset = async () => {
+    if (!adminEmail) {
+      toast.error('No admin email address found');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      const res = await (authClient as any).emailOtp.requestPasswordReset({
+        email: adminEmail,
+      });
+
+      if (res?.error) {
+        toast.error(res.error.message || 'Failed to send password reset code');
+      } else {
+        toast.success(`Password reset instructions sent to ${adminEmail}`);
+      }
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      toast.error(err.message || 'Failed to send password reset email');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 select-none">
       {/* HEADER & TAB SWITCHER */}
@@ -167,11 +324,11 @@ export default function AdminSettingsPage() {
           <div className="flex items-center gap-2.5">
             <Sliders size={26} className="text-[#FF4C00]" />
             <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white">
-              Subscription & Promo <span className="text-[#FF4C00]">Settings</span>
+              System <span className="text-[#FF4C00]">Settings</span>
             </h1>
           </div>
           <p className="text-xs md:text-sm text-zinc-400 mt-1 font-medium">
-            Configure streaming plan pricing, quality limits, and manage promotional discount codes.
+            Manage admin credentials, streaming plan pricing, quality limits, and promo codes.
           </p>
         </div>
 
@@ -199,6 +356,18 @@ export default function AdminSettingsPage() {
           >
             <Tag size={14} />
             <span>Promo Codes</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'profile'
+                ? 'bg-[#FF4C00] text-black font-extrabold shadow-sm'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <User size={14} />
+            <span>Admin Profile</span>
           </button>
         </div>
       </div>
@@ -343,7 +512,6 @@ export default function AdminSettingsPage() {
             </button>
           </div>
 
-          {/* Promo Codes Table */}
           <div className="bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="table w-full border-collapse">
@@ -450,6 +618,160 @@ export default function AdminSettingsPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: ADMIN PROFILE SETTINGS */}
+      {activeTab === 'profile' && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          <div className="bg-[#0E0E0E] border border-[#1A1A1A] rounded-2xl p-6 md:p-8 space-y-8">
+            {/* Header Badge */}
+            <div className="flex items-center justify-between border-b border-[#1A1A1A] pb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00]">
+                  <ShieldCheck size={26} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    <span>Admin Administrator Profile</span>
+                    <span className="px-2 py-0.5 rounded bg-[#FF4C00] text-black text-[10px] font-extrabold uppercase tracking-widest">
+                      SUPER ADMIN
+                    </span>
+                  </h2>
+                  <p className="text-xs text-zinc-400 mt-0.5 font-medium">
+                    Configure your admin avatar, system credentials, and account details in database.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveAdminProfile} className="space-y-8">
+              {/* Avatar Picker Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                    <User size={15} className="text-[#FF4C00]" />
+                    <span>Admin Avatar Customization</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#1E1E1E] border border-zinc-800 text-[11px] font-bold text-zinc-300 hover:text-white transition-all cursor-pointer">
+                    <Upload size={13} className="text-[#FF4C00]" />
+                    <span>{uploadingImage ? 'Uploading...' : 'Upload Custom Avatar'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCustomImageUpload}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Selected Preview & Presets Grid */}
+                <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-[#141414] border border-[#262626] rounded-2xl">
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#FF4C00] shadow-lg shadow-[#FF4C00]/20 shrink-0">
+                    <img src={adminAvatar} alt="Admin Avatar" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  </div>
+
+                  <div className="flex-1 w-full space-y-3">
+                    <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest block">
+                      Choose Preset Character Avatar:
+                    </span>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5 max-h-[140px] overflow-y-auto p-1 custom-scrollbar">
+                      {PRESET_AVATARS.map((avatar) => {
+                        const isSelected = adminAvatarId === avatar.id || adminAvatar === avatar.url;
+                        return (
+                          <div
+                            key={avatar.id}
+                            onClick={() => {
+                              setAdminAvatar(avatar.url);
+                              setAdminAvatarId(avatar.id);
+                            }}
+                            className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all border-2 ${
+                              isSelected
+                                ? 'border-[#FF4C00] scale-105 shadow-md shadow-[#FF4C00]/30 z-10'
+                                : 'border-transparent opacity-60 hover:opacity-100 hover:scale-102'
+                            }`}
+                            title={avatar.name}
+                          >
+                            <img src={avatar.url} alt={avatar.name} className="w-full h-full object-cover" />
+                            {isSelected && (
+                              <div className="absolute inset-0 bg-[#FF4C00]/20 flex items-center justify-center">
+                                <Check size={14} className="text-white drop-shadow-md" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Input Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Full Admin Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    placeholder="Admin Name"
+                    className="w-full bg-[#141414] border border-[#262626] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#FF4C00]/50 font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    Admin Email Address
+                  </label>
+                  <input
+                    type="email"
+                    disabled
+                    value={adminEmail}
+                    className="w-full bg-[#141414]/50 border border-[#262626] rounded-xl px-4 py-3 text-sm text-zinc-400 font-mono outline-none cursor-not-allowed"
+                  />
+                  <span className="text-[10px] text-zinc-600 block">System authentication email linked to Better-Auth</span>
+                </div>
+              </div>
+
+              {/* Save Admin Profile Button */}
+              <div className="flex items-center justify-end pt-4 border-t border-[#1A1A1A]">
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-6 py-3 rounded-xl bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#FF4C00]/10 flex items-center gap-2"
+                >
+                  {isSavingProfile ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+                  <span>Save Admin Profile</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Admin Security Section */}
+            <div className="pt-6 border-t border-[#1A1A1A] space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
+                <KeyRound size={15} className="text-[#FF4C00]" />
+                <span>Admin Password & Security</span>
+              </h3>
+              <p className="text-xs text-zinc-400 font-medium">
+                Need to update your admin access credentials? Send a secure 6-digit OTP password reset code to <strong className="text-white">{adminEmail}</strong>.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleSendAdminPasswordReset}
+                disabled={isSendingReset}
+                className="px-4 py-2.5 rounded-xl bg-[#141414] hover:bg-[#1E1E1E] border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center gap-2"
+              >
+                {isSendingReset ? <Loader2 size={14} className="animate-spin text-[#FF4C00]" /> : <KeyRound size={14} className="text-[#FF4C00]" />}
+                <span>Send Password Reset OTP Code</span>
+              </button>
             </div>
           </div>
         </div>

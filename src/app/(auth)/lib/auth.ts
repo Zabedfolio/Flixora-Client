@@ -237,6 +237,11 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         defaultValue: 'user'
+      },
+      status: {
+        type: 'string',
+        required: false,
+        defaultValue: 'active'
       }
     }
   },
@@ -251,6 +256,7 @@ export const auth = betterAuth({
               planId: (user as any).planId || '',
               plan: (user as any).plan || '',
               role: (user as any).role || 'user',
+              status: (user as any).status || 'active',
             },
           };
         },
@@ -265,9 +271,7 @@ export const auth = betterAuth({
               filter,
               { 
                 $set: { 
-                  planId: '',
-                  plan: '',
-                  role: 'user'
+                  status: (user as any).status || 'active'
                 } 
               }
             );
