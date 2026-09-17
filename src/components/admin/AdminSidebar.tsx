@@ -43,7 +43,6 @@ const NAV_ITEMS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
   { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' },
-  { id: 'home', label: 'Home Page', icon: Home, href: '/' },
 ];
 
 export default function AdminSidebar({
@@ -233,7 +232,8 @@ export default function AdminSidebar({
         {isProfileOpen && (
           <div className="absolute bottom-16 left-4 bg-[#0E0E0E] border border-[#1A1A1A] rounded-xl shadow-2xl p-2 w-48 z-50 flex flex-col gap-1">
             <Link
-              href="/admin/profile"
+              href="/admin/settings?tab=profile"
+              onClick={() => setIsProfileOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-950 transition-all"
             >
               <User size={14} className="text-[#FF4C00]" />

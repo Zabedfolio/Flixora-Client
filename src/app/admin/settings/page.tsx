@@ -82,6 +82,17 @@ export default function AdminSettingsPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
 
+  // Sync tab from URL query params
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'profile' || tab === 'promos' || tab === 'plans') {
+        setActiveTab(tab as any);
+      }
+    }
+  }, []);
+
   // Sync Admin Session Info
   useEffect(() => {
     if (session?.user) {

@@ -256,6 +256,14 @@ export default function Navbar({
     !isLoggingOut &&
     (Boolean(session?.user) || isKidsMode);
 
+  const userRole =
+    (session?.user as any)?.role ||
+    liveProfile?.role ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("flixora-session-role")
+      : null);
+  const isAdminUser = userRole === "admin" || pathname?.startsWith("/admin");
+
   const displayAvatar = isKidsMode
     ? activeKidsProfile?.avatar || "https://i.ibb.co/ZRCZZjZY/77a32760a782.png"
     : liveProfile?.image || session?.user?.image || "";
@@ -411,7 +419,7 @@ export default function Navbar({
                     ) : (
                       <>
                         <Link
-                          href="/dashboard/setting"
+                          href={isAdminUser ? "/admin/settings?tab=profile" : "/dashboard/setting"}
                           className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                           onClick={() => setIsProfileDropdownOpen(false)}
                         >
@@ -419,12 +427,12 @@ export default function Navbar({
                           <span>Profile Settings</span>
                         </Link>
                         <Link
-                          href="/dashboard"
+                          href={isAdminUser ? "/admin" : "/dashboard"}
                           className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                           onClick={() => setIsProfileDropdownOpen(false)}
                         >
                           <LayoutDashboard size={14} />
-                          <span>Dashboard</span>
+                          <span>{isAdminUser ? "Admin Dashboard" : "Dashboard"}</span>
                         </Link>
                       </>
                     )}
@@ -524,18 +532,18 @@ export default function Navbar({
                     ) : (
                       <>
                         <Link
-                          href="/profile"
+                          href={isAdminUser ? "/admin/settings?tab=profile" : "/dashboard/setting"}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                         >
-                          Profile
+                          Profile Settings
                         </Link>
                         <Link
-                          href="/dashboard"
+                          href={isAdminUser ? "/admin" : "/dashboard"}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="block w-full text-left px-4 py-2.5 text-sm rounded-lg text-[#E5E5E5] hover:bg-[#1A1A1A] hover:text-[#FF4C00] transition-colors"
                         >
-                          Dashboard
+                          {isAdminUser ? "Admin Dashboard" : "Dashboard"}
                         </Link>
                       </>
                     )}

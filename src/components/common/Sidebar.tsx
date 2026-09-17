@@ -69,7 +69,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics', roles: ['admin'] },
   { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions', roles: ['admin'] },
   { id: 'settings_admin', label: 'Settings', icon: Settings, href: '/admin/settings', roles: ['admin'] },
-  { id: 'home_admin', label: 'Home Page', icon: Home, href: '/', roles: ['admin'] },
 ];
 
 const getRoleDetails = (role: string) => {
