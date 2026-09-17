@@ -188,20 +188,22 @@ export default function Sidebar({ isOpen = false, onClose, forcedRole }: Sidebar
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('flixora-session-role');
-        window.dispatchEvent(new Event('auth-logout'));
       }
       useKidsStore.getState().setActiveKidsProfile(null);
       setLiveProfile(null);
 
       await authClient.signOut();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-logout'));
+      }
       toast.success('Logged out successfully!');
     } catch (error) {
       console.error('Logout failed:', error);
       toast.error('Something went wrong during logout.');
     } finally {
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('is_logging_out');
-        window.location.href = '/';
+        window.location.replace('/');
       }
     }
   };

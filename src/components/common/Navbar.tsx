@@ -56,7 +56,12 @@ export default function Navbar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMyListModalOpen, setIsMyListModalOpen] = useState(false);
   const [watchlistCount, setWatchlistCount] = useState(0);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("is_logging_out") === "true";
+    }
+    return false;
+  });
 
   // Exit Kids Mode PIN Modal state
   const [isExitPinModalOpen, setIsExitPinModalOpen] = useState(false);
@@ -79,6 +84,7 @@ export default function Navbar({
 
   useEffect(() => {
     const handleAuthLogout = () => {
+      setIsLoggingOut(true);
       setLiveProfile(null);
     };
     window.addEventListener("auth-logout", handleAuthLogout);
@@ -88,8 +94,28 @@ export default function Navbar({
   }, []);
 
   useEffect(() => {
-    const fetchLiveProfile = async () => {
+    if (!isPending) {
       if (!session?.user) {
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("is_logging_out");
+        }
+        setIsLoggingOut(false);
+        setLiveProfile(null);
+      } else if (
+        typeof window !== "undefined" &&
+        sessionStorage.getItem("is_logging_out") === "true"
+      ) {
+        authClient.signOut().catch(() => {});
+        setIsLoggingOut(true);
+      } else {
+        setIsLoggingOut(false);
+      }
+    }
+  }, [session, isPending]);
+
+  useEffect(() => {
+    const fetchLiveProfile = async () => {
+      if (isLoggingOut || !session?.user) {
         setLiveProfile(null);
         return;
       }
@@ -97,7 +123,7 @@ export default function Navbar({
         const res = await fetch("/api/user/profile");
         if (res.ok) {
           const data = await res.json();
-          if (data.user) {
+          if (data.user && !isLoggingOut) {
             setLiveProfile(data.user);
           } else {
             setLiveProfile(null);
@@ -111,7 +137,7 @@ export default function Navbar({
       }
     };
     fetchLiveProfile();
-  }, [session]);
+  }, [session, isLoggingOut]);
 
   useEffect(() => {
     const updateCount = () => {
@@ -172,9 +198,7 @@ export default function Navbar({
 
     try {
       // ১. Kids Store ক্লিয়ার
-      if (isKidsMode) {
-        useKidsStore.getState().setActiveKidsProfile(null);
-      }
+      useKidsStore.getState().setActiveKidsProfile(null);
 
       // ২. লোকাল স্টেট সাথে সাথে নাল করা যাতে UI সাথে সাথে Login Button দেখায়
       setLiveProfile(null);
@@ -196,10 +220,8 @@ export default function Navbar({
       toast.error("Something went wrong during logout.");
     } finally {
       if (typeof window !== "undefined") {
-        sessionStorage.removeItem("is_logging_out");
-        window.location.href = "/";
+        window.location.replace("/");
       }
-      setIsLoggingOut(false);
     }
   };
 
