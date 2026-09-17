@@ -19,8 +19,10 @@ import {
   Heart,
   ShieldAlert,
   Film as MovieIcon,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
+import { authClient } from "@/app/(auth)/lib/auth-client";
 
 interface MovieCard {
   id: number;
@@ -112,41 +114,67 @@ const FormattedMessage = ({ text }: { text: string }) => {
 };
 
 export default function AIChatbot() {
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
+  const userName = session?.user?.name;
+
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("flixora_chat_history");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          // ignore error
-        }
-      }
-    }
-    return [
-      {
-        id: "1",
-        sender: "bot",
-        text: "Welcome to Flixora AI Assistant. What movie, genre, or TV show are you looking for today?",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-    ];
-  });
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Sync history to localStorage & auto-scroll
+  const createInitialWelcome = (name?: string): ChatMessage => ({
+    id: "welcome-1",
+    sender: "bot",
+    text: name
+      ? `Welcome back, **${name}**! What movie, genre, or TV show are you looking for today?`
+      : "Welcome to Flixora AI Assistant. What movie, genre, or TV show are you looking for today?",
+    timestamp: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  });
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [createInitialWelcome()]);
+
+  // Load chat history dynamically when userId changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Purge legacy global key to prevent unauthenticated cross-user chat leaks
+    localStorage.removeItem("flixora_chat_history");
+
+    if (userId) {
+      const userKey = `flixora_chat_history_${userId}`;
+      const saved = localStorage.getItem(userKey);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+            return;
+          }
+        } catch (e) {
+          // ignore parse error
+        }
+      }
+      setMessages([createInitialWelcome(userName)]);
+    } else {
+      // User is logged out: reset messages state so previous user's chat is never visible
+      setMessages([createInitialWelcome()]);
+    }
+  }, [userId, userName]);
+
+  // Sync user-scoped history to localStorage & auto-scroll
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("flixora_chat_history", JSON.stringify(messages));
+      localStorage.removeItem("flixora_chat_history");
+      if (userId && messages.length > 0) {
+        localStorage.setItem(`flixora_chat_history_${userId}`, JSON.stringify(messages));
+      }
     }
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, isOpen]);
+  }, [messages, isTyping, isOpen, userId]);
 
   // Prevent background scrolling on mobile modal open
   useEffect(() => {
@@ -160,7 +188,7 @@ export default function AIChatbot() {
     };
   }, [isOpen]);
 
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     const initialMsg: ChatMessage[] = [
       {
         id: Date.now().toString(),
@@ -175,6 +203,16 @@ export default function AIChatbot() {
     setMessages(initialMsg);
     if (typeof window !== "undefined") {
       localStorage.removeItem("flixora_chat_history");
+      if (userId) {
+        localStorage.removeItem(`flixora_chat_history_${userId}`);
+        try {
+          await fetch(`/api/ai/chat?userId=${encodeURIComponent(userId)}`, {
+            method: "DELETE",
+          });
+        } catch (e) {
+          // ignore error
+        }
+      }
     }
   };
 
@@ -205,6 +243,7 @@ export default function AIChatbot() {
         body: JSON.stringify({
           query: query,
           prompt: query,
+          userId: userId || undefined,
           messages: messages.map((m) => ({
             sender: m.sender,
             text: m.text,
@@ -342,6 +381,23 @@ const formatPosterUrl = (path: string | null | undefined): string => {
               </button>
             </div>
           </div>
+
+          {/* Unauthenticated Guest User Banner */}
+          {!userId && (
+            <div className="bg-[#FF4C00]/10 border-b border-[#FF4C00]/20 px-4 py-2 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-zinc-300 font-medium">
+                <Lock className="w-3.5 h-3.5 text-[#FF4C00] shrink-0" />
+                <span className="text-[11px] text-zinc-300">Log in to save your chat history & personalized picks.</span>
+              </div>
+              <Link
+                href="/auth/login"
+                onClick={() => setIsOpen(false)}
+                className="text-[10px] font-extrabold bg-[#FF4C00] hover:bg-[#ff6222] text-black px-2.5 py-1 rounded-md transition shrink-0 uppercase tracking-wider shadow-sm"
+              >
+                Log In
+              </Link>
+            </div>
+          )}
 
           {/* Chat Messages Body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-none">
