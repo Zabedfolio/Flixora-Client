@@ -244,7 +244,7 @@ export default function AIChatbot() {
         const loginRequiredMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           sender: "bot",
-          text: "🔒 **Authentication Required**\n\nYou need to be logged in to chat with Flixora AI and receive recommendations. Please log in to your account.",
+          text: "You need to be logged in to chat with Flixora AI and receive recommendations. Please log in to your account.",
           isLoginPrompt: true,
           timestamp: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -453,6 +453,12 @@ const formatPosterUrl = (path: string | null | undefined): string => {
                   >
                     {msg.sender === "bot" ? (
                       <>
+                        {msg.isLoginPrompt && (
+                          <div className="flex items-center gap-2 text-[#FF4C00] font-extrabold pb-2 border-b border-zinc-800/80 mb-2">
+                            <Lock className="w-4 h-4 shrink-0 text-[#FF4C00]" />
+                            <span className="text-xs uppercase tracking-wider">Authentication Required</span>
+                          </div>
+                        )}
                         <FormattedMessage text={msg.text} />
                         {msg.isLoginPrompt && (
                           <div className="pt-3">
