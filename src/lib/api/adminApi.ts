@@ -149,11 +149,11 @@ class AdminApiClient {
 
   // 1. Revenue Analytics
   public async getRevenueOverview(): Promise<RevenueOverviewData> {
-    const res = await this.request<{ success: boolean; data: RevenueOverviewData }>(
+    const raw = await this.request<any>(
       '/api/analytics/revenue-overview',
       '/api/admin/analytics'
     );
-    return res.data;
+    return raw?.data?.data || raw?.data || raw;
   }
 
   // 2. Transactions & Refunds
@@ -171,14 +171,48 @@ class AdminApiClient {
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
-    return await this.request<TransactionListResponse>(
+    const raw = await this.request<any>(
       `/api/transactions${queryString}`,
       `/api/admin/transactions${queryString}`
     );
+
+    // Extract transaction list safely from any backend response wrapper
+    const dataObj = raw?.data || raw;
+    const txArray: AdminTransaction[] = Array.isArray(dataObj)
+      ? dataObj
+      : Array.isArray(dataObj?.data)
+      ? dataObj.data
+      : Array.isArray(dataObj?.transactions)
+      ? dataObj.transactions
+      : Array.isArray(raw?.transactions)
+      ? raw.transactions
+      : [];
+
+    const pagination = dataObj?.pagination || raw?.pagination || {
+      total: txArray.length,
+      page: params.page || 1,
+      limit: params.limit || 10,
+      totalPages: Math.ceil(txArray.length / (params.limit || 10)) || 1,
+      hasMore: false,
+    };
+
+    const summary = dataObj?.summary || raw?.summary || {
+      totalRevenue: txArray.reduce((acc, t) => (t.status === 'success' ? acc + (t.amount || 0) : acc), 0),
+      successfulCount: txArray.filter((t) => t.status === 'success').length,
+      refundedCount: txArray.filter((t) => t.status === 'refunded').length,
+      failedCount: txArray.filter((t) => t.status === 'failed').length,
+    };
+
+    return {
+      success: true,
+      data: txArray,
+      pagination,
+      summary,
+    };
   }
 
   public async processRefund(transactionId: string, reason: string): Promise<AdminTransaction> {
-    const res = await this.request<{ success: boolean; data: AdminTransaction }>(
+    const res = await this.request<any>(
       `/api/transactions/${transactionId}/refund`,
       `/api/admin/transactions/${transactionId}/refund`,
       {
@@ -186,20 +220,24 @@ class AdminApiClient {
         body: JSON.stringify({ reason }),
       }
     );
-    return res.data;
+    return res?.data?.data || res?.data || res;
   }
 
   // 3. Subscription Plans CRUD
   public async getPlans(): Promise<AdminPlan[]> {
-    const res = await this.request<{ success: boolean; data: AdminPlan[] }>(
+    const res = await this.request<any>(
       '/api/plans',
       '/api/admin/plans'
     );
-    return res.data;
+    const dataObj = res?.data || res;
+    if (Array.isArray(dataObj)) return dataObj;
+    if (Array.isArray(dataObj?.plans)) return dataObj.plans;
+    if (Array.isArray(res?.plans)) return res.plans;
+    return [];
   }
 
   public async createPlan(plan: Partial<AdminPlan>): Promise<AdminPlan> {
-    const res = await this.request<{ success: boolean; data: AdminPlan }>(
+    const res = await this.request<any>(
       '/api/plans',
       '/api/admin/plans',
       {
@@ -207,11 +245,11 @@ class AdminApiClient {
         body: JSON.stringify(plan),
       }
     );
-    return res.data;
+    return res?.data?.data || res?.data || res;
   }
 
   public async updatePlan(id: string, plan: Partial<AdminPlan>): Promise<AdminPlan> {
-    const res = await this.request<{ success: boolean; data: AdminPlan }>(
+    const res = await this.request<any>(
       `/api/plans/${id}`,
       `/api/admin/plans/${id}`,
       {
@@ -219,31 +257,35 @@ class AdminApiClient {
         body: JSON.stringify(plan),
       }
     );
-    return res.data;
+    return res?.data?.data || res?.data || res;
   }
 
   public async deletePlan(id: string): Promise<boolean> {
-    const res = await this.request<{ success: boolean }>(
+    const res = await this.request<any>(
       `/api/plans/${id}`,
       `/api/admin/plans/${id}`,
       {
         method: 'DELETE',
       }
     );
-    return res.success;
+    return Boolean(res?.success);
   }
 
   // 4. Promo Codes CRUD
   public async getPromoCodes(): Promise<PromoCodeItem[]> {
-    const res = await this.request<{ success: boolean; data: PromoCodeItem[] }>(
+    const res = await this.request<any>(
       '/api/promo-codes',
       '/api/admin/promo-codes'
     );
-    return res.data;
+    const dataObj = res?.data || res;
+    if (Array.isArray(dataObj)) return dataObj;
+    if (Array.isArray(dataObj?.promoCodes)) return dataObj.promoCodes;
+    if (Array.isArray(res?.promoCodes)) return res.promoCodes;
+    return [];
   }
 
   public async createPromoCode(input: PromoCodeFormInput): Promise<PromoCodeItem> {
-    const res = await this.request<{ success: boolean; data: PromoCodeItem }>(
+    const res = await this.request<any>(
       '/api/promo-codes',
       '/api/admin/promo-codes',
       {
@@ -251,18 +293,18 @@ class AdminApiClient {
         body: JSON.stringify(input),
       }
     );
-    return res.data;
+    return res?.data?.data || res?.data || res;
   }
 
   public async deletePromoCode(id: string): Promise<boolean> {
-    const res = await this.request<{ success: boolean }>(
+    const res = await this.request<any>(
       `/api/promo-codes/${id}`,
       `/api/admin/promo-codes/${id}`,
       {
         method: 'DELETE',
       }
     );
-    return res.success;
+    return Boolean(res?.success);
   }
 }
 
