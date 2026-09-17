@@ -100,19 +100,14 @@ export default async function MovieDetailsPage({ params }: PageProps) {
     }
   }
 
-  // Fetch credits & videos if we have a valid resolved numerical TMDB ID
+  // Fetch credits & videos in parallel if we have a valid resolved numerical TMDB ID
   if (/^\d+$/.test(resolvedId)) {
-    try {
-      creditsData = await fetchFromTMDB<any>(`/movie/${resolvedId}/credits?language=en-US`);
-    } catch (error) {
-      // silent
-    }
-
-    try {
-      videosData = await fetchFromTMDB<any>(`/movie/${resolvedId}/videos?language=en-US`);
-    } catch (error) {
-      // silent
-    }
+    const [creditsRes, videosRes] = await Promise.allSettled([
+      fetchFromTMDB<any>(`/movie/${resolvedId}/credits?language=en-US`),
+      fetchFromTMDB<any>(`/movie/${resolvedId}/videos?language=en-US`),
+    ]);
+    if (creditsRes.status === 'fulfilled') creditsData = creditsRes.value;
+    if (videosRes.status === 'fulfilled') videosData = videosRes.value;
   }
 
   const posterUrl = movieData.poster_path
@@ -135,38 +130,40 @@ export default async function MovieDetailsPage({ params }: PageProps) {
     overview: movieData.overview || "No overview available.",
   };
 
-  // Record Watch History in MongoDB
+  // Record Watch History in MongoDB asynchronously (non-blocking for fast page render)
   if (authSession?.user?.id) {
-    try {
-      const { db } = await connectToDatabase();
-      const genreIds = Array.isArray(movieData.genres)
-        ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.id : null)).filter(Boolean)
-        : (Array.isArray(movieData.genre_ids) ? movieData.genre_ids : []);
+    const userId = authSession.user.id;
+    const genreIds = Array.isArray(movieData.genres)
+      ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.id : null)).filter(Boolean)
+      : (Array.isArray(movieData.genre_ids) ? movieData.genre_ids : []);
 
-      const genreNames = Array.isArray(movieData.genres)
-        ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.name : g)).filter(Boolean)
-        : [];
+    const genreNames = Array.isArray(movieData.genres)
+      ? movieData.genres.map((g: any) => (typeof g === 'object' ? g.name : g)).filter(Boolean)
+      : [];
 
-      await db.collection("history").updateOne(
-        { userId: authSession.user.id, movieId: resolvedId },
-        { 
-          $set: { 
-            title: movie.title,
-            poster: movie.poster,
-            year: movie.releaseDate,
-            duration: movie.runtime,
-            category: movie.genres[0] || 'Movie',
-            genres: genreNames.length > 0 ? genreNames : [movie.genres[0] || 'Movie'],
-            genreIds: genreIds,
-            tmdbId: resolvedId,
-            watchedDate: new Date()
-          } 
-        },
-        { upsert: true }
-      );
-    } catch (err) {
-      console.error("Error recording watch history:", err);
-    }
+    connectToDatabase()
+      .then(({ db }) => {
+        db.collection("history")
+          .updateOne(
+            { userId, movieId: resolvedId },
+            { 
+              $set: { 
+                title: movie.title,
+                poster: movie.poster,
+                year: movie.releaseDate,
+                duration: movie.runtime,
+                category: movie.genres[0] || 'Movie',
+                genres: genreNames.length > 0 ? genreNames : [movie.genres[0] || 'Movie'],
+                genreIds: genreIds,
+                tmdbId: resolvedId,
+                watchedDate: new Date()
+              } 
+            },
+            { upsert: true }
+          )
+          .catch((err: any) => console.error("Error recording watch history:", err));
+      })
+      .catch((err: any) => console.error("DB connection error for history:", err));
   }
 
   const cast = creditsData?.cast?.slice(0, 12).map((c: any) => ({
