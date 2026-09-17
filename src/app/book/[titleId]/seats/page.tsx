@@ -39,7 +39,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     }
   }, [isKidsMode, router]);
 
-  const [liveProfile, setLiveProfile] = useState<{ name?: string; email?: string } | null>(null);
+  const [liveProfile, setLiveProfile] = useState<{ id?: string; name?: string; email?: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/user/profile')
@@ -209,6 +209,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
 
       const userEmail = session?.user?.email || liveProfile?.email || '';
       const userName = session?.user?.name || liveProfile?.name || '';
+      const realUserId = session?.user?.id || liveProfile?.id || userId;
 
       const res = await fetch('/api/cinema/create-checkout-session', {
         method: 'POST',
@@ -226,7 +227,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           time: selectedTime,
           seatNumbers: selectedSeatIds,
           totalPrice,
-          userId,
+          userId: realUserId,
           userEmail,
           userName,
         }),
