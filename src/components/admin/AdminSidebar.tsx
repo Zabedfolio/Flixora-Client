@@ -43,7 +43,6 @@ const NAV_ITEMS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
   { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/admin/transactions' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' },
-  { id: 'home', label: 'Home Page', icon: Home, href: '/' },
 ];
 
 export default function AdminSidebar({
