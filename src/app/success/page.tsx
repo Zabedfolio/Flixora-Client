@@ -1,315 +1,255 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check, ShieldCheck, Tv, Mail, ArrowRight } from 'lucide-react';
-import { headers } from 'next/headers';
-import { ObjectId } from 'mongodb';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Check, ShieldCheck, Tv, Mail, ArrowRight, Loader2 } from 'lucide-react';
 
-import { stripe } from '@/app/(auth)/lib/stripe';
-import { auth } from '@/app/(auth)/lib/auth';
-import { connectToDatabase } from '@/lib/mongodb';
+function SuccessContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-export const dynamic = 'force-dynamic';
+  const sessionId = searchParams.get('session_id') || '';
+  const fromPlanParam = searchParams.get('from') || 'Basic';
+  const toPlanParam = searchParams.get('to') || 'Premium';
 
-interface SuccessProps {
-  searchParams: Promise<{
-    session_id?: string;
-    from?: string;
-    to?: string;
-  }>;
-}
-
-export default async function Success({ searchParams }: SuccessProps) {
-  const params = await searchParams;
-  const sessionId = params.session_id;
-
-  // -----------------------------------
-  // Validate session ID
-  // -----------------------------------
-  if (!sessionId) {
-    redirect('/cancel?error=Missing%20payment%20session%20ID');
-  }
-
-  // -----------------------------------
-  // Retrieve Stripe session
-  // -----------------------------------
-  let session;
-  try {
-    session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items', 'payment_intent', 'customer'],
-    });
-  } catch (error) {
-    console.error('Error fetching Stripe session:', error);
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Failed to verify payment session';
-    redirect(`/cancel?error=${encodeURIComponent(message)}`);
-  }
-
-  // -----------------------------------
-  // Stripe session validation
-  // -----------------------------------
-  if (session.status === 'open') {
-    redirect('/cancel?error=Payment%20session%20is%20still%20in%20progress');
-  }
-
-  if (session.status !== 'complete') {
-    redirect(
-      `/cancel?error=${encodeURIComponent(
-        `Subscription payment status is ${session.status}`,
-      )}`,
-    );
-  }
-
-  // -----------------------------------
-  // Fetch active user session details
-  // -----------------------------------
-  const authSession = await auth.api.getSession({
-    headers: await headers(),
+  const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(5);
+  const [details, setDetails] = useState<{
+    userName: string;
+    userEmail: string;
+    userAvatar: string | null;
+    fromPlanName: string;
+    toPlanName: string;
+    amountPaid: string;
+  }>({
+    userName: 'Subscriber',
+    userEmail: 'customer@flixora.tv',
+    userAvatar: null,
+    fromPlanName: fromPlanParam,
+    toPlanName: toPlanParam,
+    amountPaid: '$14.99',
   });
 
-  const userName = authSession?.user?.name || 'User';
-  const userAvatar = authSession?.user?.image || null;
+  // 1. Verify payment session via API
+  useEffect(() => {
+    let isMounted = true;
 
-  // -----------------------------------
-  // Retrieve plan details from DB
-  // -----------------------------------
-  const { db } = await connectToDatabase();
-  const plans = await db.collection('plans').find({}).toArray();
+    async function verifyPayment() {
+      try {
+        const res = await fetch('/api/payments/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            from: fromPlanParam,
+            to: toPlanParam,
+          }),
+        });
 
-  const fromPlanId = params.from || '';
-  const toPlanId = params.to || '';
-
-  const fromPlan = plans.find(
-    (p: any) =>
-      p.slug === fromPlanId ||
-      p._id.toString() === fromPlanId ||
-      p.name?.toLowerCase() === fromPlanId.toLowerCase(),
-  );
-  const toPlan = plans.find(
-    (p: any) =>
-      p.slug === toPlanId ||
-      p._id.toString() === toPlanId ||
-      p.name?.toLowerCase() === toPlanId.toLowerCase(),
-  );
-
-  const fromPlanName = fromPlan?.name || 'Basic';
-  const toPlanName = toPlan?.name || 'Premium';
-
-  // -----------------------------------
-  // Payment information
-  // -----------------------------------
-  const customerEmail =
-    session.customer_details?.email || authSession?.user?.email || 'Your Stripe billing email';
-  const lineItem = session.line_items?.data?.[0];
-  const totalAmountCents = session.amount_total ?? lineItem?.amount_total;
-  const amountPaid = totalAmountCents
-    ? `$${(totalAmountCents / 100).toFixed(2)}`
-    : '$14.99';
-
-  // -----------------------------------
-  // Update User Plan & Record Payment in MongoDB (with metadata fallback)
-  // -----------------------------------
-  const targetUserId = authSession?.user?.id || session.metadata?.userId;
-  const targetPlanKey = params.to || session.metadata?.planId || 'premium';
-
-  const resolvedPlan = plans.find(
-    (p: any) =>
-      p.slug === targetPlanKey ||
-      p._id.toString() === targetPlanKey ||
-      p.name?.toLowerCase().includes(targetPlanKey.toLowerCase()),
-  ) || toPlan;
-
-  if (resolvedPlan) {
-    try {
-      let filter: any = null;
-      if (targetUserId) {
-        filter = ObjectId.isValid(targetUserId)
-          ? { $or: [{ _id: new ObjectId(targetUserId) }, { _id: targetUserId }, { id: targetUserId }] }
-          : { $or: [{ _id: targetUserId }, { id: targetUserId }] };
-      } else if (customerEmail && customerEmail !== 'Your Stripe billing email') {
-        filter = { email: customerEmail };
-      }
-
-      if (filter) {
-        // 1. Update user active plan
-        const userDoc = await db.collection('user').findOneAndUpdate(
-          filter,
-          {
-            $set: {
-              planId: resolvedPlan._id.toString(),
-              plan: resolvedPlan.name,
-              updatedAt: new Date(),
-            },
-          },
-          { returnDocument: 'after' }
-        );
-
-        const finalUserId = userDoc?._id?.toString() || targetUserId || 'authenticated_user';
-
-        // 2. Log payment details in payments collection if not already recorded
-        const existingPayment = await db
-          .collection('payments')
-          .findOne({ stripeSessionId: sessionId });
-
-        if (!existingPayment) {
-          const invoiceNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
-
-          await db.collection('payments').insertOne({
-            userId: finalUserId,
-            userEmail: customerEmail !== 'Your Stripe billing email' ? customerEmail : (authSession?.user?.email || ''),
-            planId: resolvedPlan._id.toString(),
-            planName: resolvedPlan.name,
-            amount: amountPaid,
-            status: 'Paid',
-            stripeSessionId: sessionId,
-            invoiceId: invoiceNum,
-            createdAt: new Date(),
-          });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data && isMounted) {
+            setDetails({
+              userName: json.data.userName || 'Subscriber',
+              userEmail: json.data.userEmail || 'customer@flixora.tv',
+              userAvatar: json.data.userAvatar || null,
+              fromPlanName: json.data.fromPlanName || fromPlanParam,
+              toPlanName: json.data.toPlanName || toPlanParam,
+              amountPaid: json.data.amountPaid || '$14.99',
+            });
+          }
         }
+      } catch (err) {
+        console.error('Payment verification error:', err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    } catch (dbErr) {
-      console.error('Error updating user plan or recording payment:', dbErr);
     }
-  }
+
+    verifyPayment();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId, fromPlanParam, toPlanParam]);
+
+  // 2. Countdown timer to auto-redirect to dashboard
+  useEffect(() => {
+    if (loading) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          router.push('/dashboard');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [loading, router]);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans flex items-center justify-center pt-24 pb-12 px-4 relative select-none">
-      {/* Decorative background glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF4C00]/5 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-zinc-900/40 blur-[100px] rounded-full pointer-events-none" />
+    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden font-sans flex items-center justify-center pt-20 pb-12 px-4 relative select-none">
+      {/* Background Glow Effects */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF4C00]/10 blur-[140px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none" />
 
-      {/* Main Card */}
-      <main className="w-full max-w-md bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-6 shadow-[0_0_50px_rgba(255,76,0,0.04)] relative overflow-hidden flex flex-col items-center text-center">
-        {/* Neon border glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-gradient-to-r from-transparent via-[#FF4C00] to-transparent shadow-[0_0_20px_#FF4C00]" />
+      {/* Main Payment Success Card */}
+      <main className="w-full max-w-md bg-[#0A0A0A] border border-[#1A1A1A] rounded-3xl p-6 md:p-8 shadow-[0_0_60px_rgba(255,76,0,0.06)] relative overflow-hidden flex flex-col items-center text-center">
+        {/* Top Gradient Accent Line */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-[#FF4C00] to-transparent shadow-[0_0_20px_#FF4C00]" />
 
-        {/* Checkmark */}
-        <div className="w-14 h-14 rounded-xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] mb-4 relative animate-pulse shadow-[0_0_30px_rgba(255,76,0,0.1)]">
-          <Check size={26} strokeWidth={3} />
+        {/* Success Icon */}
+        <div className="w-16 h-16 rounded-2xl bg-[#FF4C00]/10 border border-[#FF4C00]/30 flex items-center justify-center text-[#FF4C00] mb-5 shadow-[0_0_30px_rgba(255,76,0,0.15)] shrink-0">
+          <Check size={30} strokeWidth={3} />
         </div>
 
-        {/* Heading */}
-        <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white mb-1.5">
-          Subscription Upgraded!
+        {/* Title & Description */}
+        <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white mb-2">
+          Payment Successful!
         </h1>
-        <p className="text-xs text-zinc-400 font-medium max-w-xs mb-4 leading-relaxed">
-          Your payment was processed successfully. Enjoy streaming in high
-          quality resolution!
+        <p className="text-xs text-zinc-400 font-medium max-w-xs mb-5 leading-relaxed">
+          Your subscription has been upgraded successfully. Welcome to Flixora Premium Streaming!
         </p>
 
-        {/* User Card */}
-        <div className="flex items-center gap-3 bg-[#111]/45 border border-zinc-900/60 px-4 py-2 rounded-xl mb-4 w-full max-w-xs justify-center">
-          {userAvatar ? (
+        {/* User Badge Chip */}
+        <div className="flex items-center gap-3 bg-[#121212] border border-[#222] px-4 py-2.5 rounded-xl mb-5 w-full max-w-xs justify-center">
+          {details.userAvatar ? (
             <Image
-              src={userAvatar}
-              alt={userName}
-              width={28}
-              height={28}
+              src={details.userAvatar}
+              alt={details.userName}
+              width={32}
+              height={32}
               className="rounded-full border border-[#FF4C00] object-cover shrink-0"
             />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-zinc-900 border border-[#FF4C00] flex items-center justify-center font-bold text-white text-[10px] shrink-0">
-              {userName.charAt(0).toUpperCase()}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF4C00] to-amber-500 flex items-center justify-center font-black text-black text-xs shrink-0">
+              {details.userName.charAt(0).toUpperCase()}
             </div>
           )}
-          <div className="flex flex-col text-left">
-            <span className="text-[7px] text-zinc-500 font-black uppercase tracking-wider">
-              Account User
+          <div className="flex flex-col text-left min-w-0">
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
+              Account Holder
             </span>
-            <span className="text-xs font-black text-white leading-tight">
-              {userName}
+            <span className="text-xs font-black text-white leading-tight truncate">
+              {details.userName}
             </span>
           </div>
         </div>
 
-        {/* Plan Upgrade Visual Flow */}
-        <div className="flex items-center justify-between gap-4 mb-4 bg-[#111] border border-zinc-900 p-3 rounded-xl w-full max-w-sm text-center">
+        {/* Upgrade Flow Badge */}
+        <div className="flex items-center justify-between gap-3 mb-5 bg-[#121212] border border-[#222] p-3 rounded-2xl w-full text-center">
           <div className="flex flex-col flex-1">
-            <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">
-              Previous Plan
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
+              Previous
             </span>
-            <span className="text-[11px] font-black text-zinc-400 mt-0.5 uppercase tracking-wide">
-              {fromPlanName}
+            <span className="text-xs font-black text-zinc-400 mt-0.5 uppercase tracking-wide">
+              {details.fromPlanName}
             </span>
           </div>
           <div className="text-[#FF4C00] flex items-center shrink-0">
-            <ArrowRight size={14} />
+            <ArrowRight size={16} strokeWidth={2.5} />
           </div>
           <div className="flex flex-col flex-1">
-            <span className="text-[8px] text-[#FF4C00] font-bold uppercase tracking-wider">
+            <span className="text-[9px] text-[#FF4C00] font-bold uppercase tracking-wider">
               Active Plan
             </span>
-            <span className="text-[11px] font-black text-white mt-0.5 uppercase tracking-wide">
-              {toPlanName}
+            <span className="text-xs font-black text-white mt-0.5 uppercase tracking-wide">
+              {details.toPlanName}
             </span>
           </div>
         </div>
 
-        {/* Subscription Details */}
-        <div className="w-full bg-[#111] border border-zinc-900 rounded-xl p-4 text-left flex flex-col gap-3 mb-6">
-          <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
-            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+        {/* Subscription Summary */}
+        <div className="w-full bg-[#121212] border border-[#222] rounded-2xl p-4 text-left flex flex-col gap-3.5 mb-6">
+          <div className="flex items-center justify-between border-b border-[#222] pb-2.5">
+            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">
               Billing Summary
             </span>
-            <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/25 text-[#FF4C00] text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
+            <span className="bg-[#FF4C00]/10 border border-[#FF4C00]/30 text-[#FF4C00] text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
               Active
             </span>
           </div>
 
-          {/* Plan Cost */}
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-900 flex items-center justify-center text-zinc-300 shrink-0">
-              <Tv size={15} />
+            <div className="w-9 h-9 rounded-xl bg-[#1A1A1A] border border-[#2B2B2B] flex items-center justify-center text-zinc-300 shrink-0">
+              <Tv size={16} />
             </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-black text-white uppercase tracking-wide">
-                Flixora {toPlanName} Plan
-              </span>
-              <span className="text-[10px] text-zinc-400 font-bold">
-                {amountPaid} / month
-              </span>
-            </div>
-          </div>
-
-          {/* Receipt Email */}
-          <div className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-900/60 p-2.5 rounded-lg">
-            <Mail size={13} className="text-zinc-500 shrink-0" />
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[8px] text-zinc-500 font-black uppercase tracking-wider">
-                Receipt Email
+              <span className="text-xs font-black text-white uppercase tracking-wide truncate">
+                Flixora {details.toPlanName}
               </span>
-              <span className="text-xs text-zinc-300 font-semibold truncate max-w-2xs">
-                {customerEmail}
+              <span className="text-[11px] text-zinc-400 font-bold">
+                {details.amountPaid} / month
               </span>
             </div>
           </div>
 
-          {/* Stripe Security */}
-          <div className="flex items-center gap-2 mt-0.5 text-[9px] font-bold text-zinc-500">
-            <ShieldCheck size={12} className="text-emerald-500 shrink-0" />
-            <span>Secured and powered by Stripe</span>
+          <div className="flex items-center gap-3 bg-[#181818] border border-[#2B2B2B] p-2.5 rounded-xl">
+            <Mail size={14} className="text-zinc-500 shrink-0" />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
+                Receipt Sent To
+              </span>
+              <span className="text-xs text-zinc-300 font-semibold truncate">
+                {details.userEmail}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1 text-[10px] font-bold text-zinc-500">
+            <ShieldCheck size={13} className="text-emerald-500 shrink-0" />
+            <span>Encrypted payment processed securely via Stripe</span>
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-2.5 w-full">
+        {/* Redirect Timer Notification */}
+        <div className="mb-6 flex items-center justify-center gap-2 text-xs font-semibold text-zinc-400 bg-[#141414] border border-[#222] px-4 py-2.5 rounded-full w-full">
+          <Loader2 size={14} className="animate-spin text-[#FF4C00] shrink-0" />
+          <span>
+            Redirecting to Dashboard in <strong className="text-[#FF4C00] font-mono text-sm">{countdown}s</strong>...
+          </span>
+        </div>
+
+        {/* Navigation Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
           <Link
             href="/dashboard"
-            className="flex-1 bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-[11px] uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#FF4C00]/10 outline-none"
+            className="flex-1 bg-[#FF4C00] hover:bg-[#E04300] text-black font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-[#FF4C00]/20 outline-none"
           >
-            Go To Dashboard
-            <ArrowRight size={12} strokeWidth={2.5} />
+            <span>Go To Dashboard</span>
+            <ArrowRight size={14} strokeWidth={2.5} />
           </Link>
           <Link
             href="/"
-            className="flex-1 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-950/40 text-zinc-300 font-bold text-[11px] uppercase tracking-wider py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center outline-none"
+            className="flex-1 bg-[#141414] hover:bg-[#1C1C1C] border border-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer flex items-center justify-center outline-none"
           >
-            Start Watching
+            <span>Start Watching</span>
           </Link>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center gap-3">
+          <Loader2 size={32} className="animate-spin text-[#FF4C00]" />
+          <span className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-widest">
+            Verifying Payment...
+          </span>
+        </div>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
   );
 }
