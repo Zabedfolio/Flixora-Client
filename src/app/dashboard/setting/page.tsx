@@ -29,6 +29,7 @@ import {
 import { toast } from "react-hot-toast";
 import { authClient } from "@/app/(auth)/lib/auth-client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Profile {
   _id: string;
@@ -205,8 +206,20 @@ export default function SettingsPage() {
     "profile" | "account" | "notifications" | "playback" | "privacy"
   >("profile");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
+  const router = useRouter();
   const { data: session } = authClient.useSession();
+
+  useEffect(() => {
+    const role =
+      (session?.user as any)?.role ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("flixora-session-role")
+        : null);
+    if (role === "admin") {
+      router.replace("/admin/settings?tab=profile");
+    }
+  }, [session, router]);
+
   const API_BASE = "";
 
   // Profile management states
