@@ -16,8 +16,6 @@ import {
   Filter,
 } from 'lucide-react';
 import { authClient } from '@/app/(auth)/lib/auth-client';
-import { toast } from 'react-hot-toast';
-
 export default function MyTicketsDashboardPage() {
   const { data: session } = authClient.useSession();
   const [tickets, setTickets] = useState<any[]>([]);
@@ -25,11 +23,27 @@ export default function MyTicketsDashboardPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'used'>('all');
   const [search, setSearch] = useState('');
 
+  const [liveProfile, setLiveProfile] = useState<{ id?: string; email?: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/user/profile')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          setLiveProfile(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
-      const userId = session?.user?.id || '';
-      const res = await fetch(`/api/cinema/tickets?userId=${encodeURIComponent(userId)}`);
+      const userId = session?.user?.id || liveProfile?.id || '';
+      const email = session?.user?.email || liveProfile?.email || '';
+      const res = await fetch(
+        `/api/cinema/tickets?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.tickets)) {
@@ -41,7 +55,7 @@ export default function MyTicketsDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, liveProfile]);
 
   useEffect(() => {
     fetchTickets();
@@ -180,13 +194,20 @@ export default function MyTicketsDashboardPage() {
                       <span>Showtime:</span>
                       <strong className="text-white">{t.time}</strong>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-start">
                       <span>Reserved Seats:</span>
-                      <strong className="text-[#FF4C00] font-mono">
+                      <strong
+                        className="text-[#FF4C00] font-mono text-right max-w-[170px] truncate"
+                        title={(() => {
+                          const seatArr = Array.isArray(t.seatNumbers) ? t.seatNumbers : Array.isArray(t.seats) ? t.seats : [];
+                          return seatArr.join(', ');
+                        })()}
+                      >
                         {(() => {
                           const seatArr = Array.isArray(t.seatNumbers) ? t.seatNumbers : Array.isArray(t.seats) ? t.seats : [];
-                          if (seatArr.length <= 2) return seatArr.join(', ');
-                          return `${seatArr.slice(0, 2).join(', ')} +${seatArr.length - 2}`;
+                          if (seatArr.length === 0) return 'N/A';
+                          if (seatArr.length <= 4) return seatArr.join(', ');
+                          return `${seatArr.slice(0, 3).join(', ')} (+${seatArr.length - 3})`;
                         })()}
                       </strong>
                     </div>
