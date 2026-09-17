@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const ticketId = searchParams.get('ticketId') || '';
-    const userId = searchParams.get('userId') || '';
+    const paramUserId = searchParams.get('userId') || '';
+    const paramEmail = searchParams.get('email') || '';
 
     const { db } = await connectToDatabase();
 
@@ -26,9 +27,14 @@ export async function GET(req: NextRequest) {
     let isUserAdmin = session?.user?.role === 'admin';
 
     if (session?.user?.id && !isUserAdmin) {
-      const dbUser = await db.collection('users').findOne({
-        $or: [{ id: session.user.id }, { email: session.user.email }],
-      });
+      const dbUser =
+        (await db.collection('user').findOne({
+          $or: [{ id: session.user.id }, { email: session.user.email }],
+        })) ||
+        (await db.collection('users').findOne({
+          $or: [{ id: session.user.id }, { email: session.user.email }],
+        }));
+
       if (dbUser?.role === 'admin') {
         isUserAdmin = true;
       }
@@ -60,8 +66,8 @@ export async function GET(req: NextRequest) {
             district: booking.district,
             date: booking.date,
             time: booking.time,
-            seats: booking.seatNumbers || [],
-            seatNumbers: booking.seatNumbers || [],
+            seats: booking.seatNumbers || booking.seats || [],
+            seatNumbers: booking.seatNumbers || booking.seats || [],
             totalPrice: booking.totalPrice,
             qrCode: `${origin}/verify/${booking.ticketId || ticketId}`,
             status: booking.status === 'confirmed' ? 'active' : booking.status,
@@ -110,26 +116,86 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, ticket });
     }
 
-    if (userId) {
-      // Search user tickets across `tickets` and `cinema_tickets`
-      let tickets = await db
-        .collection('tickets')
-        .find({ userId })
-        .sort({ createdAt: -1 })
-        .toArray();
+    // List user tickets logic
+    const candidateUserIds = Array.from(
+      new Set([paramUserId, currentUserId].filter(Boolean))
+    );
+    const candidateEmails = Array.from(
+      new Set([paramEmail, currentUserEmail].filter(Boolean))
+    );
 
-      if (tickets.length === 0) {
-        tickets = await db
-          .collection('cinema_tickets')
-          .find({ userId })
-          .sort({ createdAt: -1, purchaseDate: -1 })
-          .toArray();
-      }
+    const conditions: any[] = [];
+    candidateUserIds.forEach((uid) => {
+      conditions.push({ userId: uid });
+    });
+    candidateEmails.forEach((email) => {
+      conditions.push({
+        userEmail: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+      });
+    });
 
-      return NextResponse.json({ success: true, tickets });
+    if (conditions.length === 0) {
+      return NextResponse.json({ success: true, tickets: [] });
     }
 
-    return NextResponse.json({ success: false, message: 'Missing ticketId or userId' }, { status: 400 });
+    const query = { $or: conditions };
+
+    const [ticketsFromTickets, ticketsFromBookings, ticketsFromCinema] = await Promise.all([
+      db.collection('tickets').find(query).toArray(),
+      db.collection('bookings').find(query).toArray(),
+      db.collection('cinema_tickets').find(query).toArray(),
+    ]);
+
+    const ticketMap = new Map<string, any>();
+    const allDocs = [...ticketsFromTickets, ...ticketsFromBookings, ...ticketsFromCinema];
+
+    for (const doc of allDocs) {
+      const id = doc.ticketId || doc.bookingId;
+      if (!id) continue;
+
+      if (!ticketMap.has(id)) {
+        const seats = doc.seatNumbers || doc.seats || [];
+        const rawStatus = (doc.status || '').toLowerCase();
+        const status =
+          rawStatus === 'confirmed' || rawStatus === 'active'
+            ? 'Active'
+            : rawStatus === 'used'
+            ? 'Used'
+            : rawStatus === 'cancelled'
+            ? 'Cancelled'
+            : 'Active';
+
+        ticketMap.set(id, {
+          _id: doc._id?.toString(),
+          ticketId: id,
+          bookingId: doc.bookingId || id,
+          userId: doc.userId,
+          userName: doc.userName || 'Cinema Customer',
+          userEmail: doc.userEmail,
+          titleId: doc.titleId,
+          movieTitle: doc.movieTitle || 'Featured Cinema Movie',
+          moviePoster: doc.moviePoster || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500',
+          district: doc.district || doc.location || 'Dhaka',
+          hallName: doc.hallName || 'Star Cineplex',
+          hallAddress: doc.hallAddress || 'Dhaka, Bangladesh',
+          showtimeId: doc.showtimeId,
+          date: doc.date || '',
+          time: doc.time || '',
+          seats: seats,
+          seatNumbers: seats,
+          totalPrice: doc.totalPrice || 0,
+          qrCode: doc.qrCode || `http://localhost:3000/verify/${id}`,
+          status: status,
+          createdAt: doc.createdAt || doc.purchaseDate || new Date().toISOString(),
+        });
+      }
+    }
+
+    const tickets = Array.from(ticketMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    return NextResponse.json({ success: true, tickets });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
