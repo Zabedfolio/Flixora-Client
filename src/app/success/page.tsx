@@ -9,6 +9,8 @@ import { stripe } from '@/app/(auth)/lib/stripe';
 import { auth } from '@/app/(auth)/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 interface SuccessProps {
   searchParams: Promise<{
     session_id?: string;
@@ -34,7 +36,7 @@ export default async function Success({ searchParams }: SuccessProps) {
   let session;
   try {
     session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items', 'payment_intent'],
+      expand: ['line_items', 'payment_intent', 'customer'],
     });
   } catch (error) {
     console.error('Error fetching Stripe session:', error);
@@ -49,7 +51,7 @@ export default async function Success({ searchParams }: SuccessProps) {
   // Stripe session validation
   // -----------------------------------
   if (session.status === 'open') {
-    redirect('/');
+    redirect('/cancel?error=Payment%20session%20is%20still%20in%20progress');
   }
 
   if (session.status !== 'complete') {
@@ -83,13 +85,13 @@ export default async function Success({ searchParams }: SuccessProps) {
     (p: any) =>
       p.slug === fromPlanId ||
       p._id.toString() === fromPlanId ||
-      p.name.toLowerCase() === fromPlanId.toLowerCase(),
+      p.name?.toLowerCase() === fromPlanId.toLowerCase(),
   );
   const toPlan = plans.find(
     (p: any) =>
       p.slug === toPlanId ||
       p._id.toString() === toPlanId ||
-      p.name.toLowerCase() === toPlanId.toLowerCase(),
+      p.name?.toLowerCase() === toPlanId.toLowerCase(),
   );
 
   const fromPlanName = fromPlan?.name || 'Basic';
@@ -99,10 +101,11 @@ export default async function Success({ searchParams }: SuccessProps) {
   // Payment information
   // -----------------------------------
   const customerEmail =
-    session.customer_details?.email || 'Your Stripe billing email';
+    session.customer_details?.email || authSession?.user?.email || 'Your Stripe billing email';
   const lineItem = session.line_items?.data?.[0];
-  const amountPaid = lineItem?.amount_total
-    ? `$${(lineItem.amount_total / 100).toFixed(2)}`
+  const totalAmountCents = session.amount_total ?? lineItem?.amount_total;
+  const amountPaid = totalAmountCents
+    ? `$${(totalAmountCents / 100).toFixed(2)}`
     : '$14.99';
 
   // -----------------------------------
@@ -115,21 +118,23 @@ export default async function Success({ searchParams }: SuccessProps) {
     (p: any) =>
       p.slug === targetPlanKey ||
       p._id.toString() === targetPlanKey ||
-      p.name.toLowerCase().includes(targetPlanKey.toLowerCase()),
+      p.name?.toLowerCase().includes(targetPlanKey.toLowerCase()),
   ) || toPlan;
 
-  if (targetUserId && resolvedPlan) {
+  if (resolvedPlan) {
     try {
-      let filter: any = {};
-      if (ObjectId.isValid(targetUserId)) {
-        filter = { _id: new ObjectId(targetUserId) };
+      let filter: any = null;
+      if (targetUserId) {
+        filter = ObjectId.isValid(targetUserId)
+          ? { $or: [{ _id: new ObjectId(targetUserId) }, { _id: targetUserId }, { id: targetUserId }] }
+          : { $or: [{ _id: targetUserId }, { id: targetUserId }] };
       } else if (customerEmail && customerEmail !== 'Your Stripe billing email') {
         filter = { email: customerEmail };
       }
 
-      if (filter._id || filter.email) {
-        // 1. Update user active planId
-        await db.collection('user').updateOne(
+      if (filter) {
+        // 1. Update user active plan
+        const userDoc = await db.collection('user').findOneAndUpdate(
           filter,
           {
             $set: {
@@ -138,18 +143,24 @@ export default async function Success({ searchParams }: SuccessProps) {
               updatedAt: new Date(),
             },
           },
+          { returnDocument: 'after' }
         );
+
+        const finalUserId = userDoc?._id?.toString() || targetUserId || 'authenticated_user';
 
         // 2. Log payment details in payments collection if not already recorded
         const existingPayment = await db
           .collection('payments')
           .findOne({ stripeSessionId: sessionId });
+
         if (!existingPayment) {
           const invoiceNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
 
           await db.collection('payments').insertOne({
-            userId: targetUserId,
+            userId: finalUserId,
+            userEmail: customerEmail !== 'Your Stripe billing email' ? customerEmail : (authSession?.user?.email || ''),
             planId: resolvedPlan._id.toString(),
+            planName: resolvedPlan.name,
             amount: amountPaid,
             status: 'Paid',
             stripeSessionId: sessionId,

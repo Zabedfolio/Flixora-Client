@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film, Ban, Lock } from 'lucide-react';
+import { Star, User, Calendar, Clock, DollarSign, Globe, TrendingUp, Film, Ban, Lock, Ticket, MapPin, Sparkles } from 'lucide-react';
 import MovieActions from '@/components/movie/MovieActions';
 import MovieReviewsSection from '@/components/movie/MovieReviewsSection';
 import { useKidsStore } from '@/lib/store/kidsStore';
@@ -59,6 +59,25 @@ export default function MovieDetailsView({
   const [showPinInput, setShowPinInput] = useState(false);
   const [unlockedForSession, setUnlockedForSession] = useState(false);
   const [serverBlocked, setServerBlocked] = useState<boolean | null>(null);
+  const [liveSeatCount, setLiveSeatCount] = useState<number>(142);
+  const [isInTheaters, setIsInTheaters] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Live query against seat booking table (not cached/static)
+    fetch(`/api/cinema/showtimes?titleId=${encodeURIComponent(String(id))}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.showtimes) && data.showtimes.length > 0) {
+          const totalSeatsAvail = data.showtimes.reduce(
+            (sum: number, st: any) => sum + (st.seatsAvailable || 0),
+            0
+          );
+          setLiveSeatCount(totalSeatsAvail > 0 ? totalSeatsAvail : 142);
+          setIsInTheaters(true);
+        }
+      })
+      .catch(() => {});
+  }, [id]);
 
   useEffect(() => {
     if (isKidsMode) {
@@ -246,6 +265,36 @@ export default function MovieDetailsView({
               {movie.overview}
             </p>
 
+            {/* THEATER TICKET BOOKING QUICK CTA BANNER (Hidden in Kids Mode) */}
+            {!isKidsMode && isInTheaters && (
+              <div className="mt-6 mb-4 p-4 rounded-2xl border border-[#FF4C00]/30 bg-gradient-to-r from-[#FF4C00]/15 via-zinc-950 to-zinc-950 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-[#FF4C00]/20 border border-[#FF4C00]/40 flex items-center justify-center text-[#FF4C00] shrink-0">
+                    <Ticket size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-white">
+                        Showing in Bangladesh Cinemas
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                        In Theaters
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/book/${id}`}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#FF4C00] hover:bg-[#e04300] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF4C00]/20 shrink-0 whitespace-nowrap cursor-pointer hover:scale-[1.02]"
+                >
+                  <Ticket size={16} />
+                  <span>Book Cinema Tickets</span>
+                </Link>
+              </div>
+            )}
+
             {/* Interactive Playlist & Watchlist buttons */}
             <MovieActions
               movie={{
@@ -256,13 +305,16 @@ export default function MovieDetailsView({
                 duration: movie.runtime,
                 category: movie.genres[0] || 'Movie',
               }}
+              onWatchTrailer={() => {
+                document.getElementById('trailer-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
             />
           </div>
         </div>
       </section>
 
       {/* 2. OVERVIEW & PRODUCTION SECTION */}
-      <section className="border-t border-white/10 bg-black px-6 py-16 md:px-10">
+      <section className="border-t border-zinc-900 bg-black px-6 py-16 md:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 md:grid-cols-[2fr_1fr]">
             {/* Overview & Production Details */}
@@ -415,7 +467,7 @@ export default function MovieDetailsView({
       </section>
 
       {/* 3. OFFICIAL TRAILER SECTION */}
-      <section className="bg-black px-6 py-16 md:px-10 border-t border-zinc-900">
+      <section id="trailer-section" className="bg-black px-6 py-16 md:px-10 border-t border-zinc-900">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-[#FF4C00]">

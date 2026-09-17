@@ -34,20 +34,39 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .toArray();
 
+    // Retrieve plans to resolve friendly plan names if not stored directly
+    const plans = await db.collection('plans').find({}).toArray();
+    const plansMap = new Map<string, string>();
+    plans.forEach((p: any) => {
+      if (p._id) plansMap.set(p._id.toString(), p.name);
+      if (p.slug) plansMap.set(p.slug.toLowerCase(), p.name);
+    });
+
     // Map database fields to the frontend BillingRecord format
-    const formattedPayments = payments.map((p: any) => ({
-      _id: p._id.toString(),
-      id: p._id.toString(),
-      userId: p.userId,
-      date: p.createdAt
-        ? new Date(p.createdAt).toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0],
-      amount: p.amount,
-      status: p.status,
-      planId: p.planId,
-      invoiceId:
-        p.invoiceId || `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
-    }));
+    const formattedPayments = payments.map((p: any) => {
+      const resolvedPlanName =
+        p.planName ||
+        plansMap.get(p.planId) ||
+        plansMap.get(String(p.planId || '').toLowerCase()) ||
+        (p.planId ? String(p.planId).charAt(0).toUpperCase() + String(p.planId).slice(1) : 'Premium');
+
+      return {
+        _id: p._id.toString(),
+        id: p._id.toString(),
+        userId: p.userId,
+        userEmail: p.userEmail,
+        date: p.createdAt
+          ? new Date(p.createdAt).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0],
+        amount: p.amount,
+        status: p.status || 'Paid',
+        planId: p.planId,
+        planName: resolvedPlanName,
+        paymentMethod: p.paymentMethod || 'Visa •••• 4242',
+        invoiceId:
+          p.invoiceId || `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
+      };
+    });
 
     return NextResponse.json({
       success: true,

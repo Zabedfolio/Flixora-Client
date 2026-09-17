@@ -263,8 +263,14 @@ export default function SettingsPage() {
   useEffect(() => {
     if (session?.user) {
       setSelectedRole((session.user as any).role || "user");
+      if (session.user.email) {
+        setEmail(session.user.email);
+      }
+      if (session.user.name && !editName) {
+        setEditName(session.user.name);
+      }
     }
-  }, [session]);
+  }, [session, editName]);
 
   const updateRole = async () => {
     if (
@@ -298,12 +304,13 @@ export default function SettingsPage() {
           if (res.ok) {
             const data = await res.json();
             if (data.length === 0) {
+              const defaultName = session.user.name || "Primary Account";
               const createRes = await fetch(`${API_BASE}/api/profiles`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   userId: session.user.id,
-                  name: session.user.name || "Primary Account",
+                  name: defaultName,
                   avatar: PRESET_AVATARS[0].url,
                   avatarId: PRESET_AVATARS[0].id,
                 }),
@@ -311,21 +318,33 @@ export default function SettingsPage() {
               if (createRes.ok) {
                 const newProf = await createRes.json();
                 setProfiles([newProf]);
-                setEditName(newProf.name);
+                setEditName(newProf.name || defaultName);
                 setEditAvatar(newProf.avatar);
                 setEditAvatarId(newProf.avatarId || PRESET_AVATARS[0].id);
+              } else {
+                setEditName(defaultName);
               }
             } else {
               setProfiles(data);
               if (data.length > 0) {
-                setEditName(data[0].name);
+                const resolvedName = (data[0].name && data[0].name !== "Primary Account")
+                  ? data[0].name
+                  : (session.user.name || data[0].name || "Primary Account");
+                setEditName(resolvedName);
                 setEditAvatar(data[0].avatar);
                 setEditAvatarId(data[0].avatarId || PRESET_AVATARS[0].id);
               }
             }
+          } else {
+            if (session.user.name) {
+              setEditName(session.user.name);
+            }
           }
         } catch (error) {
           console.error("Failed to load profiles:", error);
+          if (session.user.name) {
+            setEditName(session.user.name);
+          }
         }
       };
 
@@ -464,27 +483,15 @@ export default function SettingsPage() {
 
     setIsChangingPassword(true);
     try {
-      let res = await (authClient as any).emailOtp.resetPassword({
+      const res = await (authClient as any).emailOtp.resetPassword({
         email: email,
         otp: passwordOtpInput.trim(),
         password: newPasswordInput.trim(),
       });
 
       if (res?.error) {
-        const apiRes = await fetch("/api/user/change-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            newPassword: newPasswordInput.trim(),
-          }),
-        });
-        const apiData = await apiRes.json();
-        if (!apiRes.ok || !apiData.success) {
-          toast.error(
-            res.error.message || apiData.message || "Failed to reset password.",
-          );
-          return;
-        }
+        toast.error(res.error.message || "YOU PUT WRONG OTP");
+        return;
       }
 
       toast.success("Password updated successfully!");
@@ -602,7 +609,8 @@ export default function SettingsPage() {
   // Inline Profile Update Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editName.trim()) {
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
       toast.error("Name cannot be empty");
       return;
     }
@@ -613,6 +621,33 @@ export default function SettingsPage() {
     }
 
     try {
+      // 1. Update primary user document in MongoDB user collection
+      const userProfileRes = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: trimmedName,
+          image: editAvatar,
+          avatarId: editAvatarId,
+        }),
+      });
+
+      if (!userProfileRes.ok) {
+        console.warn("MongoDB /api/user/profile PATCH returned non-OK status");
+      }
+
+      // 2. Update Better Auth session client user object
+      try {
+        if ((authClient as any).updateUser) {
+          await (authClient as any).updateUser({
+            name: trimmedName,
+          });
+        }
+      } catch (authErr) {
+        console.warn("Better Auth updateUser notice:", authErr);
+      }
+
+      // 3. Update or create profile in /api/profiles collection
       let currentProfId = profiles[0]?._id;
 
       if (!currentProfId) {
@@ -621,7 +656,7 @@ export default function SettingsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: session.user.id,
-            name: editName.trim(),
+            name: trimmedName,
             avatar: editAvatar,
             avatarId: editAvatarId,
           }),
@@ -629,6 +664,7 @@ export default function SettingsPage() {
         if (createRes.ok) {
           const newProf = await createRes.json();
           currentProfId = newProf._id;
+          setProfiles([newProf]);
         }
       }
 
@@ -637,24 +673,23 @@ export default function SettingsPage() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: editName.trim(),
+            name: trimmedName,
             avatar: editAvatar,
             avatarId: editAvatarId,
           }),
         });
 
-        if (!res.ok) {
-          throw new Error("Failed to update profile details");
+        if (res.ok) {
+          const updatedProfile = await res.json();
+          setProfiles([updatedProfile]);
         }
-
-        const updatedProfile = await res.json();
-        setProfiles([updatedProfile]);
       }
 
       const roleOk = await updateRole();
 
       if (roleOk) {
         triggerAutoSaveToast("Profile settings");
+        toast.success("Profile saved successfully!");
       }
     } catch (error: any) {
       console.error("Failed to save profile settings:", error);
@@ -973,7 +1008,7 @@ export default function SettingsPage() {
                       setEmailStep("input");
                       setIsEmailModalOpen(true);
                     }}
-                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
+                    className="border border-zinc-800 hover:border-[#FF4C00]/60 text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
                   >
                     Change Email
                   </button>
@@ -1006,7 +1041,7 @@ export default function SettingsPage() {
                       setConfirmPasswordInput("");
                       setIsPasswordModalOpen(true);
                     }}
-                    className="border border-zinc-700 hover:border-white text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
+                    className="border border-zinc-800 hover:border-[#FF4C00]/60 text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-xl transition-all cursor-pointer outline-none shrink-0"
                   >
                     Change Password
                   </button>

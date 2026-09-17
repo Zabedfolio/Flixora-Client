@@ -139,55 +139,53 @@ export default function HeroBanner() {
   };
 
   const runAiSearch = async (query: string) => {
-  const trimmed = query.trim();
+    const trimmed = query.trim();
 
-  if (!trimmed) {
-    return;
-  }
-
-  pauseAutoPlay();
-  setAiLoading(true);
-  setAiResult(null);
-
-  try {
-    const serverUrl = getServerUrl();
-    const response = await fetch(`${serverUrl}/api/ai/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: trimmed,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to get AI recommendation");
+    if (!trimmed) {
+      return;
     }
 
-    const result = await response.json();
-    console.log("AI Search Result:", result);
+    pauseAutoPlay();
+    setAiLoading(true);
+    setAiResult(null);
 
-    // Safe extraction & state update matching AiChatResult interface
-    const extractedMovies = Array.isArray(result.data?.movies)
-      ? result.data.movies
-      : Array.isArray(result.movies)
-      ? result.movies
-      : [];
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: trimmed,
+          prompt: trimmed,
+        }),
+      });
 
-    setAiResult({
-      movies: extractedMovies,
-    });
-  } catch (error) {
-    console.error("AI recommendation error:", error);
+      if (!response.ok) {
+        throw new Error("Failed to get AI recommendation");
+      }
 
-    setAiResult({
-      movies: [],
-    });
-  } finally {
-    setAiLoading(false);
-  }
-};
+      const result = await response.json();
+      console.log("Hero Banner AI Search Result:", result);
+
+      const extractedMovies = Array.isArray(result.movies)
+        ? result.movies
+        : Array.isArray(result.data?.movies)
+        ? result.data.movies
+        : [];
+
+      setAiResult({
+        movies: extractedMovies,
+      });
+    } catch (error) {
+      console.error("AI recommendation error:", error);
+      setAiResult({
+        movies: [],
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -282,7 +280,7 @@ export default function HeroBanner() {
 
           <form
             onSubmit={handleAiSubmit}
-            className="flex items-center gap-2 rounded-2xl border border-white/20 bg-[#000000]/60 p-2.5 backdrop-blur-lg focus-within:border-[#FF4C00] focus-within:shadow-[0_0_20px_rgba(255,76,0,0.25)] transition-all duration-300"
+            className="flex items-center gap-2 rounded-2xl border border-zinc-800/80 bg-[#000000]/60 p-2.5 backdrop-blur-lg focus-within:border-[#FF4C00] focus-within:shadow-[0_0_20px_rgba(255,76,0,0.25)] transition-all duration-300"
           >
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#FF4C00]/15 border border-[#FF4C00]/30">
               <Bot size={16} className="text-[#FF4C00]" />
@@ -361,7 +359,7 @@ export default function HeroBanner() {
         type="button"
         onClick={goToPreviousSlide}
         aria-label="Previous slide"
-        className="absolute left-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white transition-all duration-300 hover:scale-110 hover:border-transparent hover:bg-[#FF4C00] md:flex"
+        className="absolute left-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-800 bg-black/60 text-white transition-all duration-300 hover:scale-110 hover:border-transparent hover:bg-[#FF4C00] md:flex"
       >
         <ChevronLeft size={24} />
       </button>
@@ -371,7 +369,7 @@ export default function HeroBanner() {
         type="button"
         onClick={goToNextSlide}
         aria-label="Next slide"
-        className="absolute right-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white transition-all duration-300 hover:scale-110 hover:border-transparent hover:bg-[#FF4C00] md:flex"
+        className="absolute right-6 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-800 bg-black/60 text-white transition-all duration-300 hover:scale-110 hover:border-transparent hover:bg-[#FF4C00] md:flex"
       >
         <ChevronRight size={24} />
       </button>

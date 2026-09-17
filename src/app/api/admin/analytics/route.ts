@@ -1,10 +1,30 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { connectToDatabase } from '@/lib/mongodb';
+import { auth } from '@/app/(auth)/lib/auth';
 
 // Live: https://flixora-server.vercel.app
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export async function GET() {
+  try {
+    const authSession = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!authSession || !authSession.user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized: Authentication required.' },
+        { status: 401 }
+      );
+    }
+
+    if (authSession.user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, message: 'Forbidden: Admin access required.' },
+        { status: 403 }
+      );
+    }
   // 1. Try Express backend first
   try {
     const backendRes = await fetch(`${SERVER_URL}/api/analytics/revenue-overview`, {
@@ -124,4 +144,11 @@ export async function GET() {
       { status: 500 }
     );
   }
+} catch (outerErr: any) {
+  console.error('Error in /api/admin/analytics auth:', outerErr);
+  return NextResponse.json(
+    { success: false, message: outerErr.message || 'Internal Server Error' },
+    { status: 500 }
+  );
+}
 }

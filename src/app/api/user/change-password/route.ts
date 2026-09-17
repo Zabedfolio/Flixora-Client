@@ -19,6 +19,13 @@ export async function POST(req: Request) {
 
     const { currentPassword, newPassword } = await req.json();
 
+    if (!currentPassword) {
+      return NextResponse.json(
+        { success: false, message: 'Current password is required to change password.' },
+        { status: 400 }
+      );
+    }
+
     if (!newPassword || newPassword.trim().length < 8) {
       return NextResponse.json(
         { success: false, message: 'New password must be at least 8 characters long.' },
