@@ -265,8 +265,8 @@ export default function MovieDetailsView({
               {movie.overview}
             </p>
 
-            {/* PHYSICAL CINEMA HALL TICKET BOOKING BANNER */}
-            {isInTheaters && (
+            {/* THEATER TICKET BOOKING QUICK CTA BANNER (Hidden in Kids Mode) */}
+            {!isKidsMode && isInTheaters && (
               <div className="mt-6 mb-4 p-4 rounded-2xl border border-[#FF4C00]/30 bg-gradient-to-r from-[#FF4C00]/15 via-zinc-950 to-zinc-950 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div className="w-11 h-11 rounded-xl bg-[#FF4C00]/20 border border-[#FF4C00]/40 flex items-center justify-center text-[#FF4C00] shrink-0">
@@ -304,6 +304,9 @@ export default function MovieDetailsView({
                 year: movie.releaseDate,
                 duration: movie.runtime,
                 category: movie.genres[0] || 'Movie',
+              }}
+              onWatchTrailer={() => {
+                document.getElementById('trailer-section')?.scrollIntoView({ behavior: 'smooth' });
               }}
             />
           </div>
@@ -464,7 +467,7 @@ export default function MovieDetailsView({
       </section>
 
       {/* 3. OFFICIAL TRAILER SECTION */}
-      <section className="bg-black px-6 py-16 md:px-10 border-t border-zinc-900">
+      <section id="trailer-section" className="bg-black px-6 py-16 md:px-10 border-t border-zinc-900">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-[#FF4C00]">

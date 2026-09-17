@@ -42,6 +42,19 @@ export async function requireUserAuth() {
       ),
     };
   }
+
+  const status = (session.user as any).status;
+  if (status === 'suspended' || status === 'banned') {
+    return {
+      user: null,
+      session: null,
+      response: NextResponse.json(
+        { success: false, message: `Forbidden: Account is ${status}.` },
+        { status: 403 }
+      ),
+    };
+  }
+
   return {
     user: session.user as AuthenticatedUser,
     session,
@@ -62,6 +75,18 @@ export async function requireAdminAuth() {
       response: NextResponse.json(
         { success: false, message: 'Unauthorized: Authentication required.' },
         { status: 401 }
+      ),
+    };
+  }
+
+  const status = (session.user as any).status;
+  if (status === 'suspended' || status === 'banned') {
+    return {
+      user: null,
+      session: null,
+      response: NextResponse.json(
+        { success: false, message: `Forbidden: Account is ${status}.` },
+        { status: 403 }
       ),
     };
   }

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { authClient } from '@/app/(auth)/lib/auth-client';
 import { toast } from 'react-hot-toast';
+import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface SeatsPageProps {
   params: Promise<{ titleId: string }>;
@@ -29,6 +30,14 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = authClient.useSession();
+  const { isKidsMode } = useKidsStore();
+
+  useEffect(() => {
+    if (isKidsMode) {
+      toast.error('Ticket booking is restricted in Kids Mode.');
+      router.replace('/');
+    }
+  }, [isKidsMode, router]);
 
   const [liveProfile, setLiveProfile] = useState<{ name?: string; email?: string } | null>(null);
 

@@ -10,6 +10,7 @@ import {
 } from '@/data/watchlistStore';
 import { PlaylistItem } from '@/components/playlist/PlaylistCard';
 import AddToPlaylistModal from '@/components/playlist/AddToPlaylistModal';
+import WatchDisclaimerModal from '@/components/movie/WatchDisclaimerModal';
 import { useKidsStore } from '@/lib/store/kidsStore';
 
 interface MovieActionsProps {
@@ -21,12 +22,14 @@ interface MovieActionsProps {
     duration: string;
     category: string;
   };
+  onWatchTrailer?: () => void;
 }
 
-export default function MovieActions({ movie }: MovieActionsProps) {
+export default function MovieActions({ movie, onWatchTrailer }: MovieActionsProps) {
   const [inMyList, setInMyList] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
   // Kids Mode & Parental Block State
   const [hasKidsProfiles, setHasKidsProfiles] = useState(false);
@@ -175,9 +178,19 @@ export default function MovieActions({ movie }: MovieActionsProps) {
 
   return (
     <div className="mt-7 flex flex-wrap gap-3 relative">
-      <button className="flex items-center gap-2 rounded-lg bg-[#FF4C00] hover:bg-[#e64500] px-6 py-3 font-semibold text-white transition cursor-pointer">
+      <button 
+        onClick={() => setIsDisclaimerOpen(true)}
+        className="flex items-center gap-2 rounded-lg bg-[#FF4C00] hover:bg-[#e64500] px-6 py-3 font-semibold text-white transition cursor-pointer"
+      >
         <Play size={16} fill="currentColor" /> Watch Now
       </button>
+
+      <WatchDisclaimerModal
+        isOpen={isDisclaimerOpen}
+        onClose={() => setIsDisclaimerOpen(false)}
+        onWatchTrailer={onWatchTrailer}
+        movieTitle={movie.title}
+      />
 
       <button
         onClick={handleMyListToggle}

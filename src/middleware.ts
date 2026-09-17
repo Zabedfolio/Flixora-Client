@@ -37,6 +37,12 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(accessDeniedUrl);
         }
 
+        if (user.status === 'suspended' || user.status === 'banned') {
+          const accessDeniedUrl = new URL('/access-denied', request.url);
+          accessDeniedUrl.searchParams.set('reason', `account_${user.status}`);
+          return NextResponse.redirect(accessDeniedUrl);
+        }
+
         if (user.role !== 'admin') {
           // Logged-in non-admin trying to breach admin dashboard -> redirect to production-level access-denied page
           const accessDeniedUrl = new URL('/access-denied', request.url);
@@ -55,12 +61,38 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 2. USER DASHBOARD ROUTE PROTECTION (/dashboard and /dashboard/*)
-  if (pathname.startsWith('/dashboard')) {
+  // 2. USER DASHBOARD & DETAILS / BOOKING ROUTE PROTECTION (/dashboard, /movie/*, /book/*, /tickets/*)
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/movie/') ||
+    pathname.startsWith('/book') ||
+    pathname.startsWith('/tickets')
+  ) {
     if (!sessionToken) {
       const loginUrl = new URL('/auth/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    try {
+      const sessionRes = await fetch(new URL('/api/auth/get-session', request.url), {
+        headers: {
+          cookie: request.headers.get('cookie') || '',
+        },
+      });
+
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+        const user = sessionData?.user;
+
+        if (user && (user.status === 'suspended' || user.status === 'banned')) {
+          const accessDeniedUrl = new URL('/access-denied', request.url);
+          accessDeniedUrl.searchParams.set('reason', `account_${user.status}`);
+          return NextResponse.redirect(accessDeniedUrl);
+        }
+      }
+    } catch (err) {
+      console.error('[Middleware User Check Error]:', err);
     }
   }
 
@@ -90,7 +122,21 @@ export async function middleware(request: NextRequest) {
       const sessionData = await sessionRes.json();
       const user = sessionData?.user;
 
-      if (!user || user.role !== 'admin') {
+      if (!user) {
+        return NextResponse.json(
+          { success: false, message: 'Unauthorized: Session missing.' },
+          { status: 401 }
+        );
+      }
+
+      if (user.status === 'suspended' || user.status === 'banned') {
+        return NextResponse.json(
+          { success: false, message: `Forbidden: Account is ${user.status}.` },
+          { status: 403 }
+        );
+      }
+
+      if (user.role !== 'admin') {
         return NextResponse.json(
           { success: false, message: 'Forbidden: Admin access required.' },
           { status: 403 }

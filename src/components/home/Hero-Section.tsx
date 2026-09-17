@@ -139,55 +139,53 @@ export default function HeroBanner() {
   };
 
   const runAiSearch = async (query: string) => {
-  const trimmed = query.trim();
+    const trimmed = query.trim();
 
-  if (!trimmed) {
-    return;
-  }
-
-  pauseAutoPlay();
-  setAiLoading(true);
-  setAiResult(null);
-
-  try {
-    const serverUrl = getServerUrl();
-    const response = await fetch(`${serverUrl}/api/ai/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: trimmed,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to get AI recommendation");
+    if (!trimmed) {
+      return;
     }
 
-    const result = await response.json();
-    console.log("AI Search Result:", result);
+    pauseAutoPlay();
+    setAiLoading(true);
+    setAiResult(null);
 
-    // Safe extraction & state update matching AiChatResult interface
-    const extractedMovies = Array.isArray(result.data?.movies)
-      ? result.data.movies
-      : Array.isArray(result.movies)
-      ? result.movies
-      : [];
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: trimmed,
+          prompt: trimmed,
+        }),
+      });
 
-    setAiResult({
-      movies: extractedMovies,
-    });
-  } catch (error) {
-    console.error("AI recommendation error:", error);
+      if (!response.ok) {
+        throw new Error("Failed to get AI recommendation");
+      }
 
-    setAiResult({
-      movies: [],
-    });
-  } finally {
-    setAiLoading(false);
-  }
-};
+      const result = await response.json();
+      console.log("Hero Banner AI Search Result:", result);
+
+      const extractedMovies = Array.isArray(result.movies)
+        ? result.movies
+        : Array.isArray(result.data?.movies)
+        ? result.data.movies
+        : [];
+
+      setAiResult({
+        movies: extractedMovies,
+      });
+    } catch (error) {
+      console.error("AI recommendation error:", error);
+      setAiResult({
+        movies: [],
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleAiSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
