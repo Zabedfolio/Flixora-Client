@@ -24,20 +24,31 @@ export async function fetchFromTMDB<T>(endpoint: string, options: RequestInit = 
     ? `${TMDB_BASE_URL}${endpoint}` 
     : `${TMDB_BASE_URL}${endpoint}${separator}${apiKeyQuery}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...headers,
-      ...options.headers,
-    },
-    next: { revalidate: 3600 }, // Cache response for 1 hour
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-  if (!response.ok) {
-    throw new Error(`TMDB API call failed: ${response.statusText} (${response.status})`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+      headers: {
+        ...headers,
+        ...options.headers,
+      },
+      next: { revalidate: 3600 }, // Cache response for 1 hour
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`TMDB API call failed: ${response.statusText} (${response.status})`);
+    }
+
+    return (await response.json()) as T;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  return response.json() as Promise<T>;
 }
 
 export function getTMDBImageUrl(path: string | null, size: 'w200' | 'w400' | 'w500' | 'original' = 'w500'): string {

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import { PanelLeftOpen, ShieldCheck, ArrowUpRight, Bell, Loader2 } from 'lucide-react';
+import { PanelLeftOpen, ShieldCheck, ArrowUpRight, Bell, Loader2, Home } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authClient } from '@/app/(auth)/lib/auth-client';
@@ -115,13 +115,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </button>
             </div>
 
-            {/* Switch to User Portal Link */}
+            {/* Highlighted Home Navigation Link with ZM Gradient */}
             <Link
-              href="/dashboard"
-              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl border border-zinc-800 hover:border-[#FF4C00]/40 bg-zinc-950/40 transition-all font-semibold"
+              href="/"
+              className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-black px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF4C00] to-amber-500 shadow-[0_0_14px_rgba(255,76,0,0.45)] hover:shadow-[0_0_20px_rgba(255,76,0,0.65)] hover:brightness-110 active:scale-95 transition-all border border-amber-300/30"
             >
-              <span>User View</span>
-              <ArrowUpRight size={13} className="text-[#FF4C00]" />
+              <Home size={14} className="text-black stroke-[2.5]" />
+              <span>Home</span>
             </Link>
 
             {/* Admin Profile Chip */}
