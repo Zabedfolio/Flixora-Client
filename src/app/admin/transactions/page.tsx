@@ -57,12 +57,14 @@ export default function AdminTransactionsPage() {
         status: statusFilter === 'all' ? undefined : statusFilter,
       });
 
-      setTransactions(res.data || []);
-      setTotalPages(res.pagination.totalPages || 1);
-      setTotalCount(res.pagination.total || 0);
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setTransactions(list);
+      setTotalPages(res?.pagination?.totalPages || 1);
+      setTotalCount(res?.pagination?.total || list.length);
     } catch (err: any) {
       console.error('Failed to fetch transactions:', err);
       toast.error('Failed to load transaction history');
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
@@ -195,7 +197,7 @@ export default function AdminTransactionsPage() {
                     <span>Loading real-time transactions...</span>
                   </td>
                 </tr>
-              ) : transactions.length === 0 ? (
+              ) : !Array.isArray(transactions) || transactions.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-12 text-center text-zinc-500">
                     No transactions matching your criteria.

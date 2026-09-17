@@ -120,7 +120,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               href="/"
               className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-black px-4 py-1.5 rounded-full bg-gradient-to-r from-[#FF4C00] to-amber-500 shadow-[0_0_14px_rgba(255,76,0,0.45)] hover:shadow-[0_0_20px_rgba(255,76,0,0.65)] hover:brightness-110 active:scale-95 transition-all border border-amber-300/30"
             >
-              <Home size={14} className="text-black stroke-[2.5]" />
+              <Home size={14} strokeWidth={2.5} className="text-black" />
               <span>Home</span>
             </Link>
 
