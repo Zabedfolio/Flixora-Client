@@ -41,6 +41,7 @@ interface ChatMessage {
   text: string;
   options?: string[];
   movies?: MovieCard[];
+  isLoginPrompt?: boolean;
   timestamp: string;
 }
 
@@ -128,7 +129,8 @@ export default function AIChatbot() {
     sender: "bot",
     text: name
       ? `Welcome back, **${name}**! What movie, genre, or TV show are you looking for today?`
-      : "Welcome to Flixora AI Assistant. What movie, genre, or TV show are you looking for today?",
+      : "Welcome to Flixora AI Assistant! Please log in to chat with Flixora AI and get personalized movie recommendations.",
+    isLoginPrompt: !name,
     timestamp: new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
@@ -235,6 +237,25 @@ export default function AIChatbot() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
+
+    // Check if user is authenticated using useSession before generating an AI reply
+    if (!session?.user) {
+      setTimeout(() => {
+        const loginRequiredMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: "bot",
+          text: "🔒 **Authentication Required**\n\nYou need to be logged in to chat with Flixora AI and receive recommendations. Please log in to your account.",
+          isLoginPrompt: true,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        setMessages((prev) => [...prev, loginRequiredMsg]);
+        setIsTyping(false);
+      }, 350);
+      return;
+    }
 
     try {
       const response = await fetch("/api/ai/chat", {
@@ -431,7 +452,22 @@ const formatPosterUrl = (path: string | null | undefined): string => {
                     }`}
                   >
                     {msg.sender === "bot" ? (
-                      <FormattedMessage text={msg.text} />
+                      <>
+                        <FormattedMessage text={msg.text} />
+                        {msg.isLoginPrompt && (
+                          <div className="pt-3">
+                            <Link
+                              href="/auth/login"
+                              onClick={() => setIsOpen(false)}
+                              className="inline-flex items-center gap-2 bg-[#FF4C00] hover:bg-[#ff6222] text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(255,76,0,0.35)] uppercase tracking-wider group cursor-pointer"
+                            >
+                              <User className="w-4 h-4 text-black" />
+                              <span>Log In to Continue</span>
+                              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                            </Link>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       msg.text
                     )}
