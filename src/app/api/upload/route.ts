@@ -12,51 +12,53 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64String = buffer.toString("base64");
-    const mimeType = file.type || "image/png";
-
     const apiKey =
       process.env.IMGBB_API_KEY ||
       process.env.NEXT_PUBLIC_IMGBB_API_KEY ||
       "11a68652db5672d694741402f649a797";
 
+    // Direct ImgBB API Upload
     if (apiKey) {
       try {
-        const body = new URLSearchParams();
-        body.append("image", base64String);
+        const imgbbFormData = new FormData();
+        imgbbFormData.append("image", file);
 
         const imgbbRes = await fetch(
           `https://api.imgbb.com/1/upload?key=${apiKey}`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: body.toString(),
+            body: imgbbFormData,
           }
         );
 
         if (imgbbRes.ok) {
           const imgbbData = await imgbbRes.json();
           const imageUrl =
-            imgbbData.data?.display_url || imgbbData.data?.url;
+            imgbbData.data?.url || imgbbData.data?.display_url;
           if (imageUrl) {
             return NextResponse.json({
               success: true,
               url: imageUrl,
               display_url: imageUrl,
+              delete_url: imgbbData.data?.delete_url,
             });
           }
+        } else {
+          const errText = await imgbbRes.text().catch(() => "");
+          console.warn("ImgBB API returned non-OK status:", imgbbRes.status, errText);
         }
-      } catch (err) {
-        console.warn("ImgBB API upload failed, falling back to base64 Data URL:", err);
+      } catch (err: any) {
+        console.warn("ImgBB API upload exception:", err.message);
       }
     }
 
-    // Fallback: return base64 Data URL if ImgBB API fails or key is missing
+    // Base64 Data URL Fallback
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64String = buffer.toString("base64");
+    const mimeType = file.type || "image/png";
     const dataUrl = `data:${mimeType};base64,${base64String}`;
+
     return NextResponse.json({
       success: true,
       url: dataUrl,
@@ -64,7 +66,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Upload API route error:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to process upload" },
+      { success: false, error: error.message || "Failed to process image upload" },
       { status: 500 }
     );
   }
