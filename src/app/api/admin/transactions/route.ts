@@ -29,76 +29,52 @@ export async function GET(request: NextRequest) {
 
     const allRecords: any[] = [];
 
-    // Process 'transactions' collection
-    rawTxs.forEach((t: any) => {
-      const u = userMap.get(t.userId) || userMap.get((t.userEmail || '').toLowerCase());
-      const rawAmt = typeof t.amount === 'number' ? t.amount : parseFloat(String(t.amount || '0').replace(/[^0-9.]/g, ''));
-      const status = (t.status === 'Paid' || t.status === 'success') ? 'success' : (t.status === 'refunded' || t.status === 'Cancelled') ? 'refunded' : 'failed';
-      const rawDate = t.date || t.createdAt || new Date();
+    // Process 'payments' collection (Real Checkout Subscriptions)
+    rawPayments.forEach((p: any) => {
+      const u = userMap.get(p.userId ? String(p.userId) : '') || userMap.get((p.customerEmail || p.userEmail || '').toLowerCase());
+      const userEmail = p.customerEmail || p.userEmail || u?.email || 'subscriber@flixora.tv';
+      const userName = p.userName || u?.name || (userEmail.includes('@') ? userEmail.split('@')[0] : 'Flixora Subscriber');
+      const rawAmt = typeof p.amount === 'number' ? p.amount : parseFloat(String(p.amount || '0').replace(/[^0-9.]/g, ''));
+      const status = (p.status === 'Paid' || p.status === 'success') ? 'success' : (p.status === 'Cancelled' || p.status === 'refunded') ? 'refunded' : 'failed';
+      const rawDate = p.createdAt || new Date();
 
       allRecords.push({
-        _id: t._id.toString(),
-        invoiceId: t.invoiceId || `INV-SUB-${t._id.toString().slice(-6).toUpperCase()}`,
-        stripeTransactionId: t.stripeTransactionId || t.stripeSessionId || `pi_live_${t._id.toString().slice(-8)}`,
-        userId: t.userId || u?._id?.toString() || '',
-        userEmail: t.userEmail || u?.email || 'subscriber@flixora.tv',
-        userName: t.userName || u?.name || 'Subscribed User',
-        planName: t.planName || 'Streaming Plan',
+        _id: p._id.toString(),
+        invoiceId: p.invoiceId || `INV-PAY-${p._id.toString().slice(-6).toUpperCase()}`,
+        stripeTransactionId: p.stripeSessionId || p.paymentIntentId || `cs_live_${p._id.toString().slice(-8)}`,
+        userId: p.userId ? String(p.userId) : (u?._id?.toString() || ''),
+        userEmail: userEmail,
+        userName: userName,
+        planName: p.planName || (rawAmt >= 14 ? 'Premium' : rawAmt >= 10 ? 'Standard' : 'Basic'),
         amount: isNaN(rawAmt) || rawAmt <= 0 ? 11.99 : parseFloat(rawAmt.toFixed(2)),
-        currency: t.currency || 'USD',
+        currency: 'USD',
         status: status,
         date: new Date(rawDate).toISOString().split('T')[0],
         rawDate: new Date(rawDate),
-        paymentMethod: t.paymentMethod || 'Stripe (Card)',
+        paymentMethod: p.paymentMethod || 'Card (Stripe)',
         type: 'subscription'
       });
     });
 
-    // Process 'payments' collection (merge payments not in transactions)
-    rawPayments.forEach((p: any) => {
-      const exists = allRecords.some(r => r.stripeTransactionId === (p.stripeSessionId || p._id.toString()) || r.invoiceId === p.invoiceId);
-      if (!exists) {
-        const u = userMap.get(p.userId) || userMap.get((p.userEmail || '').toLowerCase());
-        const rawAmt = typeof p.amount === 'number' ? p.amount : parseFloat(String(p.amount || '0').replace(/[^0-9.]/g, ''));
-        const status = p.status === 'Paid' ? 'success' : p.status === 'Cancelled' ? 'refunded' : 'failed';
-        const rawDate = p.createdAt || new Date();
-
-        allRecords.push({
-          _id: p._id.toString(),
-          invoiceId: p.invoiceId || `INV-PAY-${p._id.toString().slice(-6).toUpperCase()}`,
-          stripeTransactionId: p.stripeSessionId || `cs_live_${p._id.toString().slice(-8)}`,
-          userId: p.userId || u?._id?.toString() || '',
-          userEmail: p.userEmail || u?.email || 'subscriber@flixora.tv',
-          userName: u?.name || 'Flixora Subscriber',
-          planName: p.planName || 'Subscription Plan',
-          amount: isNaN(rawAmt) || rawAmt <= 0 ? 11.99 : parseFloat(rawAmt.toFixed(2)),
-          currency: 'USD',
-          status: status,
-          date: new Date(rawDate).toISOString().split('T')[0],
-          rawDate: new Date(rawDate),
-          paymentMethod: p.paymentMethod || 'Card (Stripe)',
-          type: 'subscription'
-        });
-      }
-    });
-
-    // Process 'cinema_tickets' collection (merge ticket purchases)
+    // Process 'cinema_tickets' collection (Real Movie Tickets)
     rawTickets.forEach((tk: any) => {
-      const exists = allRecords.some(r => r.invoiceId === tk.ticketId || r.invoiceId === tk.bookingId);
+      const exists = allRecords.some(r => r.invoiceId === tk.ticketId || r.invoiceId === tk.bookingId || r.stripeTransactionId === tk.bookingId);
       if (!exists) {
-        const u = userMap.get(tk.userId) || userMap.get((tk.userEmail || '').toLowerCase());
+        const u = userMap.get(tk.userId ? String(tk.userId) : '') || userMap.get((tk.userEmail || '').toLowerCase());
+        const userEmail = tk.userEmail || u?.email || 'cinema_user@flixora.tv';
+        const userName = tk.userName || u?.name || (userEmail.includes('@') ? userEmail.split('@')[0] : 'Cinema Buyer');
         const ticketAmt = typeof tk.totalPrice === 'number' ? (tk.totalPrice > 200 ? parseFloat((tk.totalPrice / 110).toFixed(2)) : tk.totalPrice) : 14.00;
         const status = tk.status === 'cancelled' ? 'refunded' : 'success';
         const rawDate = tk.createdAt || new Date();
 
         allRecords.push({
           _id: tk._id.toString(),
-          invoiceId: tk.ticketId || tk.bookingId || `TCK-${tk._id.toString().slice(-6).toUpperCase()}`,
-          stripeTransactionId: tk.bookingId || `tck_live_${tk.ticketId || tk._id.toString().slice(-6)}`,
-          userId: tk.userId || u?._id?.toString() || '',
-          userEmail: tk.userEmail || u?.email || 'cinema_user@flixora.tv',
-          userName: tk.userName || u?.name || 'Cinema Ticket Buyer',
-          planName: `Ticket: ${tk.movieTitle || 'Movie'} (${tk.seatNumbers?.length || tk.seats?.length || 1} seats)`,
+          invoiceId: tk.ticketCode || tk.ticketId || tk.bookingId || `TCK-${tk._id.toString().slice(-6).toUpperCase()}`,
+          stripeTransactionId: tk.bookingId || tk.stripeSessionId || `tck_live_${tk._id.toString().slice(-6)}`,
+          userId: tk.userId ? String(tk.userId) : (u?._id?.toString() || ''),
+          userEmail: userEmail,
+          userName: userName,
+          planName: `Cinema: ${tk.movieTitle || 'Movie'} (${tk.seatNumbers?.length || tk.seats?.length || 1} seats)`,
           amount: parseFloat(ticketAmt.toFixed(2)),
           currency: 'USD',
           status: status,
@@ -106,6 +82,36 @@ export async function GET(request: NextRequest) {
           rawDate: new Date(rawDate),
           paymentMethod: 'Stripe Cinema Pay',
           type: 'ticket'
+        });
+      }
+    });
+
+    // Process 'transactions' collection (merge any extra non-duplicate transactions)
+    rawTxs.forEach((t: any) => {
+      const exists = allRecords.some(r => r.stripeTransactionId === t.stripeTransactionId || r.invoiceId === t.invoiceId);
+      if (!exists && !t.userEmail?.includes('subscriber_')) {
+        const u = userMap.get(t.userId ? String(t.userId) : '') || userMap.get((t.userEmail || '').toLowerCase());
+        const userEmail = u?.email || t.userEmail || 'subscriber@flixora.tv';
+        const userName = u?.name || t.userName || (userEmail.includes('@') ? userEmail.split('@')[0] : 'Subscribed User');
+        const rawAmt = typeof t.amount === 'number' ? t.amount : parseFloat(String(t.amount || '0').replace(/[^0-9.]/g, ''));
+        const status = (t.status === 'Paid' || t.status === 'success') ? 'success' : (t.status === 'refunded' || t.status === 'Cancelled') ? 'refunded' : 'failed';
+        const rawDate = t.date || t.createdAt || new Date();
+
+        allRecords.push({
+          _id: t._id.toString(),
+          invoiceId: t.invoiceId || `INV-SUB-${t._id.toString().slice(-6).toUpperCase()}`,
+          stripeTransactionId: t.stripeTransactionId || t.stripeSessionId || `pi_live_${t._id.toString().slice(-8)}`,
+          userId: t.userId ? String(t.userId) : (u?._id?.toString() || ''),
+          userEmail: userEmail,
+          userName: userName,
+          planName: t.planName || 'Streaming Plan',
+          amount: isNaN(rawAmt) || rawAmt <= 0 ? 11.99 : parseFloat(rawAmt.toFixed(2)),
+          currency: t.currency || 'USD',
+          status: status,
+          date: new Date(rawDate).toISOString().split('T')[0],
+          rawDate: new Date(rawDate),
+          paymentMethod: t.paymentMethod || 'Stripe (Card)',
+          type: 'subscription'
         });
       }
     });
