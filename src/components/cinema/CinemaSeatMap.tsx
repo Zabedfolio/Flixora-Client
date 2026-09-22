@@ -8,6 +8,7 @@ interface CinemaSeatMapProps {
   hall: CinemaHall;
   seats: SeatInfo[];
   selectedSeatIds: string[];
+  groupHeldSeats?: string[];
   onToggleSeat: (seat: SeatInfo) => void;
   onProceedToCheckout?: () => void;
   isSubmitting?: boolean;
@@ -17,6 +18,7 @@ export default function CinemaSeatMap({
   hall,
   seats,
   selectedSeatIds,
+  groupHeldSeats = [],
   onToggleSeat,
   onProceedToCheckout,
   isSubmitting = false,
@@ -166,49 +168,63 @@ export default function CinemaSeatMap({
                           }}
                           className="transition-transform duration-200"
                         >
-                          <button
-                            type="button"
-                            disabled={isBooked || isHeldByOther}
-                            onClick={() => onToggleSeat(seat)}
-                            title={`${seat.id} (${isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
-                            className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
-                              isSelected
-                                ? 'scale-110 z-20'
-                                : isBooked || isHeldByOther
-                                ? 'opacity-30 cursor-not-allowed'
-                                : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
-                            }`}
-                          >
-                            {/* Seat Chair Backrest Contour */}
-                            <div
-                              className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
-                                isSelected
-                                  ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
-                                  : isPremium
-                                  ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
-                                  : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
-                              }`}
-                            >
-                              <span className="px-1 py-0.2 rounded-full font-mono font-black">
-                                {seat.number}
-                              </span>
-                            </div>
+                          {(() => {
+                            const isSelected = selectedSeatIds.includes(seat.id);
+                            const isGroupHeld = groupHeldSeats.includes(seat.id);
+                            const isBooked = seat.status === 'booked';
+                            const isHeldByOther = seat.status === 'held' && !isGroupHeld;
+                            const isPremium = seat.type === 'premium';
 
-                            {/* Seat Chair Bottom Cushion Base */}
-                            <div
-                              className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
-                                isSelected
-                                  ? 'bg-[#E64400] border-[#FF4C00]/80'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-900 border-zinc-800'
-                                  : isPremium
-                                  ? 'bg-amber-700 border-amber-400/60'
-                                  : 'bg-[#801200] border-[#FF4C00]/40'
-                              }`}
-                            />
-                          </button>
+                            return (
+                              <button
+                                type="button"
+                                disabled={isBooked || isHeldByOther}
+                                onClick={() => onToggleSeat(seat)}
+                                title={`${seat.id} (${isGroupHeld ? 'Group Reserved Seat' : isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
+                                className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
+                                  isSelected
+                                    ? 'scale-110 z-20'
+                                    : isBooked || isHeldByOther
+                                    ? 'opacity-30 cursor-not-allowed'
+                                    : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
+                                }`}
+                              >
+                                {/* Seat Chair Backrest Contour */}
+                                <div
+                                  className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
+                                    isSelected
+                                      ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
+                                      : isGroupHeld
+                                      ? 'bg-purple-600 text-white font-black border border-purple-300 ring-1 ring-purple-400 shadow-[0_0_14px_rgba(147,51,234,0.9)]'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
+                                      : isPremium
+                                      ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
+                                      : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
+                                  }`}
+                                >
+                                  <span className="px-1 py-0.2 rounded-full font-mono font-black">
+                                    {seat.number}
+                                  </span>
+                                </div>
+
+                                {/* Seat Chair Bottom Cushion Base */}
+                                <div
+                                  className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
+                                    isSelected
+                                      ? 'bg-[#E64400] border-[#FF4C00]/80'
+                                      : isGroupHeld
+                                      ? 'bg-purple-800 border-purple-400/80'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-900 border-zinc-800'
+                                      : isPremium
+                                      ? 'bg-amber-700 border-amber-400/60'
+                                      : 'bg-[#801200] border-[#FF4C00]/40'
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })()}
                         </div>
                       );
                     })}
@@ -243,49 +259,63 @@ export default function CinemaSeatMap({
                           }}
                           className="transition-transform duration-200"
                         >
-                          <button
-                            type="button"
-                            disabled={isBooked || isHeldByOther}
-                            onClick={() => onToggleSeat(seat)}
-                            title={`${seat.id} (${isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
-                            className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
-                              isSelected
-                                ? 'scale-110 z-20'
-                                : isBooked || isHeldByOther
-                                ? 'opacity-30 cursor-not-allowed'
-                                : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
-                            }`}
-                          >
-                            {/* Seat Chair Backrest Contour */}
-                            <div
-                              className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
-                                isSelected
-                                  ? 'bg-[#FF4C00] text-black font-black ring-2 ring-[#FF4C00] shadow-[0_0_18px_rgba(255,76,0,1)]'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
-                                  : isPremium
-                                  ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
-                                  : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
-                              }`}
-                            >
-                              <span className="px-1 py-0.2 rounded-full font-mono font-black">
-                                {seat.number}
-                              </span>
-                            </div>
+                          {(() => {
+                            const isSelected = selectedSeatIds.includes(seat.id);
+                            const isGroupHeld = groupHeldSeats.includes(seat.id);
+                            const isBooked = seat.status === 'booked';
+                            const isHeldByOther = seat.status === 'held' && !isGroupHeld;
+                            const isPremium = seat.type === 'premium';
 
-                            {/* Seat Chair Bottom Cushion Base */}
-                            <div
-                              className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
-                                isSelected
-                                  ? 'bg-[#E64400] border-[#FF4C00]/80'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-900 border-zinc-800'
-                                  : isPremium
-                                  ? 'bg-amber-700 border-amber-400/60'
-                                  : 'bg-[#801200] border-[#FF4C00]/40'
-                              }`}
-                            />
-                          </button>
+                            return (
+                              <button
+                                type="button"
+                                disabled={isBooked || isHeldByOther}
+                                onClick={() => onToggleSeat(seat)}
+                                title={`${seat.id} (${isGroupHeld ? 'Group Reserved Seat' : isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
+                                className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
+                                  isSelected
+                                    ? 'scale-110 z-20'
+                                    : isBooked || isHeldByOther
+                                    ? 'opacity-30 cursor-not-allowed'
+                                    : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
+                                }`}
+                              >
+                                {/* Seat Chair Backrest Contour */}
+                                <div
+                                  className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
+                                    isSelected
+                                      ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
+                                      : isGroupHeld
+                                      ? 'bg-purple-600 text-white font-black border border-purple-300 ring-1 ring-purple-400 shadow-[0_0_14px_rgba(147,51,234,0.9)]'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
+                                      : isPremium
+                                      ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
+                                      : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
+                                  }`}
+                                >
+                                  <span className="px-1 py-0.2 rounded-full font-mono font-black">
+                                    {seat.number}
+                                  </span>
+                                </div>
+
+                                {/* Seat Chair Bottom Cushion Base */}
+                                <div
+                                  className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
+                                    isSelected
+                                      ? 'bg-[#E64400] border-[#FF4C00]/80'
+                                      : isGroupHeld
+                                      ? 'bg-purple-800 border-purple-400/80'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-900 border-zinc-800'
+                                      : isPremium
+                                      ? 'bg-amber-700 border-amber-400/60'
+                                      : 'bg-[#801200] border-[#FF4C00]/40'
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })()}
                         </div>
                       );
                     })}

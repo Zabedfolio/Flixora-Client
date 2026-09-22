@@ -162,14 +162,40 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     fetchSeatsMap(true);
   }, [fetchSeatsMap]);
 
-  // Real-Time Polling for Seats (Every 3 seconds - silent background update)
+  // Real-Time Polling for Seats (Every 2 seconds - live synchronization)
   useEffect(() => {
     if (!showtimeId) return;
     const interval = setInterval(() => {
       fetchSeatsMap(false);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [showtimeId, fetchSeatsMap]);
+
+  // Join group room automatically if groupCode is present
+  useEffect(() => {
+    if (!groupCode) return;
+    const joinRoom = async () => {
+      try {
+        const userEmail = session?.user?.email || liveProfile?.email || '';
+        const userName = session?.user?.name || liveProfile?.name || '';
+        const realUserId = session?.user?.id || liveProfile?.id || userId;
+
+        await fetch('/api/cinema/group-booking/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupCode,
+            userId: realUserId,
+            userName,
+            userEmail,
+          }),
+        });
+      } catch (err) {
+        // silent
+      }
+    };
+    joinRoom();
+  }, [groupCode, session, liveProfile, userId]);
 
   // Fetch Group Booking details if groupCode is present
   const fetchGroupDetails = useCallback(async () => {
@@ -203,7 +229,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     if (!groupCode) return;
     const interval = setInterval(() => {
       fetchGroupDetails();
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [groupCode, fetchGroupDetails]);
 
@@ -271,6 +297,10 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     // Optimistic UI update
     setSelectedSeatIds(newSelected);
 
+    const userName = session?.user?.name || liveProfile?.name || 'Cinema Customer';
+    const userEmail = session?.user?.email || liveProfile?.email || 'customer@flixora.com';
+    const realUserId = session?.user?.id || liveProfile?.id || userId;
+
     try {
       const res = await fetch('/api/cinema/lock-seat', {
         method: 'POST',
@@ -281,7 +311,10 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           date: selectedDate,
           time: selectedTime,
           seatId: seat.id,
-          userId,
+          userId: realUserId,
+          groupCode,
+          userName,
+          userEmail,
           action: isCurrentlySelected ? 'release' : 'lock',
         }),
       });
@@ -330,6 +363,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           seatNumbers: selectedSeatIds,
           totalPrice,
           userId: realUserId,
+          groupCode,
           userEmail,
           userName,
         }),
@@ -467,6 +501,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
               hall={hall}
               seats={seats}
               selectedSeatIds={selectedSeatIds}
+              groupHeldSeats={groupDetails?.groupHeldSeats || []}
               onToggleSeat={handleToggleSeat}
               onProceedToCheckout={handleStripeCheckout}
               isSubmitting={isSubmittingStripe}

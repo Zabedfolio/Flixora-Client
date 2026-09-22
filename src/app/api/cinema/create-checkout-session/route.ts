@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       seatNumbers,
       totalPrice,
       userId,
+      groupCode,
       userName = 'Flixora User',
       userEmail = 'user@flixora.com',
     } = body;
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
       time,
       seatNumbers,
       totalPrice: Number(totalPrice) || 0,
+      groupCode: groupCode || null,
       status: 'confirmed',
       createdAt: new Date().toISOString(),
     };
@@ -91,11 +93,25 @@ export async function POST(request: Request) {
       seatNumbers,
       totalPrice: Number(totalPrice) || 0,
       qrCode: qrCodeUrl,
+      groupCode: groupCode || null,
       status: 'active',
       createdAt: new Date().toISOString(),
     };
     await db.collection('tickets').insertOne(ticketRecord);
     await db.collection('cinema_tickets').insertOne(ticketRecord); // legacy table fallback
+
+    // Release temporary seat locks matching these seats
+    await db.collection('seat_locks').deleteMany({
+      showtimeId,
+      seatId: { $in: seatNumbers },
+    });
+
+    if (groupCode) {
+      await db.collection('group_members').updateOne(
+        { groupCode, $or: [{ userId }, { userEmail }] },
+        { $set: { paymentStatus: 'paid', ticketId } }
+      );
+    }
 
     // 3. Mark seats as Booked in cinema_seats collection
     await db.collection('cinema_seats').updateMany(

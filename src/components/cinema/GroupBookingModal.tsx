@@ -88,19 +88,28 @@ export default function GroupBookingModal({
           </p>
         </div>
 
-        {/* Movie Session Details */}
-        <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-850 flex items-center justify-between text-xs text-zinc-300">
-          <div>
-            <p className="font-bold text-white text-sm">{movieTitle}</p>
-            <p className="text-zinc-400 mt-0.5">{hallName}</p>
-            <p className="text-zinc-500 text-[11px] mt-0.5">
-              {date} @ <strong className="text-[#FF4C00] font-mono">{time}</strong>
-            </p>
+        {/* Movie Session Details & Reserved Seats */}
+        <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-850 space-y-3 text-xs text-zinc-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold text-white text-sm">{movieTitle}</p>
+              <p className="text-zinc-400 mt-0.5">{hallName}</p>
+              <p className="text-zinc-500 text-[11px] mt-0.5">
+                {date} @ <strong className="text-[#FF4C00] font-mono">{time}</strong>
+              </p>
+            </div>
+            <div className="text-right font-mono">
+              <span className="text-[10px] text-zinc-500 uppercase block">Group Code</span>
+              <span className="text-xs font-black text-[#FF4C00] bg-[#FF4C00]/10 border border-[#FF4C00]/20 px-2 py-0.5 rounded">
+                {groupCode}
+              </span>
+            </div>
           </div>
-          <div className="text-right font-mono">
-            <span className="text-[10px] text-zinc-500 uppercase block">Group Code</span>
-            <span className="text-xs font-black text-[#FF4C00] bg-[#FF4C00]/10 border border-[#FF4C00]/20 px-2 py-0.5 rounded">
-              {groupCode}
+
+          <div className="pt-2 border-t border-zinc-900 flex items-center justify-between">
+            <span className="text-[11px] font-bold text-zinc-400">Current Reserved Group Seats:</span>
+            <span className="font-mono text-xs font-black text-[#FF4C00]">
+              {selectedSeats && selectedSeats.length > 0 ? selectedSeats.join(', ') : 'Selecting...'}
             </span>
           </div>
         </div>

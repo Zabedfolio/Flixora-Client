@@ -4,7 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { showtimeId, hallId, date, time, seatId, userId, action } = body;
+    const { showtimeId, hallId, date, time, seatId, userId, groupCode, userName, userEmail, action } = body;
 
     if (!showtimeId || !seatId || !userId) {
       return NextResponse.json({ success: false, message: 'Missing required parameters' }, { status: 400 });
@@ -18,6 +18,18 @@ export async function POST(req: NextRequest) {
 
     if (action === 'release') {
       await db.collection('seat_locks').deleteOne({ lockKey, userId });
+
+      if (groupCode) {
+        await db.collection('group_bookings').updateOne(
+          { groupCode },
+          { $pull: { groupSeatPool: seatId } as any }
+        );
+        await db.collection('group_members').updateOne(
+          { groupCode, userId },
+          { $pull: { selectedSeats: seatId } as any }
+        );
+      }
+
       return NextResponse.json({ success: true, message: `Seat ${seatId} released` });
     }
 
@@ -47,13 +59,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if locked by another user
+    // Check if locked by another user (unless in same group)
     const existingLock = await db.collection('seat_locks').findOne({ lockKey });
-    if (existingLock && existingLock.userId !== userId && new Date(existingLock.expiresAt) > new Date()) {
-      return NextResponse.json(
-        { success: false, message: `Seat ${seatId} is currently held by another customer.` },
-        { status: 409 }
-      );
+    if (
+      existingLock &&
+      existingLock.userId !== userId &&
+      new Date(existingLock.expiresAt) > new Date()
+    ) {
+      // Allow lock transfer if within same group session
+      if (!groupCode || existingLock.groupCode !== groupCode) {
+        return NextResponse.json(
+          { success: false, message: `Seat ${seatId} is currently held by another customer.` },
+          { status: 409 }
+        );
+      }
     }
 
     // 10-Minute Hold Expiry (600 seconds)
@@ -70,12 +89,36 @@ export async function POST(req: NextRequest) {
           time,
           seatId,
           userId,
+          groupCode: groupCode || null,
+          userName: userName || null,
           expiresAt,
           updatedAt: new Date(),
         },
       },
       { upsert: true }
     );
+
+    // Synchronize seat selection into group_bookings and group_members
+    if (groupCode) {
+      await db.collection('group_bookings').updateOne(
+        { groupCode },
+        { $addToSet: { groupSeatPool: seatId } as any }
+      );
+      if (userId) {
+        await db.collection('group_members').updateOne(
+          { groupCode, userId },
+          {
+            $addToSet: { selectedSeats: seatId } as any,
+            $set: {
+              userName: userName || 'Cinema Customer',
+              userEmail: userEmail || 'customer@flixora.com',
+              joinedAt: new Date().toISOString(),
+            },
+          },
+          { upsert: true }
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,
