@@ -37,13 +37,28 @@ export async function GET(
       .find({ groupCode: group.groupCode, expiresAt: { $gt: new Date() } })
       .toArray();
 
-    const groupHeldSeats = activeGroupLocks.map((l: any) => l.seatId);
+    const lockSeats = activeGroupLocks.map((l: any) => l.seatId);
+    const poolSeats = Array.isArray(group.groupSeatPool) ? group.groupSeatPool : [];
+    const memberSelectedSeats = members.flatMap((m: any) => m.selectedSeats || []);
+
+    // Combine all unique seats held/selected in this group session
+    const rawGroupSeats = Array.from(new Set([...lockSeats, ...poolSeats, ...memberSelectedSeats]));
+
+    // Find all seats already paid for in this group session
+    const paidSeatsInGroup = new Set(
+      members
+        .filter((m: any) => m.paymentStatus === 'paid')
+        .flatMap((m: any) => m.paidSeats || m.selectedSeats || [])
+    );
+
+    // Unpaid group seats ready for checkout
+    const unpaidGroupSeats = rawGroupSeats.filter((seatId) => !paidSeatsInGroup.has(seatId));
 
     return NextResponse.json({
       success: true,
       group: {
         ...group,
-        groupHeldSeats,
+        groupHeldSeats: unpaidGroupSeats,
       },
       members: members.map((m: any) => ({
         userId: m.userId,

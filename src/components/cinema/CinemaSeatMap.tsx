@@ -402,7 +402,10 @@ export default function CinemaSeatMap({
 
             <button
               type="button"
-              disabled={selectedSeatsObj.length === 0 || isSubmitting}
+              disabled={
+                (selectedSeatsObj.length === 0 && (!onProceedGroupCheckout || groupHeldSeats.length === 0)) ||
+                isSubmitting
+              }
               onClick={onProceedToCheckout}
               className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#FF4C00] hover:bg-[#e04300] disabled:opacity-40 disabled:hover:bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF4C00]/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
             >
@@ -411,7 +414,9 @@ export default function CinemaSeatMap({
                 {isSubmitting
                   ? 'Launching Stripe Gateway...'
                   : onProceedGroupCheckout
-                  ? `Pay My Seats (${totalPrice} BDT)`
+                  ? selectedSeatsObj.length > 0
+                    ? `Pay My Seats (${totalPrice} BDT)`
+                    : `Pay All Group Seats (${groupTotalPrice} BDT)`
                   : 'Pay & Confirm with Stripe'}
               </span>
             </button>

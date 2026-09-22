@@ -374,10 +374,14 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
       return;
     }
 
-    const seatsToBook =
+    let seatsToBook =
       targetSeatsParam && targetSeatsParam.length > 0
         ? targetSeatsParam
         : selectedSeatIds;
+
+    if (seatsToBook.length === 0 && groupCode && Array.isArray(groupDetails?.groupHeldSeats) && groupDetails.groupHeldSeats.length > 0) {
+      seatsToBook = groupDetails.groupHeldSeats;
+    }
 
     if (!hall || seatsToBook.length === 0) {
       toast.error('Please select at least 1 seat to continue.');

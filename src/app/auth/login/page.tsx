@@ -162,7 +162,7 @@ export const LoginForm: React.FC = () => {
       const { data, error } = await authClient.signIn.email({
         email: formData.email,
         password: formData.password,
-        callbackURL: "/",
+        callbackURL: redirectTarget || "/dashboard",
         rememberMe: formData.rememberMe,
       });
 
@@ -193,7 +193,7 @@ export const LoginForm: React.FC = () => {
       setFailedAttempts(0);
       localStorage.removeItem("failedAttempts");
       localStorage.removeItem("lockoutUntil");
-      router.push(redirectTarget);
+      window.location.href = redirectTarget || "/dashboard";
     } catch (err) {
       console.error("Login error:", err);
       toast.error("An unexpected error occurred. Please try again later.");
@@ -230,18 +230,17 @@ export const LoginForm: React.FC = () => {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        toast.error(data.message || "Invalid Kids Username or 4-digit PIN");
+        toast.error(data.message || "Invalid Kids Handle or PIN");
         return;
       }
 
       // Enter Kids Mode in Zustand state
       useKidsStore.getState().enterKidsMode(data.profile);
 
-      toast.success(data.message || `Welcome, ${data.profile.name}! Kids Mode Activated.`);
-      window.location.replace("/");
+      toast.success(`Welcome to Kids Mode, ${data.profile.name}! 🎈`);
+      window.location.href = redirectTarget || "/";
     } catch (err) {
-      console.error("Kids login error:", err);
-      toast.error("Network error during Kids login. Please try again.");
+      toast.error("Failed to login to Kids Mode");
     } finally {
       setKidsLoading(false);
     }
@@ -254,7 +253,7 @@ export const LoginForm: React.FC = () => {
       setGoogleLoading(true);
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: redirectTarget || "/dashboard",
       });
     } catch (err) {
       console.error("Google Login Error:", err);
