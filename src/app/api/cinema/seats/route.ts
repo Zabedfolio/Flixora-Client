@@ -8,12 +8,14 @@ export async function GET(req: NextRequest) {
     const showtimeId = searchParams.get('showtimeId') || '';
     const hallId = searchParams.get('hallId') || 'hall-star-sks';
     const userId = searchParams.get('userId') || '';
+    const groupCode = searchParams.get('groupCode') || '';
 
     const hall = CINEMA_HALLS_DATA.find((h) => h.id === hallId) || CINEMA_HALLS_DATA[0];
 
     let bookedSeatIds: string[] = [];
     let heldSeatIds: string[] = [];
     let myHeldSeats: string[] = [];
+    let groupHeldSeats: string[] = [];
 
     try {
       const { db } = await connectToDatabase();
@@ -67,6 +69,9 @@ export async function GET(req: NextRequest) {
         if (userId && lock.userId === userId) {
           myHeldSeats.push(lock.seatId);
         }
+        if (groupCode && lock.groupCode === groupCode) {
+          groupHeldSeats.push(lock.seatId);
+        }
       });
     } catch (dbErr) {
       console.warn('MongoDB seat status fetch warning:', dbErr);
@@ -89,6 +94,7 @@ export async function GET(req: NextRequest) {
       bookedSeatIds,
       heldSeatIds,
       myHeldSeats,
+      groupHeldSeats,
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });

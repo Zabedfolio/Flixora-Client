@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CinemaHall, SeatInfo, ShowtimePill } from '@/data/cinemaData';
 import CinemaSeatMap from '@/components/cinema/CinemaSeatMap';
+import GroupBookingModal from '@/components/cinema/GroupBookingModal';
 import {
   ChevronLeft,
   Ticket,
@@ -16,6 +17,10 @@ import {
   MapPin,
   CreditCard,
   Lock,
+  Users,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { authClient } from '@/app/(auth)/lib/auth-client';
 import { toast } from 'react-hot-toast';
@@ -56,6 +61,15 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   const showtimeId = searchParams.get('showtimeId') || '';
   const selectedDate = searchParams.get('date') || '';
   const selectedTime = searchParams.get('time') || '';
+  const urlGroupCode = searchParams.get('groupCode') || '';
+
+  // Group Booking State
+  const [groupCode, setGroupCode] = useState<string>(urlGroupCode);
+  const [groupShareUrl, setGroupShareUrl] = useState<string>('');
+  const [groupDetails, setGroupDetails] = useState<any>(null);
+  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   // Seats & Hall state
   const [seats, setSeats] = useState<SeatInfo[]>([]);
@@ -126,7 +140,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     try {
       if (isInitial) setLoadingSeats(true);
       const res = await fetch(
-        `/api/cinema/seats?showtimeId=${showtimeId}&hallId=${hallId}&userId=${userId}`
+        `/api/cinema/seats?showtimeId=${showtimeId}&hallId=${hallId}&userId=${userId}&groupCode=${groupCode}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -142,7 +156,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     } finally {
       if (isInitial) setLoadingSeats(false);
     }
-  }, [showtimeId, hallId, userId]);
+  }, [showtimeId, hallId, userId, groupCode]);
 
   useEffect(() => {
     fetchSeatsMap(true);
@@ -156,6 +170,94 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     }, 3000);
     return () => clearInterval(interval);
   }, [showtimeId, fetchSeatsMap]);
+
+  // Fetch Group Booking details if groupCode is present
+  const fetchGroupDetails = useCallback(async () => {
+    if (!groupCode) return;
+    try {
+      const res = await fetch(`/api/cinema/group-booking/${groupCode}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.group) {
+          setGroupDetails(data.group);
+          if (Array.isArray(data.members)) {
+            setGroupMembers(data.members);
+          }
+          if (typeof window !== 'undefined') {
+            setGroupShareUrl(
+              `${window.location.origin}/book/${titleId}/seats?hallId=${encodeURIComponent(hallId)}&showtimeId=${encodeURIComponent(showtimeId)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&groupCode=${groupCode}`
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch group details:', err);
+    }
+  }, [groupCode, titleId, hallId, showtimeId, selectedDate, selectedTime]);
+
+  useEffect(() => {
+    fetchGroupDetails();
+  }, [fetchGroupDetails]);
+
+  useEffect(() => {
+    if (!groupCode) return;
+    const interval = setInterval(() => {
+      fetchGroupDetails();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [groupCode, fetchGroupDetails]);
+
+  // Open or Create Group Booking Session
+  const handleOpenOrCreateGroupBooking = async () => {
+    if (groupCode && groupShareUrl) {
+      setIsGroupModalOpen(true);
+      return;
+    }
+
+    try {
+      setIsCreatingGroup(true);
+      const userEmail = session?.user?.email || liveProfile?.email || '';
+      const userName = session?.user?.name || liveProfile?.name || '';
+      const realUserId = session?.user?.id || liveProfile?.id || userId;
+
+      const res = await fetch('/api/cinema/group-booking/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titleId,
+          movieTitle: movieInfo.title,
+          moviePoster: movieInfo.poster,
+          hallId: hall?.id || hallId,
+          hallName: hall?.name || 'Star Cineplex',
+          showtimeId,
+          date: selectedDate,
+          time: selectedTime,
+          selectedSeats: selectedSeatIds,
+          userId: realUserId,
+          userName,
+          userEmail,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.groupCode) {
+        setGroupCode(data.groupCode);
+        setGroupShareUrl(data.shareUrl);
+        setGroupDetails(data.group);
+        setIsGroupModalOpen(true);
+        toast.success('Group Booking invite link generated!');
+        router.replace(
+          `/book/${titleId}/seats?hallId=${encodeURIComponent(hallId)}&showtimeId=${encodeURIComponent(showtimeId)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&groupCode=${data.groupCode}`
+        );
+      } else {
+        toast.error(data.message || 'Failed to create group booking session');
+      }
+    } catch (err) {
+      toast.error('Network error starting group booking');
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
 
   // Handle Seat Selection / Temporary Lock Holding
   const handleToggleSeat = async (seat: SeatInfo) => {
@@ -275,19 +377,66 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
             </div>
           </div>
 
-          {/* Selected Booking Info Summary */}
-          {hall && (
-            <div className="flex items-center gap-3 bg-[#0A0A0A] border border-zinc-800 px-4 py-2.5 rounded-2xl">
-              <Building2 size={16} className="text-[#FF4C00] shrink-0" />
-              <div className="text-xs">
-                <p className="font-black text-white">{hall.name} ({hall.district})</p>
-                <p className="text-[11px] text-zinc-400">
-                  {selectedDate} @ <strong className="text-[#FF4C00] font-mono">{selectedTime}</strong>
+          {/* Selected Booking Info Summary & Group Booking Action */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <button
+              onClick={handleOpenOrCreateGroupBooking}
+              disabled={isCreatingGroup}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-purple-900/20 shrink-0"
+            >
+              {isCreatingGroup ? (
+                <Loader2 size={16} className="animate-spin text-purple-400" />
+              ) : (
+                <Users size={16} className="text-purple-400" />
+              )}
+              <span>{groupCode ? 'View Group Invite' : 'Invite Friends to Book'}</span>
+            </button>
+
+            {hall && (
+              <div className="flex items-center gap-3 bg-[#0A0A0A] border border-zinc-800 px-4 py-2.5 rounded-2xl">
+                <Building2 size={16} className="text-[#FF4C00] shrink-0" />
+                <div className="text-xs">
+                  <p className="font-black text-white">{hall.name} ({hall.district})</p>
+                  <p className="text-[11px] text-zinc-400">
+                    {selectedDate} @ <strong className="text-[#FF4C00] font-mono">{selectedTime}</strong>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* GROUP BOOKING ACTIVE BANNER */}
+        {groupCode && (
+          <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold shrink-0">
+                <Users size={18} />
+              </div>
+              <div>
+                <p className="font-bold text-white flex items-center gap-2">
+                  <span>Group Session Active:</span>
+                  <span className="font-mono text-purple-300 bg-purple-950 border border-purple-800 px-2 py-0.5 rounded">
+                    {groupCode}
+                  </span>
+                </p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  {groupMembers.length > 0
+                    ? `${groupMembers.length} friend(s) in room: ${groupMembers.map((m) => m.userName).join(', ')}`
+                    : 'Share your link with friends so they can pick adjacent seats in real-time!'}
                 </p>
               </div>
             </div>
-          )}
-        </div>
+
+            <button
+              onClick={handleOpenOrCreateGroupBooking}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Share2 size={14} />
+              <span>Share Invite Link & QR</span>
+            </button>
+          </div>
+        )}
 
         {/* PARABOLIC SEAT MAP CONTAINER */}
         <div className="rounded-3xl border border-zinc-900 bg-[#0C0C0C] p-6 space-y-6 shadow-2xl">
@@ -341,6 +490,20 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
             <span>256-Bit SSL Protected</span>
           </div>
         </div>
+
+        {/* GROUP BOOKING MODAL */}
+        <GroupBookingModal
+          isOpen={isGroupModalOpen}
+          onClose={() => setIsGroupModalOpen(false)}
+          groupCode={groupCode}
+          shareUrl={groupShareUrl}
+          movieTitle={movieInfo.title}
+          hallName={hall ? hall.name : 'Cinema Hall'}
+          date={selectedDate}
+          time={selectedTime}
+          selectedSeats={selectedSeatIds}
+          members={groupMembers}
+        />
 
       </div>
     </div>
