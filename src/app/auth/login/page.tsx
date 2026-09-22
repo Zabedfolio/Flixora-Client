@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { toast } from "react-hot-toast";
 import { authClient } from "@/app/(auth)/lib/auth-client";
@@ -32,6 +32,8 @@ export const LoginForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || searchParams.get('callbackUrl') || '/dashboard';
 
   // Kids Login State
   const [kidsUsername, setKidsUsername] = useState("");
@@ -191,7 +193,7 @@ export const LoginForm: React.FC = () => {
       setFailedAttempts(0);
       localStorage.removeItem("failedAttempts");
       localStorage.removeItem("lockoutUntil");
-      router.push("/dashboard");
+      router.push(redirectTarget);
     } catch (err) {
       console.error("Login error:", err);
       toast.error("An unexpected error occurred. Please try again later.");
@@ -628,4 +630,14 @@ export const LoginForm: React.FC = () => {
   );
 };
 
-export default LoginForm;
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center text-white">
+        <Loader2 className="w-8 h-8 animate-spin text-[#FF4C00]" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
+  );
+}

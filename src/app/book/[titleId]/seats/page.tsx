@@ -174,7 +174,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   const notifiedPaidEventsRef = React.useRef<Set<string>>(new Set());
   const isAuthenticated = !!(session?.user?.id || liveProfile?.id);
   const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '';
-  const loginUrl = `/login?redirect=${encodeURIComponent(currentPath)}`;
+  const loginUrl = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
 
   // Join group room automatically if groupCode is present
   useEffect(() => {
