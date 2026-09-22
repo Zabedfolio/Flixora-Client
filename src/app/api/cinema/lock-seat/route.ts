@@ -22,12 +22,13 @@ export async function POST(req: NextRequest) {
       });
 
       if (groupCode) {
+        const cleanCode = groupCode.toUpperCase();
         await db.collection('group_bookings').updateOne(
-          { groupCode },
+          { $or: [{ groupCode }, { groupCode: cleanCode }] },
           { $pull: { groupSeatPool: seatId } as any }
         );
         await db.collection('group_members').updateMany(
-          { groupCode },
+          { $or: [{ groupCode }, { groupCode: cleanCode }] },
           { $pull: { selectedSeats: seatId } as any }
         );
       }
@@ -102,13 +103,14 @@ export async function POST(req: NextRequest) {
 
     // Synchronize seat selection into group_bookings and group_members
     if (groupCode) {
+      const cleanCode = groupCode.toUpperCase();
       await db.collection('group_bookings').updateOne(
-        { groupCode },
+        { $or: [{ groupCode }, { groupCode: cleanCode }] },
         { $addToSet: { groupSeatPool: seatId } as any }
       );
       if (userId) {
         await db.collection('group_members').updateOne(
-          { groupCode, userId },
+          { $and: [{ $or: [{ groupCode }, { groupCode: cleanCode }] }, { $or: [{ userId }, { userEmail }] }] },
           {
             $addToSet: { selectedSeats: seatId } as any,
             $set: {

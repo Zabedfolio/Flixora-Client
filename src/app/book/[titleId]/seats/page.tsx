@@ -139,8 +139,9 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     if (!showtimeId || !hallId) return;
     try {
       if (isInitial) setLoadingSeats(true);
+      const effectiveUserId = session?.user?.id || liveProfile?.id || userId;
       const res = await fetch(
-        `/api/cinema/seats?showtimeId=${showtimeId}&hallId=${hallId}&userId=${userId}&groupCode=${groupCode}`
+        `/api/cinema/seats?showtimeId=${showtimeId}&hallId=${hallId}&userId=${effectiveUserId}&groupCode=${groupCode}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -156,7 +157,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     } finally {
       if (isInitial) setLoadingSeats(false);
     }
-  }, [showtimeId, hallId, userId, groupCode]);
+  }, [showtimeId, hallId, userId, groupCode, session, liveProfile]);
 
   useEffect(() => {
     fetchSeatsMap(true);
