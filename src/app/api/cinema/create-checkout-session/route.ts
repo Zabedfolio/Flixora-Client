@@ -47,6 +47,48 @@ export async function POST(request: Request) {
 
     const { db } = await connectToDatabase();
 
+    // Verify if any requested seats have already been paid for by another participant
+    const existingTicket = await db.collection('tickets').findOne({
+      showtimeId,
+      $or: [{ seatNumbers: { $in: seatNumbers } }, { seats: { $in: seatNumbers } }],
+      status: { $nin: ['cancelled', 'Cancelled'] },
+    });
+
+    const existingBooking = await db.collection('bookings').findOne({
+      showtimeId,
+      seatNumbers: { $in: seatNumbers },
+      status: { $nin: ['cancelled', 'Cancelled'] },
+    });
+
+    if (existingTicket || existingBooking) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'One or more of the selected seats have already been paid for and confirmed by another member!',
+        },
+        { status: 409 }
+      );
+    }
+
+    if (groupCode) {
+      const groupDoc = await db.collection('group_bookings').findOne({
+        $or: [{ groupCode }, { groupCode: groupCode.toUpperCase() }],
+      });
+      if (groupDoc && Array.isArray(groupDoc.paidSeats)) {
+        const alreadyPaidSeats = seatNumbers.filter((s: string) => groupDoc.paidSeats.includes(s));
+        if (alreadyPaidSeats.length > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Seat(s) ${alreadyPaidSeats.join(', ')} have already been paid for!`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+    }
+
     // 1. Store record in `bookings` collection
     const bookingRecord = {
       bookingId,

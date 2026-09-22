@@ -53,12 +53,15 @@ export async function GET(
 
     // Unpaid group seats ready for checkout
     const unpaidGroupSeats = rawGroupSeats.filter((seatId) => !paidSeatsInGroup.has(seatId));
+    const isFullyPaid = (paidSeatsInGroup.size > 0 || (Array.isArray(group.paidSeats) && group.paidSeats.length > 0)) && unpaidGroupSeats.length === 0;
 
     return NextResponse.json({
       success: true,
       group: {
         ...group,
         groupHeldSeats: unpaidGroupSeats,
+        paidSeats: Array.from(paidSeatsInGroup),
+        isFullyPaid,
       },
       members: members.map((m: any) => ({
         userId: m.userId,

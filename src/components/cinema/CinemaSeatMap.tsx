@@ -10,6 +10,7 @@ interface CinemaSeatMapProps {
   selectedSeatIds: string[];
   groupHeldSeats?: string[];
   isLeader?: boolean;
+  isFullyPaid?: boolean;
   onToggleSeat: (seat: SeatInfo) => void;
   onProceedToCheckout?: () => void;
   onProceedGroupCheckout?: () => void;
@@ -23,6 +24,7 @@ export default function CinemaSeatMap({
   selectedSeatIds,
   groupHeldSeats = [],
   isLeader = false,
+  isFullyPaid = false,
   onToggleSeat,
   onProceedToCheckout,
   onProceedGroupCheckout,
@@ -386,7 +388,17 @@ export default function CinemaSeatMap({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            {isLeader ? (
+            {isFullyPaid ? (
+              /* GROUP BOOKING FULLY PAID STATE */
+              <button
+                type="button"
+                disabled
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-not-allowed opacity-90"
+              >
+                <CheckCircle2 size={18} className="text-emerald-400" />
+                <span>Group Payment Completed (All Seats Paid)</span>
+              </button>
+            ) : isLeader ? (
               /* GROUP LEADER: Single Primary Action Button */
               <button
                 type="button"

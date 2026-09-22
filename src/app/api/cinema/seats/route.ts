@@ -55,6 +55,32 @@ export async function GET(req: NextRequest) {
         }
       });
 
+      if (groupCode) {
+        const cleanGroupCode = groupCode.toUpperCase();
+        const groupBooking = await db.collection('group_bookings').findOne({
+          $or: [{ groupCode }, { groupCode: cleanGroupCode }],
+        });
+        if (groupBooking && Array.isArray(groupBooking.paidSeats)) {
+          bookedSeatIds.push(...groupBooking.paidSeats);
+        }
+
+        const paidMembers = await db
+          .collection('group_members')
+          .find({
+            $or: [{ groupCode }, { groupCode: cleanGroupCode }],
+            paymentStatus: 'paid',
+          })
+          .toArray();
+
+        paidMembers.forEach((m: any) => {
+          if (Array.isArray(m.paidSeats)) {
+            bookedSeatIds.push(...m.paidSeats);
+          } else if (Array.isArray(m.selectedSeats)) {
+            bookedSeatIds.push(...m.selectedSeats);
+          }
+        });
+      }
+
       // Fetch active seat holds
       const activeLocks = await db
         .collection('seat_locks')

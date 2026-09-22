@@ -513,7 +513,22 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           </div>
         )}
 
-        {groupCode && (
+        {/* GROUP BOOKING FULLY PAID BANNER */}
+        {groupCode && groupDetails?.isFullyPaid && (
+          <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between gap-4 text-xs text-emerald-200">
+            <div className="flex items-center gap-3">
+              <Check font-extrabold size={20} className="text-emerald-400 shrink-0" />
+              <div>
+                <p className="font-bold text-white">🎉 Group Booking Completed!</p>
+                <p className="text-[11px] text-emerald-300/80">
+                  All seats in this group booking have been successfully paid and confirmed. Further payment attempts are disabled.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {groupCode && !groupDetails?.isFullyPaid && (
           <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold shrink-0">
@@ -586,6 +601,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
                     )
                   : false
               }
+              isFullyPaid={!!groupDetails?.isFullyPaid}
               onToggleSeat={handleToggleSeat}
               onProceedToCheckout={() => handleStripeCheckout()}
               onProceedGroupCheckout={
