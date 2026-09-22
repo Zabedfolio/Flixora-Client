@@ -17,15 +17,17 @@ export async function POST(req: NextRequest) {
     await db.collection('seat_locks').deleteMany({ expiresAt: { $lte: new Date() } });
 
     if (action === 'release') {
-      await db.collection('seat_locks').deleteOne({ lockKey, userId });
+      await db.collection('seat_locks').deleteMany({
+        lockKey,
+      });
 
       if (groupCode) {
         await db.collection('group_bookings').updateOne(
           { groupCode },
           { $pull: { groupSeatPool: seatId } as any }
         );
-        await db.collection('group_members').updateOne(
-          { groupCode, userId },
+        await db.collection('group_members').updateMany(
+          { groupCode },
           { $pull: { selectedSeats: seatId } as any }
         );
       }

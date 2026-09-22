@@ -573,6 +573,18 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
               seats={seats}
               selectedSeatIds={selectedSeatIds}
               groupHeldSeats={groupDetails?.groupHeldSeats || []}
+              isLeader={
+                groupDetails
+                  ? groupDetails.leaderUserId === (session?.user?.id || liveProfile?.id || userId) ||
+                    (groupDetails.leaderEmail && groupDetails.leaderEmail === (session?.user?.email || liveProfile?.email)) ||
+                    groupMembers.some(
+                      (m) =>
+                        m.isLeader &&
+                        (m.userId === (session?.user?.id || liveProfile?.id || userId) ||
+                          (m.userEmail && m.userEmail === (session?.user?.email || liveProfile?.email)))
+                    )
+                  : false
+              }
               onToggleSeat={handleToggleSeat}
               onProceedToCheckout={() => handleStripeCheckout()}
               onProceedGroupCheckout={
