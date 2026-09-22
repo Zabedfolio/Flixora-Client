@@ -11,6 +11,8 @@ interface CinemaSeatMapProps {
   groupHeldSeats?: string[];
   onToggleSeat: (seat: SeatInfo) => void;
   onProceedToCheckout?: () => void;
+  onProceedGroupCheckout?: () => void;
+  groupTotalPrice?: number;
   isSubmitting?: boolean;
 }
 
@@ -21,6 +23,8 @@ export default function CinemaSeatMap({
   groupHeldSeats = [],
   onToggleSeat,
   onProceedToCheckout,
+  onProceedGroupCheckout,
+  groupTotalPrice = 0,
   isSubmitting = false,
 }: CinemaSeatMapProps) {
   // View mode state for mobile tap accessibility (3D Arc vs 2D Flat Grid)
@@ -379,15 +383,39 @@ export default function CinemaSeatMap({
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={selectedSeatsObj.length === 0 || isSubmitting}
-            onClick={onProceedToCheckout}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#FF4C00] hover:bg-[#e04300] disabled:opacity-40 disabled:hover:bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF4C00]/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-          >
-            <CheckCircle2 size={16} />
-            <span>{isSubmitting ? 'Launching Stripe Gateway...' : 'Pay & Confirm with Stripe'}</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {onProceedGroupCheckout && (
+              <button
+                type="button"
+                disabled={groupHeldSeats.length === 0 || isSubmitting}
+                onClick={onProceedGroupCheckout}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 size={16} />
+                <span>
+                  {isSubmitting
+                    ? 'Launching Stripe Gateway...'
+                    : `Pay All Group Seats (${groupTotalPrice} BDT)`}
+                </span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              disabled={selectedSeatsObj.length === 0 || isSubmitting}
+              onClick={onProceedToCheckout}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#FF4C00] hover:bg-[#e04300] disabled:opacity-40 disabled:hover:bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF4C00]/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <CheckCircle2 size={16} />
+              <span>
+                {isSubmitting
+                  ? 'Launching Stripe Gateway...'
+                  : onProceedGroupCheckout
+                  ? `Pay My Seats (${totalPrice} BDT)`
+                  : 'Pay & Confirm with Stripe'}
+              </span>
+            </button>
+          </div>
         </div>
       )}
     </div>

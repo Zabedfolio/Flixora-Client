@@ -171,9 +171,14 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     return () => clearInterval(interval);
   }, [showtimeId, fetchSeatsMap]);
 
+  const notifiedPaidEventsRef = React.useRef<Set<string>>(new Set());
+  const isAuthenticated = !!(session?.user?.id || liveProfile?.id);
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '';
+  const loginUrl = `/login?redirect=${encodeURIComponent(currentPath)}`;
+
   // Join group room automatically if groupCode is present
   useEffect(() => {
-    if (!groupCode) return;
+    if (!groupCode || !isAuthenticated) return;
     const joinRoom = async () => {
       try {
         const userEmail = session?.user?.email || liveProfile?.email || '';
@@ -195,7 +200,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
       }
     };
     joinRoom();
-  }, [groupCode, session, liveProfile, userId]);
+  }, [groupCode, session, liveProfile, userId, isAuthenticated]);
 
   // Fetch Group Booking details if groupCode is present
   const fetchGroupDetails = useCallback(async () => {
@@ -208,6 +213,25 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           setGroupDetails(data.group);
           if (Array.isArray(data.members)) {
             setGroupMembers(data.members);
+
+            // Live notification when a member/friend completes payment
+            data.members.forEach((m: any) => {
+              if (m.paymentStatus === 'paid') {
+                const paidSeatsArr =
+                  Array.isArray(m.paidSeats) && m.paidSeats.length > 0
+                    ? m.paidSeats
+                    : m.selectedSeats;
+                const eventKey = `${m.userId}_${m.ticketId || (paidSeatsArr || []).join(',')}`;
+                if (!notifiedPaidEventsRef.current.has(eventKey)) {
+                  notifiedPaidEventsRef.current.add(eventKey);
+                  toast.success(
+                    `🎉 ${m.userName || 'Group member'} completed payment for seat(s): ${(paidSeatsArr || []).join(', ')}!`,
+                    { duration: 8000 }
+                  );
+                  fetchSeatsMap();
+                }
+              }
+            });
           }
           if (typeof window !== 'undefined') {
             setGroupShareUrl(
@@ -219,7 +243,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     } catch (err) {
       console.error('Failed to fetch group details:', err);
     }
-  }, [groupCode, titleId, hallId, showtimeId, selectedDate, selectedTime]);
+  }, [groupCode, titleId, hallId, showtimeId, selectedDate, selectedTime, fetchSeatsMap]);
 
   useEffect(() => {
     fetchGroupDetails();
@@ -235,6 +259,12 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
 
   // Open or Create Group Booking Session
   const handleOpenOrCreateGroupBooking = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to start or join a group booking.');
+      router.push(loginUrl);
+      return;
+    }
+
     if (groupCode && groupShareUrl) {
       setIsGroupModalOpen(true);
       return;
@@ -289,6 +319,12 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   const handleToggleSeat = async (seat: SeatInfo) => {
     if (!showtimeId || !hallId) return;
 
+    if (groupCode && !isAuthenticated) {
+      toast.error('Please log in to join group seat selection.');
+      router.push(loginUrl);
+      return;
+    }
+
     const isCurrentlySelected = selectedSeatIds.includes(seat.id);
     const newSelected = isCurrentlySelected
       ? selectedSeatIds.filter((id) => id !== seat.id)
@@ -331,15 +367,26 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   };
 
   // Trigger Stripe Payment Checkout Session Redirect
-  const handleStripeCheckout = async () => {
-    if (!hall || selectedSeatIds.length === 0) {
+  const handleStripeCheckout = async (targetSeatsParam?: string[]) => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to proceed to ticket checkout.');
+      router.push(loginUrl);
+      return;
+    }
+
+    const seatsToBook =
+      targetSeatsParam && targetSeatsParam.length > 0
+        ? targetSeatsParam
+        : selectedSeatIds;
+
+    if (!hall || seatsToBook.length === 0) {
       toast.error('Please select at least 1 seat to continue.');
       return;
     }
 
     try {
       setIsSubmittingStripe(true);
-      const selectedSeatObjs = seats.filter((s) => selectedSeatIds.includes(s.id));
+      const selectedSeatObjs = seats.filter((s) => seatsToBook.includes(s.id));
       const totalPrice = selectedSeatObjs.reduce((sum, s) => sum + s.price, 0);
 
       const userEmail = session?.user?.email || liveProfile?.email || '';
@@ -360,7 +407,7 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           showtimeId,
           date: selectedDate,
           time: selectedTime,
-          seatNumbers: selectedSeatIds,
+          seatNumbers: seatsToBook,
           totalPrice,
           userId: realUserId,
           groupCode,
@@ -441,6 +488,26 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
         </div>
 
         {/* GROUP BOOKING ACTIVE BANNER */}
+        {groupCode && !isAuthenticated && (
+          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-amber-200">
+            <div className="flex items-center gap-3">
+              <Lock size={20} className="text-amber-400 shrink-0" />
+              <div>
+                <p className="font-bold text-white">Login Required for Group Booking</p>
+                <p className="text-[11px] text-amber-300/80">
+                  You are accessing a shared group booking link. Please log in or register to select seats and complete payment.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={loginUrl}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold uppercase tracking-wider text-xs flex items-center justify-center shrink-0 transition-all"
+            >
+              Sign In to Join
+            </Link>
+          </div>
+        )}
+
         {groupCode && (
           <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
             <div className="flex items-center gap-3">
@@ -503,7 +570,15 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
               selectedSeatIds={selectedSeatIds}
               groupHeldSeats={groupDetails?.groupHeldSeats || []}
               onToggleSeat={handleToggleSeat}
-              onProceedToCheckout={handleStripeCheckout}
+              onProceedToCheckout={() => handleStripeCheckout()}
+              onProceedGroupCheckout={
+                groupCode && (groupDetails?.groupHeldSeats || []).length > 0
+                  ? () => handleStripeCheckout(groupDetails.groupHeldSeats)
+                  : undefined
+              }
+              groupTotalPrice={seats
+                .filter((s) => (groupDetails?.groupHeldSeats || []).includes(s.id))
+                .reduce((sum, s) => sum + s.price, 0)}
               isSubmitting={isSubmittingStripe}
             />
           )}

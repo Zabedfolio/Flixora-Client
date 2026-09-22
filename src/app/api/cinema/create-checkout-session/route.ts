@@ -109,7 +109,24 @@ export async function POST(request: Request) {
     if (groupCode) {
       await db.collection('group_members').updateOne(
         { groupCode, $or: [{ userId }, { userEmail }] },
-        { $set: { paymentStatus: 'paid', ticketId } }
+        {
+          $set: {
+            paymentStatus: 'paid',
+            ticketId,
+            paidSeats: seatNumbers,
+            paidAt: new Date().toISOString(),
+            payerName: userName,
+          },
+        },
+        { upsert: true }
+      );
+
+      await db.collection('group_bookings').updateOne(
+        { groupCode },
+        {
+          $addToSet: { paidSeats: { $each: seatNumbers } } as any,
+          $set: { updatedAt: new Date().toISOString() },
+        }
       );
     }
 
