@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CinemaHall, SeatInfo, ShowtimePill } from '@/data/cinemaData';
 import CinemaSeatMap from '@/components/cinema/CinemaSeatMap';
+import GroupBookingModal from '@/components/cinema/GroupBookingModal';
 import {
   ChevronLeft,
   Ticket,
@@ -16,6 +17,10 @@ import {
   MapPin,
   CreditCard,
   Lock,
+  Users,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { authClient } from '@/app/(auth)/lib/auth-client';
 import { toast } from 'react-hot-toast';
@@ -56,6 +61,15 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   const showtimeId = searchParams.get('showtimeId') || '';
   const selectedDate = searchParams.get('date') || '';
   const selectedTime = searchParams.get('time') || '';
+  const urlGroupCode = searchParams.get('groupCode') || '';
+
+  // Group Booking State
+  const [groupCode, setGroupCode] = useState<string>(urlGroupCode);
+  const [groupShareUrl, setGroupShareUrl] = useState<string>('');
+  const [groupDetails, setGroupDetails] = useState<any>(null);
+  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   // Seats & Hall state
   const [seats, setSeats] = useState<SeatInfo[]>([]);
@@ -125,8 +139,9 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     if (!showtimeId || !hallId) return;
     try {
       if (isInitial) setLoadingSeats(true);
+      const effectiveUserId = session?.user?.id || liveProfile?.id || userId;
       const res = await fetch(
-        `/api/cinema/seats?showtimeId=${showtimeId}&hallId=${hallId}&userId=${userId}`
+        `/api/cinema/seats?showtimeId=${showtimeId}&hallId=${hallId}&userId=${effectiveUserId}&groupCode=${groupCode}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -142,24 +157,174 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
     } finally {
       if (isInitial) setLoadingSeats(false);
     }
-  }, [showtimeId, hallId, userId]);
+  }, [showtimeId, hallId, userId, groupCode, session, liveProfile]);
 
   useEffect(() => {
     fetchSeatsMap(true);
   }, [fetchSeatsMap]);
 
-  // Real-Time Polling for Seats (Every 3 seconds - silent background update)
+  // Real-Time Polling for Seats (Every 2 seconds - live synchronization)
   useEffect(() => {
     if (!showtimeId) return;
     const interval = setInterval(() => {
       fetchSeatsMap(false);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [showtimeId, fetchSeatsMap]);
+
+  const notifiedPaidEventsRef = React.useRef<Set<string>>(new Set());
+  const isAuthenticated = !!(session?.user?.id || liveProfile?.id);
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '';
+  const loginUrl = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+
+  // Join group room automatically if groupCode is present
+  useEffect(() => {
+    if (!groupCode || !isAuthenticated) return;
+    const joinRoom = async () => {
+      try {
+        const userEmail = session?.user?.email || liveProfile?.email || '';
+        const userName = session?.user?.name || liveProfile?.name || '';
+        const realUserId = session?.user?.id || liveProfile?.id || userId;
+
+        await fetch('/api/cinema/group-booking/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupCode,
+            userId: realUserId,
+            userName,
+            userEmail,
+          }),
+        });
+      } catch (err) {
+        // silent
+      }
+    };
+    joinRoom();
+  }, [groupCode, session, liveProfile, userId, isAuthenticated]);
+
+  // Fetch Group Booking details if groupCode is present
+  const fetchGroupDetails = useCallback(async () => {
+    if (!groupCode) return;
+    try {
+      const res = await fetch(`/api/cinema/group-booking/${groupCode}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.group) {
+          setGroupDetails(data.group);
+          if (Array.isArray(data.members)) {
+            setGroupMembers(data.members);
+
+            // Live notification when a member/friend completes payment
+            data.members.forEach((m: any) => {
+              if (m.paymentStatus === 'paid') {
+                const paidSeatsArr =
+                  Array.isArray(m.paidSeats) && m.paidSeats.length > 0
+                    ? m.paidSeats
+                    : m.selectedSeats;
+                const eventKey = `${m.userId}_${m.ticketId || (paidSeatsArr || []).join(',')}`;
+                if (!notifiedPaidEventsRef.current.has(eventKey)) {
+                  notifiedPaidEventsRef.current.add(eventKey);
+                  toast.success(
+                    `🎉 ${m.userName || 'Group member'} completed payment for seat(s): ${(paidSeatsArr || []).join(', ')}!`,
+                    { duration: 8000 }
+                  );
+                  fetchSeatsMap();
+                }
+              }
+            });
+          }
+          if (typeof window !== 'undefined') {
+            setGroupShareUrl(
+              `${window.location.origin}/book/${titleId}/seats?hallId=${encodeURIComponent(hallId)}&showtimeId=${encodeURIComponent(showtimeId)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&groupCode=${groupCode}`
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch group details:', err);
+    }
+  }, [groupCode, titleId, hallId, showtimeId, selectedDate, selectedTime, fetchSeatsMap]);
+
+  useEffect(() => {
+    fetchGroupDetails();
+  }, [fetchGroupDetails]);
+
+  useEffect(() => {
+    if (!groupCode) return;
+    const interval = setInterval(() => {
+      fetchGroupDetails();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [groupCode, fetchGroupDetails]);
+
+  // Open or Create Group Booking Session
+  const handleOpenOrCreateGroupBooking = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to start or join a group booking.');
+      router.push(loginUrl);
+      return;
+    }
+
+    if (groupCode && groupShareUrl) {
+      setIsGroupModalOpen(true);
+      return;
+    }
+
+    try {
+      setIsCreatingGroup(true);
+      const userEmail = session?.user?.email || liveProfile?.email || '';
+      const userName = session?.user?.name || liveProfile?.name || '';
+      const realUserId = session?.user?.id || liveProfile?.id || userId;
+
+      const res = await fetch('/api/cinema/group-booking/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titleId,
+          movieTitle: movieInfo.title,
+          moviePoster: movieInfo.poster,
+          hallId: hall?.id || hallId,
+          hallName: hall?.name || 'Star Cineplex',
+          showtimeId,
+          date: selectedDate,
+          time: selectedTime,
+          selectedSeats: selectedSeatIds,
+          userId: realUserId,
+          userName,
+          userEmail,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.groupCode) {
+        setGroupCode(data.groupCode);
+        setGroupShareUrl(data.shareUrl);
+        setGroupDetails(data.group);
+        setIsGroupModalOpen(true);
+        toast.success('Group Booking invite link generated!');
+        router.replace(
+          `/book/${titleId}/seats?hallId=${encodeURIComponent(hallId)}&showtimeId=${encodeURIComponent(showtimeId)}&date=${encodeURIComponent(selectedDate)}&time=${encodeURIComponent(selectedTime)}&groupCode=${data.groupCode}`
+        );
+      } else {
+        toast.error(data.message || 'Failed to create group booking session');
+      }
+    } catch (err) {
+      toast.error('Network error starting group booking');
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
 
   // Handle Seat Selection / Temporary Lock Holding
   const handleToggleSeat = async (seat: SeatInfo) => {
     if (!showtimeId || !hallId) return;
+
+    if (groupCode && !isAuthenticated) {
+      toast.error('Please log in to join group seat selection.');
+      router.push(loginUrl);
+      return;
+    }
 
     const isCurrentlySelected = selectedSeatIds.includes(seat.id);
     const newSelected = isCurrentlySelected
@@ -168,6 +333,10 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
 
     // Optimistic UI update
     setSelectedSeatIds(newSelected);
+
+    const userName = session?.user?.name || liveProfile?.name || 'Cinema Customer';
+    const userEmail = session?.user?.email || liveProfile?.email || 'customer@flixora.com';
+    const realUserId = session?.user?.id || liveProfile?.id || userId;
 
     try {
       const res = await fetch('/api/cinema/lock-seat', {
@@ -179,7 +348,10 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           date: selectedDate,
           time: selectedTime,
           seatId: seat.id,
-          userId,
+          userId: realUserId,
+          groupCode,
+          userName,
+          userEmail,
           action: isCurrentlySelected ? 'release' : 'lock',
         }),
       });
@@ -196,15 +368,30 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
   };
 
   // Trigger Stripe Payment Checkout Session Redirect
-  const handleStripeCheckout = async () => {
-    if (!hall || selectedSeatIds.length === 0) {
+  const handleStripeCheckout = async (targetSeatsParam?: string[]) => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to proceed to ticket checkout.');
+      router.push(loginUrl);
+      return;
+    }
+
+    let seatsToBook =
+      targetSeatsParam && targetSeatsParam.length > 0
+        ? targetSeatsParam
+        : selectedSeatIds;
+
+    if (seatsToBook.length === 0 && groupCode && Array.isArray(groupDetails?.groupHeldSeats) && groupDetails.groupHeldSeats.length > 0) {
+      seatsToBook = groupDetails.groupHeldSeats;
+    }
+
+    if (!hall || seatsToBook.length === 0) {
       toast.error('Please select at least 1 seat to continue.');
       return;
     }
 
     try {
       setIsSubmittingStripe(true);
-      const selectedSeatObjs = seats.filter((s) => selectedSeatIds.includes(s.id));
+      const selectedSeatObjs = seats.filter((s) => seatsToBook.includes(s.id));
       const totalPrice = selectedSeatObjs.reduce((sum, s) => sum + s.price, 0);
 
       const userEmail = session?.user?.email || liveProfile?.email || '';
@@ -225,9 +412,10 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
           showtimeId,
           date: selectedDate,
           time: selectedTime,
-          seatNumbers: selectedSeatIds,
+          seatNumbers: seatsToBook,
           totalPrice,
           userId: realUserId,
+          groupCode,
           userEmail,
           userName,
         }),
@@ -275,19 +463,101 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
             </div>
           </div>
 
-          {/* Selected Booking Info Summary */}
-          {hall && (
-            <div className="flex items-center gap-3 bg-[#0A0A0A] border border-zinc-800 px-4 py-2.5 rounded-2xl">
-              <Building2 size={16} className="text-[#FF4C00] shrink-0" />
-              <div className="text-xs">
-                <p className="font-black text-white">{hall.name} ({hall.district})</p>
-                <p className="text-[11px] text-zinc-400">
-                  {selectedDate} @ <strong className="text-[#FF4C00] font-mono">{selectedTime}</strong>
+          {/* Selected Booking Info Summary & Group Booking Action */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <button
+              onClick={handleOpenOrCreateGroupBooking}
+              disabled={isCreatingGroup}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-purple-900/20 shrink-0"
+            >
+              {isCreatingGroup ? (
+                <Loader2 size={16} className="animate-spin text-purple-400" />
+              ) : (
+                <Users size={16} className="text-purple-400" />
+              )}
+              <span>{groupCode ? 'View Group Invite' : 'Invite Friends to Book'}</span>
+            </button>
+
+            {hall && (
+              <div className="flex items-center gap-3 bg-[#0A0A0A] border border-zinc-800 px-4 py-2.5 rounded-2xl">
+                <Building2 size={16} className="text-[#FF4C00] shrink-0" />
+                <div className="text-xs">
+                  <p className="font-black text-white">{hall.name} ({hall.district})</p>
+                  <p className="text-[11px] text-zinc-400">
+                    {selectedDate} @ <strong className="text-[#FF4C00] font-mono">{selectedTime}</strong>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* GROUP BOOKING ACTIVE BANNER */}
+        {groupCode && !isAuthenticated && (
+          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-amber-200">
+            <div className="flex items-center gap-3">
+              <Lock size={20} className="text-amber-400 shrink-0" />
+              <div>
+                <p className="font-bold text-white">Login Required for Group Booking</p>
+                <p className="text-[11px] text-amber-300/80">
+                  You are accessing a shared group booking link. Please log in or register to select seats and complete payment.
                 </p>
               </div>
             </div>
-          )}
-        </div>
+            <Link
+              href={loginUrl}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold uppercase tracking-wider text-xs flex items-center justify-center shrink-0 transition-all"
+            >
+              Sign In to Join
+            </Link>
+          </div>
+        )}
+
+        {/* GROUP BOOKING FULLY PAID BANNER */}
+        {groupCode && groupDetails?.isFullyPaid && (
+          <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between gap-4 text-xs text-emerald-200">
+            <div className="flex items-center gap-3">
+              <Check font-extrabold size={20} className="text-emerald-400 shrink-0" />
+              <div>
+                <p className="font-bold text-white">🎉 Group Booking Completed!</p>
+                <p className="text-[11px] text-emerald-300/80">
+                  All seats in this group booking have been successfully paid and confirmed. Further payment attempts are disabled.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {groupCode && !groupDetails?.isFullyPaid && (
+          <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold shrink-0">
+                <Users size={18} />
+              </div>
+              <div>
+                <p className="font-bold text-white flex items-center gap-2">
+                  <span>Group Session Active:</span>
+                  <span className="font-mono text-purple-300 bg-purple-950 border border-purple-800 px-2 py-0.5 rounded">
+                    {groupCode}
+                  </span>
+                </p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  {groupMembers.length > 0
+                    ? `${groupMembers.length} friend(s) in room: ${groupMembers.map((m) => m.userName).join(', ')}`
+                    : 'Share your link with friends so they can pick adjacent seats in real-time!'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleOpenOrCreateGroupBooking}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Share2 size={14} />
+              <span>Share Invite Link & QR</span>
+            </button>
+          </div>
+        )}
 
         {/* PARABOLIC SEAT MAP CONTAINER */}
         <div className="rounded-3xl border border-zinc-900 bg-[#0C0C0C] p-6 space-y-6 shadow-2xl">
@@ -318,8 +588,30 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
               hall={hall}
               seats={seats}
               selectedSeatIds={selectedSeatIds}
+              groupHeldSeats={groupDetails?.groupHeldSeats || []}
+              isLeader={
+                groupDetails
+                  ? groupDetails.leaderUserId === (session?.user?.id || liveProfile?.id || userId) ||
+                    (groupDetails.leaderEmail && groupDetails.leaderEmail === (session?.user?.email || liveProfile?.email)) ||
+                    groupMembers.some(
+                      (m) =>
+                        m.isLeader &&
+                        (m.userId === (session?.user?.id || liveProfile?.id || userId) ||
+                          (m.userEmail && m.userEmail === (session?.user?.email || liveProfile?.email)))
+                    )
+                  : false
+              }
+              isFullyPaid={!!groupDetails?.isFullyPaid}
               onToggleSeat={handleToggleSeat}
-              onProceedToCheckout={handleStripeCheckout}
+              onProceedToCheckout={() => handleStripeCheckout()}
+              onProceedGroupCheckout={
+                groupCode && (groupDetails?.groupHeldSeats || []).length > 0
+                  ? () => handleStripeCheckout(groupDetails.groupHeldSeats)
+                  : undefined
+              }
+              groupTotalPrice={seats
+                .filter((s) => (groupDetails?.groupHeldSeats || []).includes(s.id))
+                .reduce((sum, s) => sum + s.price, 0)}
               isSubmitting={isSubmittingStripe}
             />
           )}
@@ -341,6 +633,20 @@ export default function SeatSelectionAndPaymentPage({ params }: SeatsPageProps) 
             <span>256-Bit SSL Protected</span>
           </div>
         </div>
+
+        {/* GROUP BOOKING MODAL */}
+        <GroupBookingModal
+          isOpen={isGroupModalOpen}
+          onClose={() => setIsGroupModalOpen(false)}
+          groupCode={groupCode}
+          shareUrl={groupShareUrl}
+          movieTitle={movieInfo.title}
+          hallName={hall ? hall.name : 'Cinema Hall'}
+          date={selectedDate}
+          time={selectedTime}
+          selectedSeats={selectedSeatIds}
+          members={groupMembers}
+        />
 
       </div>
     </div>

@@ -8,8 +8,13 @@ interface CinemaSeatMapProps {
   hall: CinemaHall;
   seats: SeatInfo[];
   selectedSeatIds: string[];
+  groupHeldSeats?: string[];
+  isLeader?: boolean;
+  isFullyPaid?: boolean;
   onToggleSeat: (seat: SeatInfo) => void;
   onProceedToCheckout?: () => void;
+  onProceedGroupCheckout?: () => void;
+  groupTotalPrice?: number;
   isSubmitting?: boolean;
 }
 
@@ -17,8 +22,13 @@ export default function CinemaSeatMap({
   hall,
   seats,
   selectedSeatIds,
+  groupHeldSeats = [],
+  isLeader = false,
+  isFullyPaid = false,
   onToggleSeat,
   onProceedToCheckout,
+  onProceedGroupCheckout,
+  groupTotalPrice = 0,
   isSubmitting = false,
 }: CinemaSeatMapProps) {
   // View mode state for mobile tap accessibility (3D Arc vs 2D Flat Grid)
@@ -166,49 +176,63 @@ export default function CinemaSeatMap({
                           }}
                           className="transition-transform duration-200"
                         >
-                          <button
-                            type="button"
-                            disabled={isBooked || isHeldByOther}
-                            onClick={() => onToggleSeat(seat)}
-                            title={`${seat.id} (${isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
-                            className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
-                              isSelected
-                                ? 'scale-110 z-20'
-                                : isBooked || isHeldByOther
-                                ? 'opacity-30 cursor-not-allowed'
-                                : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
-                            }`}
-                          >
-                            {/* Seat Chair Backrest Contour */}
-                            <div
-                              className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
-                                isSelected
-                                  ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
-                                  : isPremium
-                                  ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
-                                  : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
-                              }`}
-                            >
-                              <span className="px-1 py-0.2 rounded-full font-mono font-black">
-                                {seat.number}
-                              </span>
-                            </div>
+                          {(() => {
+                            const isSelected = selectedSeatIds.includes(seat.id);
+                            const isGroupHeld = groupHeldSeats.includes(seat.id);
+                            const isBooked = seat.status === 'booked';
+                            const isHeldByOther = seat.status === 'held' && !isGroupHeld;
+                            const isPremium = seat.type === 'premium';
 
-                            {/* Seat Chair Bottom Cushion Base */}
-                            <div
-                              className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
-                                isSelected
-                                  ? 'bg-[#E64400] border-[#FF4C00]/80'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-900 border-zinc-800'
-                                  : isPremium
-                                  ? 'bg-amber-700 border-amber-400/60'
-                                  : 'bg-[#801200] border-[#FF4C00]/40'
-                              }`}
-                            />
-                          </button>
+                            return (
+                              <button
+                                type="button"
+                                disabled={isBooked || isHeldByOther}
+                                onClick={() => onToggleSeat(seat)}
+                                title={`${seat.id} (${isGroupHeld ? 'Group Reserved Seat' : isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
+                                className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
+                                  isSelected
+                                    ? 'scale-110 z-20'
+                                    : isBooked || isHeldByOther
+                                    ? 'opacity-30 cursor-not-allowed'
+                                    : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
+                                }`}
+                              >
+                                {/* Seat Chair Backrest Contour */}
+                                <div
+                                  className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
+                                    isSelected
+                                      ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
+                                      : isGroupHeld
+                                      ? 'bg-purple-600 text-white font-black border border-purple-300 ring-1 ring-purple-400 shadow-[0_0_14px_rgba(147,51,234,0.9)]'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
+                                      : isPremium
+                                      ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
+                                      : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
+                                  }`}
+                                >
+                                  <span className="px-1 py-0.2 rounded-full font-mono font-black">
+                                    {seat.number}
+                                  </span>
+                                </div>
+
+                                {/* Seat Chair Bottom Cushion Base */}
+                                <div
+                                  className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
+                                    isSelected
+                                      ? 'bg-[#E64400] border-[#FF4C00]/80'
+                                      : isGroupHeld
+                                      ? 'bg-purple-800 border-purple-400/80'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-900 border-zinc-800'
+                                      : isPremium
+                                      ? 'bg-amber-700 border-amber-400/60'
+                                      : 'bg-[#801200] border-[#FF4C00]/40'
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })()}
                         </div>
                       );
                     })}
@@ -243,49 +267,63 @@ export default function CinemaSeatMap({
                           }}
                           className="transition-transform duration-200"
                         >
-                          <button
-                            type="button"
-                            disabled={isBooked || isHeldByOther}
-                            onClick={() => onToggleSeat(seat)}
-                            title={`${seat.id} (${isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
-                            className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
-                              isSelected
-                                ? 'scale-110 z-20'
-                                : isBooked || isHeldByOther
-                                ? 'opacity-30 cursor-not-allowed'
-                                : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
-                            }`}
-                          >
-                            {/* Seat Chair Backrest Contour */}
-                            <div
-                              className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
-                                isSelected
-                                  ? 'bg-[#FF4C00] text-black font-black ring-2 ring-[#FF4C00] shadow-[0_0_18px_rgba(255,76,0,1)]'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
-                                  : isPremium
-                                  ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
-                                  : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
-                              }`}
-                            >
-                              <span className="px-1 py-0.2 rounded-full font-mono font-black">
-                                {seat.number}
-                              </span>
-                            </div>
+                          {(() => {
+                            const isSelected = selectedSeatIds.includes(seat.id);
+                            const isGroupHeld = groupHeldSeats.includes(seat.id);
+                            const isBooked = seat.status === 'booked';
+                            const isHeldByOther = seat.status === 'held' && !isGroupHeld;
+                            const isPremium = seat.type === 'premium';
 
-                            {/* Seat Chair Bottom Cushion Base */}
-                            <div
-                              className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
-                                isSelected
-                                  ? 'bg-[#E64400] border-[#FF4C00]/80'
-                                  : isBooked || isHeldByOther
-                                  ? 'bg-zinc-900 border-zinc-800'
-                                  : isPremium
-                                  ? 'bg-amber-700 border-amber-400/60'
-                                  : 'bg-[#801200] border-[#FF4C00]/40'
-                              }`}
-                            />
-                          </button>
+                            return (
+                              <button
+                                type="button"
+                                disabled={isBooked || isHeldByOther}
+                                onClick={() => onToggleSeat(seat)}
+                                title={`${seat.id} (${isGroupHeld ? 'Group Reserved Seat' : isPremium ? 'Premium VIP' : 'Regular'}) - ${seat.price} BDT`}
+                                className={`group relative flex flex-col items-center justify-center p-0.5 rounded-t-xl transition-all duration-200 cursor-pointer ${
+                                  isSelected
+                                    ? 'scale-110 z-20'
+                                    : isBooked || isHeldByOther
+                                    ? 'opacity-30 cursor-not-allowed'
+                                    : 'hover:-translate-y-1 hover:scale-110 hover:z-10'
+                                }`}
+                              >
+                                {/* Seat Chair Backrest Contour */}
+                                <div
+                                  className={`w-6 sm:w-7.5 h-4 sm:h-5 rounded-t-lg flex items-center justify-center font-bold text-[8px] sm:text-[9.5px] tracking-tighter transition-all shadow-md ${
+                                    isSelected
+                                      ? 'bg-[#FF4C00] text-black font-black ring-2 ring-white shadow-[0_0_18px_rgba(255,76,0,1)]'
+                                      : isGroupHeld
+                                      ? 'bg-purple-600 text-white font-black border border-purple-300 ring-1 ring-purple-400 shadow-[0_0_14px_rgba(147,51,234,0.9)]'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-800 text-zinc-600 border border-zinc-700'
+                                      : isPremium
+                                      ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 text-black font-black border border-amber-300 shadow-[0_2px_10px_rgba(245,158,11,0.6)]'
+                                      : 'bg-gradient-to-b from-[#FF4C00] via-[#D62800] to-[#991600] text-white border border-[#FF6633]/60 shadow-[0_2px_10px_rgba(255,76,0,0.6)] group-hover:from-[#FF6600] group-hover:to-[#B31A00]'
+                                  }`}
+                                >
+                                  <span className="px-1 py-0.2 rounded-full font-mono font-black">
+                                    {seat.number}
+                                  </span>
+                                </div>
+
+                                {/* Seat Chair Bottom Cushion Base */}
+                                <div
+                                  className={`w-7 sm:w-8.5 h-2 sm:h-2.5 rounded-b-md border-t transition-all ${
+                                    isSelected
+                                      ? 'bg-[#E64400] border-[#FF4C00]/80'
+                                      : isGroupHeld
+                                      ? 'bg-purple-800 border-purple-400/80'
+                                      : isBooked || isHeldByOther
+                                      ? 'bg-zinc-900 border-zinc-800'
+                                      : isPremium
+                                      ? 'bg-amber-700 border-amber-400/60'
+                                      : 'bg-[#801200] border-[#FF4C00]/40'
+                                  }`}
+                                />
+                              </button>
+                            );
+                          })()}
                         </div>
                       );
                     })}
@@ -349,15 +387,81 @@ export default function CinemaSeatMap({
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={selectedSeatsObj.length === 0 || isSubmitting}
-            onClick={onProceedToCheckout}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#FF4C00] hover:bg-[#e04300] disabled:opacity-40 disabled:hover:bg-[#FF4C00] text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF4C00]/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-          >
-            <CheckCircle2 size={16} />
-            <span>{isSubmitting ? 'Launching Stripe Gateway...' : 'Pay & Confirm with Stripe'}</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {isFullyPaid ? (
+              /* GROUP BOOKING FULLY PAID STATE */
+              <button
+                type="button"
+                disabled
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-not-allowed opacity-90"
+              >
+                <CheckCircle2 size={18} className="text-emerald-400" />
+                <span>Group Payment Completed (All Seats Paid)</span>
+              </button>
+            ) : isLeader ? (
+              /* GROUP LEADER: Single Primary Action Button */
+              <button
+                type="button"
+                disabled={
+                  (selectedSeatsObj.length === 0 && groupHeldSeats.length === 0) || isSubmitting
+                }
+                onClick={onProceedGroupCheckout || onProceedToCheckout}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF4C00] to-purple-600 hover:from-[#e04300] hover:to-purple-500 disabled:opacity-40 text-white font-black text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#FF4C00]/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 size={18} />
+                <span>
+                  {isSubmitting
+                    ? 'Launching Stripe Gateway...'
+                    : `Pay & Confirm Group Tickets (${
+                        groupTotalPrice > 0 ? groupTotalPrice : totalPrice
+                      } BDT)`}
+                </span>
+              </button>
+            ) : (
+              /* INVITED FRIENDS / MEMBERS */
+              <>
+                {onProceedGroupCheckout && selectedSeatsObj.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={groupHeldSeats.length === 0 || isSubmitting}
+                    onClick={onProceedGroupCheckout}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>
+                      {isSubmitting
+                        ? 'Launching Stripe Gateway...'
+                        : `Pay All Group Seats (${groupTotalPrice} BDT)`}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={
+                    (selectedSeatsObj.length === 0 &&
+                      (!onProceedGroupCheckout || groupHeldSeats.length === 0)) ||
+                    isSubmitting
+                  }
+                  onClick={
+                    selectedSeatsObj.length > 0
+                      ? onProceedToCheckout
+                      : onProceedGroupCheckout || onProceedToCheckout
+                  }
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-[#FF4C00] hover:bg-[#e04300] disabled:opacity-40 text-black font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#FF4C00]/20 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <CheckCircle2 size={16} />
+                  <span>
+                    {isSubmitting
+                      ? 'Launching Stripe Gateway...'
+                      : selectedSeatsObj.length > 0
+                      ? `Pay My Seats (${totalPrice} BDT)`
+                      : `Pay All Group Seats (${groupTotalPrice} BDT)`}
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

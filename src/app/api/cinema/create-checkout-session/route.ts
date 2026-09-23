@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       seatNumbers,
       totalPrice,
       userId,
+      groupCode,
       userName = 'Flixora User',
       userEmail = 'user@flixora.com',
     } = body;
@@ -45,6 +46,48 @@ export async function POST(request: Request) {
     const qrCodeUrl = `${origin}/verify/${ticketId}`;
 
     const { db } = await connectToDatabase();
+
+    // Verify if any requested seats have already been paid for by another participant
+    const existingTicket = await db.collection('tickets').findOne({
+      showtimeId,
+      $or: [{ seatNumbers: { $in: seatNumbers } }, { seats: { $in: seatNumbers } }],
+      status: { $nin: ['cancelled', 'Cancelled'] },
+    });
+
+    const existingBooking = await db.collection('bookings').findOne({
+      showtimeId,
+      seatNumbers: { $in: seatNumbers },
+      status: { $nin: ['cancelled', 'Cancelled'] },
+    });
+
+    if (existingTicket || existingBooking) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'One or more of the selected seats have already been paid for and confirmed by another member!',
+        },
+        { status: 409 }
+      );
+    }
+
+    if (groupCode) {
+      const groupDoc = await db.collection('group_bookings').findOne({
+        $or: [{ groupCode }, { groupCode: groupCode.toUpperCase() }],
+      });
+      if (groupDoc && Array.isArray(groupDoc.paidSeats)) {
+        const alreadyPaidSeats = seatNumbers.filter((s: string) => groupDoc.paidSeats.includes(s));
+        if (alreadyPaidSeats.length > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Seat(s) ${alreadyPaidSeats.join(', ')} have already been paid for!`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+    }
 
     // 1. Store record in `bookings` collection
     const bookingRecord = {
@@ -65,6 +108,7 @@ export async function POST(request: Request) {
       time,
       seatNumbers,
       totalPrice: Number(totalPrice) || 0,
+      groupCode: groupCode || null,
       status: 'confirmed',
       createdAt: new Date().toISOString(),
     };
@@ -91,11 +135,42 @@ export async function POST(request: Request) {
       seatNumbers,
       totalPrice: Number(totalPrice) || 0,
       qrCode: qrCodeUrl,
+      groupCode: groupCode || null,
       status: 'active',
       createdAt: new Date().toISOString(),
     };
     await db.collection('tickets').insertOne(ticketRecord);
     await db.collection('cinema_tickets').insertOne(ticketRecord); // legacy table fallback
+
+    // Release temporary seat locks matching these seats
+    await db.collection('seat_locks').deleteMany({
+      showtimeId,
+      seatId: { $in: seatNumbers },
+    });
+
+    if (groupCode) {
+      await db.collection('group_members').updateOne(
+        { groupCode, $or: [{ userId }, { userEmail }] },
+        {
+          $set: {
+            paymentStatus: 'paid',
+            ticketId,
+            paidSeats: seatNumbers,
+            paidAt: new Date().toISOString(),
+            payerName: userName,
+          },
+        },
+        { upsert: true }
+      );
+
+      await db.collection('group_bookings').updateOne(
+        { groupCode },
+        {
+          $addToSet: { paidSeats: { $each: seatNumbers } } as any,
+          $set: { updatedAt: new Date().toISOString() },
+        }
+      );
+    }
 
     // 3. Mark seats as Booked in cinema_seats collection
     await db.collection('cinema_seats').updateMany(

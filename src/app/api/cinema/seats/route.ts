@@ -8,12 +8,14 @@ export async function GET(req: NextRequest) {
     const showtimeId = searchParams.get('showtimeId') || '';
     const hallId = searchParams.get('hallId') || 'hall-star-sks';
     const userId = searchParams.get('userId') || '';
+    const groupCode = searchParams.get('groupCode') || '';
 
     const hall = CINEMA_HALLS_DATA.find((h) => h.id === hallId) || CINEMA_HALLS_DATA[0];
 
     let bookedSeatIds: string[] = [];
     let heldSeatIds: string[] = [];
     let myHeldSeats: string[] = [];
+    let groupHeldSeats: string[] = [];
 
     try {
       const { db } = await connectToDatabase();
@@ -53,6 +55,32 @@ export async function GET(req: NextRequest) {
         }
       });
 
+      if (groupCode) {
+        const cleanGroupCode = groupCode.toUpperCase();
+        const groupBooking = await db.collection('group_bookings').findOne({
+          $or: [{ groupCode }, { groupCode: cleanGroupCode }],
+        });
+        if (groupBooking && Array.isArray(groupBooking.paidSeats)) {
+          bookedSeatIds.push(...groupBooking.paidSeats);
+        }
+
+        const paidMembers = await db
+          .collection('group_members')
+          .find({
+            $or: [{ groupCode }, { groupCode: cleanGroupCode }],
+            paymentStatus: 'paid',
+          })
+          .toArray();
+
+        paidMembers.forEach((m: any) => {
+          if (Array.isArray(m.paidSeats)) {
+            bookedSeatIds.push(...m.paidSeats);
+          } else if (Array.isArray(m.selectedSeats)) {
+            bookedSeatIds.push(...m.selectedSeats);
+          }
+        });
+      }
+
       // Fetch active seat holds
       const activeLocks = await db
         .collection('seat_locks')
@@ -66,6 +94,9 @@ export async function GET(req: NextRequest) {
         heldSeatIds.push(lock.seatId);
         if (userId && lock.userId === userId) {
           myHeldSeats.push(lock.seatId);
+        }
+        if (groupCode && lock.groupCode === groupCode) {
+          groupHeldSeats.push(lock.seatId);
         }
       });
     } catch (dbErr) {
@@ -89,6 +120,7 @@ export async function GET(req: NextRequest) {
       bookedSeatIds,
       heldSeatIds,
       myHeldSeats,
+      groupHeldSeats,
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
